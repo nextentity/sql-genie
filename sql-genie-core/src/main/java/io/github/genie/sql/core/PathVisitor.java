@@ -1,12 +1,12 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.OperateableExpression.BooleanExpression;
-import io.github.genie.sql.core.Path.BooleanPath;
-import io.github.genie.sql.core.Path.ComparablePath;
-import io.github.genie.sql.core.Path.NumberPath;
 import io.github.genie.sql.core.OperateableExpression.ComparableExpression;
 import io.github.genie.sql.core.OperateableExpression.NumberExpression;
 import io.github.genie.sql.core.OperateableExpression.StringExpression;
+import io.github.genie.sql.core.Path.BooleanPath;
+import io.github.genie.sql.core.Path.ComparablePath;
+import io.github.genie.sql.core.Path.NumberPath;
 
 /**
  * @param <T> root type

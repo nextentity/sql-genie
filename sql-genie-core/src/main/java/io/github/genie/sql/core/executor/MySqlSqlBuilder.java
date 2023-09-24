@@ -10,5 +10,4 @@ public class MySqlSqlBuilder implements JdbcQueryExecutor.SqlBuilder {
     }
 
 
-
 }

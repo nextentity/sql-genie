@@ -1,6 +1,6 @@
 package io.github.genie.sql.core.exception;
 
-public class SqlExecuteException extends RuntimeException{
+public class SqlExecuteException extends RuntimeException {
     public SqlExecuteException() {
     }
 
