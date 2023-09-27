@@ -13,6 +13,11 @@ final class OrderingImpl<T> implements Ordering<T> {
         this.order = order;
     }
 
+    public OrderingImpl(Expression.Meta expression, SortOrder order) {
+        this.expression = expression;
+        this.order = order;
+    }
+
     @Override
     public Expression.Meta expression() {
         return expression;
