@@ -69,24 +69,24 @@ public class Q {
     }
 
     public static <T> Ordering<T> desc(Path<T, ? extends Comparable<?>> path) {
-        return get(path).desc();
+        return new OrderingImpl<>(Metas.of(path), Ordering.SortOrder.DESC);
     }
 
     public static <T> Ordering<T> asc(Path<T, ? extends Comparable<?>> path) {
-        return get(path).asc();
+        return new OrderingImpl<>(Metas.of(path), Ordering.SortOrder.ASC);
     }
 
     @SafeVarargs
     public static <T> List<Ordering<T>> desc(Path<T, ? extends Comparable<?>>... paths) {
         return Arrays.stream(paths)
-                .map(path -> get(path).desc())
+                .map(Q::desc)
                 .toList();
     }
 
     @SafeVarargs
     public static <T> List<Ordering<T>> asc(Path<T, Comparable<?>>... paths) {
         return Arrays.stream(paths)
-                .map(path -> get(path).asc())
+                .map(Q::asc)
                 .toList();
     }
 
@@ -94,4 +94,5 @@ public class Q {
     public static <T> BooleanExpression<T> not(Predicate<T> lt) {
         return () -> BasicExpressions.operate(lt, Operator.NOT, List.of());
     }
+
 }

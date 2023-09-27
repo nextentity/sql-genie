@@ -1,5 +1,6 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.TypedExpression;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -86,7 +87,7 @@ public interface Query {
                 & GroupBy<T, Object[]>
                 & OrderBy<T, Object[]>
                 & Collector<Object[]>>
-        B select(List<OperateableExpression<T, ?>> paths);
+        B select(List<? extends TypedExpression<T, ?>> paths);
 
         <R, B extends AggregatableWhere<T, R> & GroupBy<T, R> & OrderBy<T, R> & Collector<R>>
         B select(Path<T, ? extends R> expression);
@@ -154,13 +155,13 @@ public interface Query {
 
     interface AggregatableWhere<T, U> extends Where<T, U> {
 
-        GroupByBuilder<T, U> where(Expression.TypedExpression<T, Boolean> predicate);
+        GroupByBuilder<T, U> where(TypedExpression<T, Boolean> predicate);
 
     }
 
     interface Where<T, U> {
 
-        OrderByBuilder<T, U> where(Expression.TypedExpression<T, Boolean> predicate);
+        OrderByBuilder<T, U> where(TypedExpression<T, Boolean> predicate);
 
     }
 
@@ -199,7 +200,7 @@ public interface Query {
 
     interface Having<T, U> {
 
-        <B extends OrderBy<T, U> & Collector<U>> B having(Predicate<T> predicate);
+        <B extends OrderBy<T, U> & Collector<U>> B having(TypedExpression<T, Boolean> predicate);
 
     }
 

@@ -1,17 +1,20 @@
 package io.github.genie.sql.core;
 
 
+import io.github.genie.sql.core.ExpressionChainBuilder.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static io.github.genie.sql.core.BasicExpressions.operateAsNumber;
+import static io.github.genie.sql.core.BasicExpressions.operateAsString;
 import static io.github.genie.sql.core.BasicExpressions.*;
 
 
 @SuppressWarnings("unused")
-public interface OperateableExpression<T, U> extends Expression.TypedExpression<T, U>, ChainApi.OperateableConnector<T, U> {
+public interface OperateableExpression<T, U> extends Expression.TypedExpression<T, U> {
 
     default BooleanExpression<T> eq(U value) {
         return operateAsPredicate(this, Operator.EQ, List.of(() -> BasicExpressions.of(value)));
@@ -62,7 +65,7 @@ public interface OperateableExpression<T, U> extends Expression.TypedExpression<
         return operateAsPredicate(this, Operator.IS_NOT_NULL, Collections.emptyList());
     }
 
-    interface BooleanExpression<T> extends Predicate<T>, ChainApi.BooleanConnector<T> {
+    interface BooleanExpression<T> extends Predicate<T>, ComparableExpression<T, Boolean> {
         default BooleanExpression<T> and(TypedExpression<T, Boolean> value) {
             return operateAsPredicate(this, Operator.AND, List.of(value));
         }
@@ -92,6 +95,45 @@ public interface OperateableExpression<T, U> extends Expression.TypedExpression<
         default BooleanExpression<T> not() {
             return operateAsPredicate(this, Operator.NOT, List.of());
         }
+
+        default <R, S extends PathOperation<T, R, LogicOrConnector<T>>
+                & CommonOperation<T, R, LogicOrConnector<T>>>
+        S or(Path<T, R> path) {
+            // noinspection unchecked
+            return (S) PathOperationImpl.or(meta(), path);
+        }
+
+
+        default <R extends Comparable<R>, S extends PathOperation<T, R, LogicOrConnector<T>> & CommonOperation<T, R, LogicOrConnector<T>>>
+        S or(Path.ComparablePath<T, R> path) {
+            // noinspection unchecked
+            return (S) PathOperationImpl.or(meta(), path);
+        }
+
+
+        default <R extends Number & Comparable<R>, S extends PathOperation<T, R, LogicOrConnector<T>> & NumberOperation<T, R, LogicOrConnector<T>>>
+        S or(Path.NumberPath<T, R> path) {
+            // noinspection unchecked
+            return (S) PathOperationImpl.or(meta(), path);
+        }
+
+        default <R, S extends PathOperation<T, R, LogicAndConnector<T>> & CommonOperation<T, R, LogicAndConnector<T>>> S and(Path<T, R> path) {
+            return Util.cast(PathOperationImpl.and(this.meta(), path));
+        }
+
+
+        default <R extends Comparable<R>, S extends PathOperation<T, R, LogicAndConnector<T>>
+                & ComparableOperation<T, R, LogicAndConnector<T>>>
+        S and(Path.ComparablePath<T, R> path) {
+            return Util.cast(PathOperationImpl.and(this.meta(), path));
+        }
+
+
+        default <R extends Number & Comparable<R>, S extends PathOperation<T, R, LogicAndConnector<T>> & NumberOperation<T, R, LogicAndConnector<T>>>
+        S and(Path.NumberPath<T, R> path) {
+            return Util.cast(PathOperationImpl.and(this.meta(), path));
+        }
+
 
         // default <R, S extends PathVisitor<T, R> & OperateableExpression<T, R>> S and(Path<T, R> path) {
         //     return Util.cast(ExpressionBuilders.and(this, path));
@@ -123,7 +165,7 @@ public interface OperateableExpression<T, U> extends Expression.TypedExpression<
 
     }
 
-    interface ComparableExpression<T, U extends Comparable<U>> extends OperateableExpression<T, U>, ChainApi.ComparableConnector<T, U> {
+    interface ComparableExpression<T, U extends Comparable<U>> extends OperateableExpression<T, U> {
 
         default BooleanExpression<T> ge(U value) {
             return operateAsPredicate(this, Operator.GE, List.of(() -> BasicExpressions.of(value)));
@@ -175,10 +217,17 @@ public interface OperateableExpression<T, U> extends Expression.TypedExpression<
             return operateAsPredicate(this, Operator.BETWEEN, List.of(() -> BasicExpressions.of(l), r));
         }
 
+        default Ordering<T> asc() {
+            return new OrderingImpl<>(this, Ordering.SortOrder.ASC);
+        }
+
+        default Ordering<T> desc() {
+            return new OrderingImpl<>(this, Ordering.SortOrder.DESC);
+        }
 
     }
 
-    interface NumberExpression<T, U extends Number & Comparable<U>> extends ComparableExpression<T, U>, ChainApi.NumberConnector<T, U> {
+    interface NumberExpression<T, U extends Number & Comparable<U>> extends ComparableExpression<T, U> {
 
         default NumberExpression<T, U> add(U value) {
             return operateAsNumber(this, Operator.ADD, List.of(() -> BasicExpressions.of(value)));
@@ -239,7 +288,7 @@ public interface OperateableExpression<T, U> extends Expression.TypedExpression<
 
     }
 
-    interface StringExpression<T> extends ComparableExpression<T, String>, ChainApi.StringConnector<T> {
+    interface StringExpression<T> extends ComparableExpression<T, String> {
 
         default BooleanExpression<T> like(String value) {
             return operateAsPredicate(this, Operator.LIKE, List.of(() -> BasicExpressions.of(value)));

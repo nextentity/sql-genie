@@ -1,5 +1,6 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.TypedExpression;
 import io.github.genie.sql.core.Query.*;
 import io.github.genie.sql.core.SelectClauseImpl.MultiColumnSelect;
 import io.github.genie.sql.core.SelectClauseImpl.SingleColumnSelect;
@@ -72,7 +73,7 @@ public class QueryBuilder<T, U> implements Build<T, U>, AggregatableWhere<T, U>,
             & GroupBy<T, Object[]>
             & OrderBy<T, Object[]>
             & Collector<Object[]>>
-    B select(List<OperateableExpression<T, ?>> paths) {
+    B select(List<? extends TypedExpression<T, ?>> paths) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.selectClause = new MultiColumnSelect(paths);
         return update(metadata);
@@ -91,7 +92,7 @@ public class QueryBuilder<T, U> implements Build<T, U>, AggregatableWhere<T, U>,
     }
 
     @Override
-    public GroupByBuilder<T, U> where(Expression.TypedExpression<T, Boolean> predicate) {
+    public GroupByBuilder<T, U> where(TypedExpression<T, Boolean> predicate) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.whereClause = predicate.meta();
         return update(metadata);
@@ -197,7 +198,7 @@ public class QueryBuilder<T, U> implements Build<T, U>, AggregatableWhere<T, U>,
     }
 
     @Override
-    public <B extends OrderBy<T, U> & Collector<U>> B having(Predicate<T> predicate) {
+    public <B extends OrderBy<T, U> & Collector<U>> B having(TypedExpression<T, Boolean> predicate) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.havingClause = predicate.meta();
         return update(metadata);
