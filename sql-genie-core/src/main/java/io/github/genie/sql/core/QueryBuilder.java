@@ -1,7 +1,10 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.TypedExpression;
 import io.github.genie.sql.core.Models.MultiColumnSelect;
+import io.github.genie.sql.core.Models.QueryMetadataImpl;
+import io.github.genie.sql.core.Models.SelectClauseImpl;
 import io.github.genie.sql.core.Models.SingleColumnSelect;
 import io.github.genie.sql.core.Query.*;
 import io.github.genie.sql.core.exception.BeanReflectiveException;
@@ -9,13 +12,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Objects;
-
-import static io.github.genie.sql.core.Expression.Paths;
 
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U> {
 
-    public static final Expression.Meta CONSTANT_1 = Metas.of(1);
+    public static final Meta CONSTANT_1 = Metas.of(1);
 
     static final SingleColumnSelect SELECT_1 =
             new SingleColumnSelect(Integer.class, CONSTANT_1);
@@ -25,34 +25,34 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     private final QueryExecutor queryExecutor;
-    private final Models.QueryMetadataImpl queryMetadata;
+    private final QueryMetadataImpl queryMetadata;
 
 
     public QueryBuilder(QueryExecutor queryExecutor, Class<T> type) {
-        this(queryExecutor, new Models.QueryMetadataImpl(type));
+        this(queryExecutor, new QueryMetadataImpl(type));
     }
 
-    QueryBuilder(QueryExecutor queryExecutor, Models.QueryMetadataImpl queryMetadata) {
+    QueryBuilder(QueryExecutor queryExecutor, QueryMetadataImpl queryMetadata) {
         this.queryExecutor = queryExecutor;
         this.queryMetadata = queryMetadata;
     }
 
-    <X, Y> QueryBuilder<X, Y> update(Models.QueryMetadataImpl queryMetadata) {
+    <X, Y> QueryBuilder<X, Y> update(QueryMetadataImpl queryMetadata) {
         return new QueryBuilder<>(queryExecutor, queryMetadata);
     }
 
     @Override
     public <R> Where0<T, R> select(Class<R> projectionType) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.selectClause = new Models.SelectClauseImpl(projectionType);
+        QueryMetadataImpl metadata = queryMetadata.copy();
+        metadata.selectClause = new SelectClauseImpl(projectionType);
         return update(metadata);
     }
 
 
     @Override
     public <R> AggWhere0<T, R> select(Path<T, ? extends R> expression) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
-        Expression.Meta paths = Metas.of(expression);
+        QueryMetadataImpl metadata = queryMetadata.copy();
+        Meta paths = Metas.of(expression);
         Class<?> type = getType(expression);
         metadata.selectClause = new SingleColumnSelect(type, paths);
         return update(metadata);
@@ -60,7 +60,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> paths) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.selectClause = new MultiColumnSelect(paths.stream().map(Expression::meta).toList());
         return update(metadata);
     }
@@ -79,27 +79,27 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public AggGroupBy0<T, U> where(TypedExpression<T, Boolean> predicate) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.whereClause = predicate.meta();
         return update(metadata);
     }
 
     @Override
     public Collector<U> orderBy(List<? extends Ordering<T>> builder) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.orderByClause = builder;
         return update(metadata);
     }
 
     @Override
     public int count() {
-        Models.QueryMetadataImpl metadata = buildCountData();
+        QueryMetadataImpl metadata = buildCountData();
         return queryExecutor.<Number>getList(metadata).get(0).intValue();
     }
 
     @NotNull
-    private Models.QueryMetadataImpl buildCountData() {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+    private QueryMetadataImpl buildCountData() {
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.selectClause = COUNT_1;
         metadata.lockModeType = LockModeType.NONE;
         return metadata;
@@ -107,13 +107,13 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public List<U> getList(int offset, int maxResult, LockModeType lockModeType) {
-        Models.QueryMetadataImpl metadata = buildListData(offset, maxResult, lockModeType);
+        QueryMetadataImpl metadata = buildListData(offset, maxResult, lockModeType);
         return queryExecutor.getList(metadata);
     }
 
     @NotNull
-    private Models.QueryMetadataImpl buildListData(int offset, int maxResult, LockModeType lockModeType) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+    private QueryMetadataImpl buildListData(int offset, int maxResult, LockModeType lockModeType) {
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.offset = offset;
         metadata.limit = maxResult;
         metadata.lockModeType = lockModeType;
@@ -122,13 +122,13 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public boolean exist(int offset) {
-        Models.QueryMetadataImpl metadata = buildExistData(offset);
+        QueryMetadataImpl metadata = buildExistData(offset);
         return !queryExecutor.getList(metadata).isEmpty();
     }
 
     @NotNull
-    private Models.QueryMetadataImpl buildExistData(int offset) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+    private QueryMetadataImpl buildExistData(int offset) {
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.selectClause = SELECT_1;
         metadata.offset = offset;
         metadata.limit = 1;
@@ -159,32 +159,31 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public OrderBy0<T, U> groupBy(List<TypedExpression<T, ?>> expressions) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.groupByClause = expressions.stream().map(Expression::meta).toList();
         return update(metadata);
     }
 
     @Override
     public Having0<T, U> groupBy(Path<T, ?> path) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.groupByClause = List.of(Metas.of(path));
         return update(metadata);
     }
 
     @Override
-    public GroupBy0<T, T> fetch(List<TypedExpression<T, ?>> paths) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+    public GroupBy0<T, T> fetch(List<PathExpression<T, ?>> paths) {
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.fetchPaths = paths
                 .stream()
-                .map(it -> it.meta() instanceof Paths p ? p : null)
-                .filter(Objects::nonNull)
+                .map(PathExpression::meta)
                 .toList();
         return update(metadata);
     }
 
     @Override
     public OrderBy0<T, U> having(TypedExpression<T, Boolean> predicate) {
-        Models.QueryMetadataImpl metadata = queryMetadata.copy();
+        QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.havingClause = predicate.meta();
         return update(metadata);
     }

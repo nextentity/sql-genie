@@ -1,6 +1,10 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.Path.BooleanPath;
+import io.github.genie.sql.core.Path.ComparablePath;
+import io.github.genie.sql.core.Path.NumberPath;
+import io.github.genie.sql.core.Path.StringPath;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -35,13 +39,13 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         <V> PathOps<T, V, B> get(Path<U, V> path);
 
-        StringOps<T, B> get(Path.StringPath<T> path);
+        StringOps<T, B> get(StringPath<T> path);
 
-        <V extends Number & Comparable<V>> NumberOps<T, V, B> get(Path.NumberPath<T, V> path);
+        <V extends Number & Comparable<V>> NumberOps<T, V, B> get(NumberPath<T, V> path);
 
-        <V extends Comparable<V>> ComparableOps<T, V, B> get(Path.ComparablePath<T, V> path);
+        <V extends Comparable<V>> ComparableOps<T, V, B> get(ComparablePath<T, V> path);
 
-        B get(Path.BooleanPath<T> path);
+        B get(BooleanPath<T> path);
 
     }
 
@@ -144,15 +148,15 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
 
         <R extends Comparable<R>>
-        ComparableOps<T, R, OrConnector<T>> or(Path.ComparablePath<T, R> path);
+        ComparableOps<T, R, OrConnector<T>> or(ComparablePath<T, R> path);
 
 
         <R extends Number & Comparable<R>>
-        NumberOps<T, R, OrConnector<T>> or(Path.NumberPath<T, R> path);
+        NumberOps<T, R, OrConnector<T>> or(NumberPath<T, R> path);
 
-        OrConnector<T> or(Path.BooleanPath<T> path);
+        OrConnector<T> or(BooleanPath<T> path);
 
-        StringOps<T, OrConnector<T>> or(Path.StringPath<T> path);
+        StringOps<T, OrConnector<T>> or(StringPath<T> path);
 
     }
 
@@ -161,15 +165,15 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
 
         <R extends Comparable<R>>
-        ComparableOps<T, R, AndConnector<T>> and(Path.ComparablePath<T, R> path);
+        ComparableOps<T, R, AndConnector<T>> and(ComparablePath<T, R> path);
 
 
         <R extends Number & Comparable<R>>
-        NumberOps<T, R, AndConnector<T>> and(Path.NumberPath<T, R> path);
+        NumberOps<T, R, AndConnector<T>> and(NumberPath<T, R> path);
 
-        StringOps<T, AndConnector<T>> and(Path.StringPath<T> path);
+        StringOps<T, AndConnector<T>> and(StringPath<T> path);
 
-        AndConnector<T> and(Path.BooleanPath<T> path);
+        AndConnector<T> and(BooleanPath<T> path);
     }
 
     interface PredicateOps<T> extends BooleanOps<T, PredicateOps<T>>, OpsAnd<T>, OpsOr<T> {

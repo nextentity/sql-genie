@@ -1,7 +1,9 @@
 package io.github.genie.sql.core;
 
 
-public interface Predicate<T> extends Expression.TypedExpression<T, Boolean> {
+import io.github.genie.sql.core.Expression.TypedExpression;
+
+public interface Predicate<T> extends TypedExpression<T, Boolean> {
 
 
 }

@@ -1,20 +1,21 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.Paths;
 
 import java.util.List;
 
 public class Expressions {
 
-    public static Expression.Paths ofPaths(List<String> strings) {
+    public static Paths ofPaths(List<String> strings) {
         return Metas.fromPaths(strings);
     }
 
-    public static Expression.Paths ofPath(String fieldName) {
+    public static Paths ofPath(String fieldName) {
         return Metas.fromPaths(List.of(fieldName));
     }
 
-    public static Expression.Paths concat(Expression.Paths join, String path) {
+    public static Paths concat(Paths join, String path) {
         return Metas.fromPaths(Util.concat(join.paths(), path));
     }
 

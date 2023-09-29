@@ -6,6 +6,9 @@ import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Operation;
 import io.github.genie.sql.core.Expression.Paths;
 import io.github.genie.sql.core.*;
+import io.github.genie.sql.core.Ordering.SortOrder;
+import io.github.genie.sql.core.SelectClause.MultiColumn;
+import io.github.genie.sql.core.SelectClause.SingleColumn;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.ColumnProjection;
 import io.github.genie.sql.core.mapping.*;
 
@@ -13,6 +16,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.github.genie.sql.core.Ordering.SortOrder.DESC;
 
 class SqlEditor {
 
@@ -64,9 +69,9 @@ class SqlEditor {
     private List<ColumnProjection> buildProjectionPaths() {
         List<ColumnProjection> projectionPaths;
         SelectClause selected = queryMetadata.selectClause();
-        if (selected instanceof SelectClause.SingleColumn singleColumn) {
+        if (selected instanceof SingleColumn singleColumn) {
             projectionPaths = List.of(new ColumnProjection(singleColumn.column(), null));
-        } else if (selected instanceof SelectClause.MultiColumn multiColumn) {
+        } else if (selected instanceof MultiColumn multiColumn) {
             projectionPaths = multiColumn.columns().stream()
                     .map(expression -> new ColumnProjection(expression, null))
                     .toList();
@@ -456,7 +461,7 @@ class SqlEditor {
                     sql.append(",");
                 }
                 appendExpression(order.meta());
-                sql.append(" ").append(order.order() == Ordering.SortOrder.DESC ? DESC : ASC);
+                sql.append(" ").append(order.order() == SortOrder.DESC ? DESC : ASC);
             }
 
         }

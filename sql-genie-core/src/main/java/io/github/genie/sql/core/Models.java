@@ -1,5 +1,6 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.*;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
 
@@ -15,15 +16,15 @@ final class Models {
 
         Class<?> fromClause;
 
-        Expression.Meta whereClause = Metas.TRUE;
+        Meta whereClause = Metas.TRUE;
 
-        List<? extends Expression.Meta> groupByClause = List.of();
+        List<? extends Meta> groupByClause = List.of();
 
         List<? extends Ordering<?>> orderByClause = List.of();
 
-        Expression.Meta havingClause = Metas.TRUE;
+        Meta havingClause = Metas.TRUE;
 
-        List<? extends Expression.Paths> fetchPaths = List.of();
+        List<? extends Paths> fetchPaths = List.of();
 
         Integer offset;
 
@@ -57,12 +58,12 @@ final class Models {
         }
 
         @Override
-        public Expression.Meta whereClause() {
+        public Meta whereClause() {
             return whereClause;
         }
 
         @Override
-        public List<? extends Expression.Meta> groupByClause() {
+        public List<? extends Meta> groupByClause() {
             return groupByClause;
         }
 
@@ -72,7 +73,7 @@ final class Models {
         }
 
         @Override
-        public Expression.Meta havingClause() {
+        public Meta havingClause() {
             return havingClause;
         }
 
@@ -92,7 +93,7 @@ final class Models {
         }
 
         @Override
-        public List<? extends Expression.Paths> fetchPaths() {
+        public List<? extends Paths> fetchPaths() {
             return fetchPaths;
         }
 
@@ -113,8 +114,8 @@ final class Models {
         }
     }
 
-    record OrderingImpl<T>(Expression.Meta meta, SortOrder order) implements Ordering<T> {
-        public static <T> OrderingImpl<T> of(Expression.TypedExpression<T, ?> meta, SortOrder order) {
+    record OrderingImpl<T>(Meta meta, SortOrder order) implements Ordering<T> {
+        public static <T> OrderingImpl<T> of(TypedExpression<T, ?> meta, SortOrder order) {
             return new OrderingImpl<>(meta.meta(), order);
         }
 
@@ -128,7 +129,7 @@ final class Models {
 
     }
 
-    record MultiColumnSelect(List<? extends Expression.Meta> columns) implements MultiColumn {
+    record MultiColumnSelect(List<? extends Meta> columns) implements MultiColumn {
         @Override
         public String toString() {
             return columns.stream()
@@ -138,7 +139,7 @@ final class Models {
 
     }
 
-    record SingleColumnSelect(Class<?> resultType, Expression.Meta column) implements SingleColumn {
+    record SingleColumnSelect(Class<?> resultType, Meta column) implements SingleColumn {
         @Override
         public String toString() {
             return String.valueOf(column);
@@ -151,22 +152,22 @@ final class Models {
     record SliceableImpl(int offset, int size) implements Slice.Sliceable {
     }
 
-    record ConstantMeta(Object value) implements Expression.Constant {
+    record ConstantMeta(Object value) implements Constant {
         @Override
         public String toString() {
             return String.valueOf(value);
         }
     }
 
-    record OperationMeta(Expression.Meta leftOperand,
+    record OperationMeta(Meta leftOperand,
                          Operator operator,
-                         List<? extends Expression.Meta> rightOperand)
-            implements Expression.Operation {
+                         List<? extends Meta> rightOperand)
+            implements Operation {
 
         @Override
         public String toString() {
-            Expression.Meta l = leftOperand();
-            List<? extends Expression.Meta> r;
+            Meta l = leftOperand();
+            List<? extends Meta> r;
             if (rightOperand() != null) {
                 r = rightOperand();
             } else {
@@ -188,7 +189,7 @@ final class Models {
 
     }
 
-    record PathsMeta(List<String> paths) implements Expression.Paths {
+    record PathsMeta(List<String> paths) implements Paths {
         @Override
         public String toString() {
             return String.join(".", paths);

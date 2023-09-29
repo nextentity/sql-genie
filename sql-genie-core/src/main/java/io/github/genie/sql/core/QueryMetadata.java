@@ -1,6 +1,9 @@
 package io.github.genie.sql.core;
 
 
+import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.Paths;
+
 import java.util.List;
 
 public interface QueryMetadata {
@@ -9,13 +12,13 @@ public interface QueryMetadata {
 
     Class<?> fromClause();
 
-    Expression.Meta whereClause();
+    Meta whereClause();
 
-    List<? extends Expression.Meta> groupByClause();
+    List<? extends Meta> groupByClause();
 
     List<? extends Ordering<?>> orderByClause();
 
-    Expression.Meta havingClause();
+    Meta havingClause();
 
     Integer offset();
 
@@ -23,5 +26,5 @@ public interface QueryMetadata {
 
     LockModeType lockModeType();
 
-    List<? extends Expression.Paths> fetchPaths();
+    List<? extends Paths> fetchPaths();
 }

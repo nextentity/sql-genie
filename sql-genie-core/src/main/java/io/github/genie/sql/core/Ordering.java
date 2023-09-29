@@ -1,8 +1,10 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.Meta;
+
 public interface Ordering<T> {
 
-    Expression.Meta meta();
+    Meta meta();
 
     SortOrder order();
 

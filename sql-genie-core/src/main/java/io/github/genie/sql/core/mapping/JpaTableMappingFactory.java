@@ -72,11 +72,11 @@ public class JpaTableMappingFactory implements MappingFactory {
 
     private String getTableName(Class<?> javaType) {
         Table table = javaType.getAnnotation(Table.class);
-        if (table != null && table.name().length() > 0) {
+        if (table != null && !table.name().isEmpty()) {
             return table.name();
         }
         Entity entity = javaType.getAnnotation(Entity.class);
-        if (entity != null && entity.name().length() > 0) {
+        if (entity != null && !entity.name().isEmpty()) {
             return entity.name();
         }
         String tableName = javaType.getSimpleName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
@@ -213,7 +213,7 @@ public class JpaTableMappingFactory implements MappingFactory {
 
     private static String getColumnName(Field field, Column column) {
         String columnName;
-        if (column != null && column.name().length() != 0) {
+        if (column != null && !column.name().isEmpty()) {
             columnName = column.name();
         } else {
             columnName = field.getName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();

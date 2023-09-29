@@ -2,6 +2,7 @@ package io.github.genie.sql.core.executor;
 
 import io.github.genie.sql.core.SelectClause;
 import io.github.genie.sql.core.exception.BeanReflectiveException;
+import io.github.genie.sql.core.executor.JdbcQueryExecutor.ColumnProjection;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import io.github.genie.sql.core.mapping.Mapping;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +16,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
     @Override
     public <R> R collect(@NotNull ResultSet resultSet,
                          @NotNull SelectClause selectClause,
-                         @NotNull List<? extends JdbcQueryExecutor.ColumnProjection> projectionPaths) throws SQLException {
+                         @NotNull List<? extends ColumnProjection> projectionPaths)
+            throws SQLException {
         int columnsCount = resultSet.getMetaData().getColumnCount();
         if (projectionPaths.size() != columnsCount) {
             throw new IllegalStateException();
@@ -32,7 +34,7 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
         } else {
             try {
                 Object row = selectClause.resultType().getConstructor().newInstance();
-                for (JdbcQueryExecutor.ColumnProjection projection : projectionPaths) {
+                for (ColumnProjection projection : projectionPaths) {
                     int deep = 0;
                     Mapping cur = projection.field();
                     while (cur != null) {

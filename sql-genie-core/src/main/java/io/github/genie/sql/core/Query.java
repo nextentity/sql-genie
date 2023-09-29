@@ -1,6 +1,7 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.Models.SliceImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -47,28 +48,25 @@ public interface Query {
 
     interface Fetch<T> {
 
-        GroupBy0<T, T> fetch(List<TypedExpression<T, ?>> path);
+        GroupBy0<T, T> fetch(List<PathExpression<T, ?>> path);
 
 
         default GroupBy0<T, T> fetch(Path<T, ?> path) {
             return fetch(Stream.of(path)
-                    .map(Metas::of)
-                    .<TypedExpression<T, ?>>map(Metas::toExpression)
+                    .<PathExpression<T, ?>>map(Q::path)
                     .toList());
         }
 
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
             return fetch(Stream.of(p0, p1)
-                    .map(Metas::of)
-                    .<TypedExpression<T, ?>>map(Metas::toExpression)
+                    .<PathExpression<T, ?>>map(Q::path)
                     .toList());
         }
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
             return fetch(Stream.of(p0, p1, p3)
-                    .map(Metas::of)
-                    .<TypedExpression<T, ?>>map(Metas::toExpression)
+                    .<PathExpression<T, ?>>map(Q::path)
                     .toList());
         }
     }
@@ -320,10 +318,10 @@ public interface Query {
         default Slice<T> slice(Slice.Sliceable sliceable) {
             int count = count();
             if (count <= sliceable.offset()) {
-                return new Models.SliceImpl<>(List.of(), count, sliceable);
+                return new SliceImpl<>(List.of(), count, sliceable);
             } else {
                 List<T> list = getList(sliceable.offset(), sliceable.size());
-                return new Models.SliceImpl<>(list, count, sliceable);
+                return new SliceImpl<>(list, count, sliceable);
             }
         }
 

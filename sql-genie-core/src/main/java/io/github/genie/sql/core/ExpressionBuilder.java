@@ -1,5 +1,11 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.ExpressionOps.PathOps;
+import io.github.genie.sql.core.Models.OrderingImpl;
+import io.github.genie.sql.core.Path.BooleanPath;
+import io.github.genie.sql.core.Path.ComparablePath;
+import io.github.genie.sql.core.Path.NumberPath;
+import io.github.genie.sql.core.Path.StringPath;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
@@ -9,7 +15,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
+class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
 
     private static final Meta TRUE = Metas.TRUE;
     private static final Meta EMPTY_PATH = Metas.fromPaths(List.of());
@@ -41,22 +47,22 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
     }
 
     @Override
-    public StringOps<T, B> get(Path.StringPath<T> path) {
+    public StringOps<T, B> get(StringPath<T> path) {
         return new StringOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public <V extends Number & Comparable<V>> NumberOps<T, V, B> get(Path.NumberPath<T, V> path) {
+    public <V extends Number & Comparable<V>> NumberOps<T, V, B> get(NumberPath<T, V> path) {
         return new NumberOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public <V extends Comparable<V>> ComparableOps<T, V, B> get(Path.ComparablePath<T, V> path) {
+    public <V extends Comparable<V>> ComparableOps<T, V, B> get(ComparablePath<T, V> path) {
         return new ComparableOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public B get(Path.BooleanPath<T> path) {
+    public B get(BooleanPath<T> path) {
         return build(toPaths(path));
     }
 
@@ -151,22 +157,22 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
         return new ExpressionBuilder<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));
     }
 
-    public <R extends Comparable<R>> ComparableOps<T, R, OrConnector<T>> or(Path.ComparablePath<T, R> path) {
+    public <R extends Comparable<R>> ComparableOps<T, R, OrConnector<T>> or(ComparablePath<T, R> path) {
         List<Meta> expressions = Util.concat(metadata.expressions, merge());
         return new ComparableOpsImpl<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));
     }
 
-    public <R extends Number & Comparable<R>> NumberOps<T, R, OrConnector<T>> or(Path.NumberPath<T, R> path) {
+    public <R extends Number & Comparable<R>> NumberOps<T, R, OrConnector<T>> or(NumberPath<T, R> path) {
         List<Meta> expressions = Util.concat(metadata.expressions, merge());
         return new NumberOpsImpl<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));
     }
 
-    public StringOps<T, OrConnector<T>> or(Path.StringPath<T> path) {
+    public StringOps<T, OrConnector<T>> or(StringPath<T> path) {
         List<Meta> expressions = Util.concat(metadata.expressions, merge());
         return new StringOpsImpl<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));
     }
 
-    public OrConnector<T> or(Path.BooleanPath<T> path) {
+    public OrConnector<T> or(BooleanPath<T> path) {
         List<Meta> expressions = Util.concat(metadata.expressions, merge());
         return new OrConnectorImpl<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));
     }
@@ -178,28 +184,28 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
         return new ExpressionBuilder<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
     }
 
-    public <R extends Comparable<R>> ComparableOps<T, R, AndConnector<T>> and(Path.ComparablePath<T, R> path) {
+    public <R extends Comparable<R>> ComparableOps<T, R, AndConnector<T>> and(ComparablePath<T, R> path) {
         List<Meta> expressions = metadata.expressions;
         Meta left = merge();
         Meta right = Metas.of(path);
         return new ComparableOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
     }
 
-    public <R extends Number & Comparable<R>> NumberOps<T, R, AndConnector<T>> and(Path.NumberPath<T, R> path) {
+    public <R extends Number & Comparable<R>> NumberOps<T, R, AndConnector<T>> and(NumberPath<T, R> path) {
         List<Meta> expressions = metadata.expressions;
         Meta left = merge();
         Meta right = Metas.of(path);
         return new NumberOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
     }
 
-    public StringOps<T, AndConnector<T>> and(Path.StringPath<T> path) {
+    public StringOps<T, AndConnector<T>> and(StringPath<T> path) {
         List<Meta> expressions = metadata.expressions;
         Meta left = merge();
         Meta right = Metas.of(path);
         return new StringOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
     }
 
-    public AndConnector<T> and(Path.BooleanPath<T> path) {
+    public AndConnector<T> and(BooleanPath<T> path) {
         List<Meta> expressions = metadata.expressions;
         Meta left = merge();
         Meta right = Metas.of(path);
@@ -344,11 +350,11 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
     }
 
     public Ordering<T> asc() {
-        return Models.OrderingImpl.of(this, Ordering.SortOrder.ASC);
+        return OrderingImpl.of(this, Ordering.SortOrder.ASC);
     }
 
     public Ordering<T> desc() {
-        return Models.OrderingImpl.of(this, Ordering.SortOrder.DESC);
+        return OrderingImpl.of(this, Ordering.SortOrder.DESC);
     }
 
     static class ComparableOpsImpl<T, U extends Comparable<U>, B> extends ExpressionBuilder<T, U, B> implements ComparableOps<T, U, B> {
@@ -489,6 +495,13 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
     record TypedExpressionImpl<T, U>(Meta meta) implements TypedExpression<T, U> {
     }
 
+    record PathExpressionImpl<T, U>(Paths meta) implements PathExpression<T, U> {
+        public <V> PathExpression<T, V> get(Path<U, V> path) {
+            return new PathExpressionImpl<>(Metas.fromPaths(
+                    Util.concat(meta().paths(), Metas.asString(path))
+            ));
+        }
+    }
 
     interface BuilderFactory<T> {
         T build(Metadata<T> metadata);

@@ -2,6 +2,8 @@ package io.github.genie.sql.core;
 
 import io.github.genie.model.Company;
 import io.github.genie.model.User;
+import io.github.genie.sql.core.Query.Metadata;
+import io.github.genie.sql.core.Query.Select0;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor;
 import io.github.genie.sql.core.executor.MySqlSqlBuilder;
 import io.github.genie.sql.core.mapping.JpaTableMappingFactory;
@@ -30,7 +32,7 @@ public class QueryTest {
     public void test() {
 
 
-        Query.Select0<User, User> root = fromBuilder.from(User.class);
+        Select0<User, User> root = fromBuilder.from(User.class);
         List<QueryMetadata> metadata = root
                 // .select(User::getId)
                 .where(Q.get(User::getId).add(2)
@@ -67,7 +69,7 @@ public class QueryTest {
         assertEquals(sql0, sql.sql());
 
 
-        Query.Metadata metadataBuilder = root
+        Metadata metadataBuilder = root
                 .select(User::getId, User::getCompanyId)
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
                 .metadata();
@@ -85,8 +87,8 @@ public class QueryTest {
 
     @Test
     void test2() {
-        Query.Select0<User, User> users = fromBuilder.from(User.class);
-        Query.Metadata metadataBuilder = users
+        Select0<User, User> users = fromBuilder.from(User.class);
+        Metadata metadataBuilder = users
                 .select(User::getId, User::getCompanyId)
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
                 .metadata();
@@ -111,7 +113,7 @@ public class QueryTest {
         );
 
         System.out.println(predicate.meta());
-        Query.Select0<User, User> root = fromBuilder.from(User.class);
+        Select0<User, User> root = fromBuilder.from(User.class);
 
         QueryMetadata metadata = root.where(predicate)
                 .metadata()
