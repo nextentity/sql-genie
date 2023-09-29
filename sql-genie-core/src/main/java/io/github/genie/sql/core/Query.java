@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public interface Query {
 
     <T> Select0<T, T> from(Class<T> type);
