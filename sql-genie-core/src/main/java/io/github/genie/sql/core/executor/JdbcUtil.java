@@ -1,7 +1,7 @@
 package io.github.genie.sql.core.executor;
 
-import io.github.genie.sql.core.UnsafeTypeCast;
 import lombok.Lombok;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// @Slf4j
+@Slf4j
 public abstract class JdbcUtil {
 
     private static final Map<Class<?>, Object> SINGLE_ENUM_MAP = new ConcurrentHashMap<>();
@@ -88,7 +88,8 @@ public abstract class JdbcUtil {
         } else {
             result = getter.getValue(resultSet, column);
         }
-        return UnsafeTypeCast.cast(result);
+        // noinspection unchecked
+        return (X) result;
     }
 
 

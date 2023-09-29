@@ -9,7 +9,7 @@ import io.github.genie.sql.core.Path.StringPath;
 import java.util.Arrays;
 import java.util.List;
 
-public class Q {
+public final class Q {
 
     public static <T> ExpressionOps.RootPath<T> of() {
         return new ExpressionBuilder.RootImpl<>();
@@ -96,4 +96,6 @@ public class Q {
         return ExpressionBuilder.ofBoolOps(meta);
     }
 
+    private Q() {
+    }
 }

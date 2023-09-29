@@ -11,12 +11,13 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-class Util {
+final class Util {
 
-    private static final Map<Object, String> cache = new ConcurrentHashMap<>();
+    private static final Map<Object, String> PROPERTY_NAME_CACHE = new ConcurrentHashMap<>();
 
     public static String getPropertyName(Serializable getterReference) {
-        return cache.computeIfAbsent(getterReference, k -> getterNameToPropertyName(getMethodReferenceName(getterReference)));
+        return PROPERTY_NAME_CACHE.computeIfAbsent(getterReference,
+                k -> getterNameToPropertyName(getMethodReferenceName(getterReference)));
     }
 
     public static String getterNameToPropertyName(String getterName) {
@@ -56,7 +57,6 @@ class Util {
     }
 
 
-    static <T> T cast(Object o) {
-        return UnsafeTypeCast.cast(o);
+    private Util() {
     }
 }

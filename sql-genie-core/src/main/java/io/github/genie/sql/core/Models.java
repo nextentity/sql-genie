@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class Models {
+final class Models {
 
     static class QueryMetadataImpl implements QueryMetadata, Cloneable {
 
@@ -193,5 +193,8 @@ class Models {
         public String toString() {
             return String.join(".", paths);
         }
+    }
+
+    private Models() {
     }
 }
