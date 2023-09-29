@@ -11,8 +11,8 @@ import java.util.List;
 
 class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
 
-    public static final Meta TRUE = Metas.of(true);
-    public static final Meta EMPTY_PATH = Metas.fromPaths(List.of());
+    private static final Meta TRUE = Metas.TRUE;
+    private static final Meta EMPTY_PATH = Metas.fromPaths(List.of());
     protected Metadata<B> metadata;
 
     @NotNull
@@ -253,10 +253,6 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
         return operateRight(operator, Metas.of(rightOperand));
     }
 
-    protected Metadata<B> operateRight(Operator operator, Path<?, ?> rightOperand) {
-        return operateRight(operator, Metas.of(rightOperand));
-    }
-
     protected Metadata<B> operateRight(Operator operator, Expression rightOperand) {
         return operateRight(operator, rightOperand.meta());
     }
@@ -488,9 +484,6 @@ class ExpressionBuilder<T, U, B> implements ExpressionOps.PathOps<T, U, B> {
             super(new Metadata<>(List.of(), TRUE, EMPTY_PATH, BoolOpsImpl::new));
         }
 
-        public RootImpl(Metadata<? extends PredicateOps<T>> metadata) {
-            super(metadata);
-        }
     }
 
     record TypedExpressionImpl<T, U>(Meta meta) implements TypedExpression<T, U> {
