@@ -31,7 +31,6 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             return (R) row;
         } else {
             try {
-
                 Object row = selectClause.resultType().getConstructor().newInstance();
                 for (JdbcQueryExecutor.ColumnProjection projection : projectionPaths) {
                     int deep = 0;

@@ -1,5 +1,7 @@
 package io.github.genie.sql.core;
 
+import lombok.Getter;
+
 public enum Operator {
 
     NOT("not", 10),
@@ -45,6 +47,7 @@ public enum Operator {
 
     private final String sign;
     private final int priority;
+    @Getter
     private final boolean multivalued;
 
     Operator(String sign, int priority, boolean multivalued) {
@@ -72,7 +75,4 @@ public enum Operator {
         return priority;
     }
 
-    public boolean isMultivalued() {
-        return multivalued;
-    }
 }

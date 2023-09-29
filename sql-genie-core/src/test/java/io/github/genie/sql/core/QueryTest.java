@@ -30,7 +30,7 @@ public class QueryTest {
     public void test() {
 
 
-        Query.Build<User, User> root = fromBuilder.from(User.class);
+        Query.Select0<User, User> root = fromBuilder.from(User.class);
         List<QueryMetadata> metadata = root
                 // .select(User::getId)
                 .where(Q.get(User::getId).add(2)
@@ -85,7 +85,7 @@ public class QueryTest {
 
     @Test
     void test2() {
-        Query.Build<User, User> users = fromBuilder.from(User.class);
+        Query.Select0<User, User> users = fromBuilder.from(User.class);
         Query.Metadata metadataBuilder = users
                 .select(User::getId, User::getCompanyId)
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
@@ -111,7 +111,7 @@ public class QueryTest {
         );
 
         System.out.println(predicate.meta());
-        Query.Build<User, User> root = fromBuilder.from(User.class);
+        Query.Select0<User, User> root = fromBuilder.from(User.class);
 
         QueryMetadata metadata = root.where(predicate)
                 .metadata()

@@ -12,195 +12,163 @@ import java.util.stream.Stream;
 @SuppressWarnings("unused")
 public interface Query {
 
-    <T> Build<T, T> from(Class<T> type);
+    <T> Select0<T, T> from(Class<T> type);
 
     static Query createQuery(QueryExecutor executor) {
         return new Query() {
             @Override
-            public <T> Build<T, T> from(Class<T> type) {
-                return Util.cast(new QueryBuilder<>(executor, type));
+            public <T> Select0<T, T> from(Class<T> type) {
+                return new QueryBuilder<>(executor, type);
             }
         };
     }
 
 
-    interface Build<T, U> extends
-            Fetch<T>,
-            Select<T>,
-            Where<T, U>,
-            GroupBy<T, U>,
-            OrderBy<T, U>,
-            Collector<U> {
+    interface Select0<T, U> extends Fetch<T>, Select<T>, GroupBy0<T, U> {
+    }
+
+    interface GroupBy0<T, U> extends GroupBy<T, U>, Where0<T, U> {
+    }
+
+    interface Where0<T, U> extends Where<T, U>, OrderBy0<T, U> {
+    }
+
+    interface OrderBy0<T, U> extends OrderBy<T, U>, Collector<U> {
+    }
+
+    interface AggWhere0<T, U> extends AggWhere<T, U>, AggGroupBy0<T, U> {
+    }
+
+    interface AggGroupBy0<T, U> extends OrderBy0<T, U>, GroupBy<T, U> {
+    }
+
+    interface Having0<T, U> extends Having<T, U>, OrderBy0<T, U> {
     }
 
 
     interface Fetch<T> {
 
-        <B extends Where<T, T>
-                & GroupBy<T, T>
-                & OrderBy<T, T>
-                & Collector<T>>
-        B fetch(List<OperateableExpression<T, ?>> path);
+        GroupBy0<T, T> fetch(List<TypedExpression<T, ?>> path);
 
 
-        default <B extends Where<T, T>
-                & GroupBy<T, T>
-                & OrderBy<T, T>
-                & Collector<T>>
-        B fetch(Path<T, ?> path) {
+        default GroupBy0<T, T> fetch(Path<T, ?> path) {
             return fetch(Stream.of(path)
-                    .map(BasicExpressions::of)
-                    .<OperateableExpression<T, ?>>map(x -> () -> x)
+                    .map(Metas::of)
+                    .<TypedExpression<T, ?>>map(Metas::toExpression)
                     .toList());
         }
 
 
-        default <B extends Where<T, T>
-                & GroupBy<T, T>
-                & OrderBy<T, T>
-                & Collector<T>>
-        B fetch(Path<T, ?> p0, Path<T, ?> p1) {
+        default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
             return fetch(Stream.of(p0, p1)
-                    .map(BasicExpressions::of)
-                    .<OperateableExpression<T, ?>>map(x -> () -> x)
+                    .map(Metas::of)
+                    .<TypedExpression<T, ?>>map(Metas::toExpression)
                     .toList());
         }
 
-        default <B extends Where<T, T>
-                & GroupBy<T, T>
-                & OrderBy<T, T>
-                & Collector<T>>
-        B fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
+        default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
             return fetch(Stream.of(p0, p1, p3)
-                    .map(BasicExpressions::of)
-                    .<OperateableExpression<T, ?>>map(x -> () -> x)
+                    .map(Metas::of)
+                    .<TypedExpression<T, ?>>map(Metas::toExpression)
                     .toList());
         }
     }
 
     interface Select<T> {
 
-        <R, B extends Where<T, R> & OrderBy<T, R> & Collector<R>>
-        B select(Class<R> projectionType);
+        <R> Where0<T, R> select(Class<R> projectionType);
 
-        <B extends AggregatableWhere<T, Object[]>
-                & GroupBy<T, Object[]>
-                & OrderBy<T, Object[]>
-                & Collector<Object[]>>
-        B select(List<? extends TypedExpression<T, ?>> paths);
+        AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> paths);
 
-        <R, B extends AggregatableWhere<T, R> & GroupBy<T, R> & OrderBy<T, R> & Collector<R>>
-        B select(Path<T, ? extends R> expression);
+        <R> AggWhere0<T, R> select(Path<T, ? extends R> expression);
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1) {
-            return select(BasicExpressions.list(p0, p1));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
+            return select(Metas.toExpressionList(p0, p1));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return select(BasicExpressions.list(p0, p1, p2));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
+            return select(Metas.toExpressionList(p0, p1, p2));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return select(BasicExpressions.list(p0, p1, p2, p3));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                 Path<T, ?> p5) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4, p5));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                              Path<T, ?> p5) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4, p5));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                 Path<T, ?> p5, Path<T, ?> p6) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4, p5, p6));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                              Path<T, ?> p5, Path<T, ?> p6) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4, p5, p6));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                 Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4, p5, p6, p7));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4, p5, p6, p7));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                 Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4, p5, p6, p7, p8));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4, p5, p6, p7, p8));
         }
 
-        default <B extends AggregatableWhere<T, Object[]> & GroupBy<T, Object[]> & OrderBy<T, Object[]> & Collector<Object[]>>
-        B select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                 Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return select(BasicExpressions.list(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
+            return select(Metas.toExpressionList(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
         }
 
 
     }
 
-    interface OrderByBuilder<T, U> extends OrderBy<T, U>, Collector<U> {
 
-    }
+    interface AggWhere<T, U> extends Where<T, U> {
 
-    interface GroupByBuilder<T, U> extends OrderByBuilder<T, U>, GroupBy<T, U> {
-
-    }
-
-    interface AggregatableWhere<T, U> extends Where<T, U> {
-
-        GroupByBuilder<T, U> where(TypedExpression<T, Boolean> predicate);
+        AggGroupBy0<T, U> where(TypedExpression<T, Boolean> predicate);
 
     }
 
     interface Where<T, U> {
 
-        OrderByBuilder<T, U> where(TypedExpression<T, Boolean> predicate);
+        OrderBy0<T, U> where(TypedExpression<T, Boolean> predicate);
 
     }
 
     interface GroupBy<T, U> {
-        <B extends OrderBy<T, U> & Collector<U>> B groupBy(List<OperateableExpression<T, ?>> expressions);
+        OrderBy0<T, U> groupBy(List<TypedExpression<T, ?>> expressions);
 
-        <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> path);
+        Having0<T, U> groupBy(Path<T, ?> path);
 
-        default <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> p0, Path<T, ?> p1) {
-            return groupBy(BasicExpressions.list(p0, p1));
+        default OrderBy0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1) {
+            return groupBy(Metas.toExpressionList(p0, p1));
         }
 
-        default <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return groupBy(BasicExpressions.list(p0, p1, p2));
+        default OrderBy0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
+            return groupBy(Metas.toExpressionList(p0, p1, p2));
         }
 
-        default <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return groupBy(BasicExpressions.list(p0, p1, p2, p3));
+        default OrderBy0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
+            return groupBy(Metas.toExpressionList(p0, p1, p2, p3));
         }
 
-        default <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return groupBy(BasicExpressions.list(p0, p1, p2, p3, p4));
+        default OrderBy0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
+            return groupBy(Metas.toExpressionList(p0, p1, p2, p3, p4));
         }
 
-        default <B extends OrderBy<T, U> & Having<T, U> & Collector<U>>
-        B groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                  Path<T, ?> p5) {
-            return groupBy(BasicExpressions.list(p0, p1, p2, p3, p4, p5));
+        default OrderBy0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                       Path<T, ?> p5) {
+            return groupBy(Metas.toExpressionList(p0, p1, p2, p3, p4, p5));
         }
     }
 
     interface Having<T, U> {
 
-        <B extends OrderBy<T, U> & Collector<U>> B having(TypedExpression<T, Boolean> predicate);
+        OrderBy0<T, U> having(TypedExpression<T, Boolean> predicate);
 
     }
 
@@ -353,10 +321,10 @@ public interface Query {
         default Slice<T> slice(Slice.Sliceable sliceable) {
             int count = count();
             if (count <= sliceable.offset()) {
-                return new SliceImpl<>(List.of(), count, sliceable);
+                return new Models.SliceImpl<>(List.of(), count, sliceable);
             } else {
                 List<T> list = getList(sliceable.offset(), sliceable.size());
-                return new SliceImpl<>(list, count, sliceable);
+                return new Models.SliceImpl<>(list, count, sliceable);
             }
         }
 

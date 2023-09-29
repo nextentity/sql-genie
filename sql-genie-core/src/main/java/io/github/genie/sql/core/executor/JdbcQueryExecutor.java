@@ -1,6 +1,6 @@
 package io.github.genie.sql.core.executor;
 
-import io.github.genie.sql.core.Expression;
+import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.QueryExecutor;
 import io.github.genie.sql.core.QueryMetadata;
 import io.github.genie.sql.core.SelectClause;
@@ -74,7 +74,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
 
     }
 
-    record ColumnProjection(Expression expression, FieldMapping field) {
+    public record ColumnProjection(Meta expression, FieldMapping field) {
     }
 
     public interface SqlExecutor {

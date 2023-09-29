@@ -2,7 +2,7 @@ package io.github.genie.sql.core;
 
 public interface Ordering<T> {
 
-    Expression.Meta expression();
+    Expression.Meta meta();
 
     SortOrder order();
 

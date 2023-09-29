@@ -2,10 +2,11 @@ package io.github.genie.sql.core;
 
 import java.util.List;
 
-@FunctionalInterface
 public interface Expression {
 
-    Meta meta();
+    default Meta meta() {
+        throw new UnsupportedOperationException();
+    }
 
     interface TypedExpression<T, U> extends Expression {
 
@@ -25,11 +26,11 @@ public interface Expression {
     }
 
     non-sealed interface Operation extends Meta {
-        Expression leftOperand();
+        Meta leftOperand();
 
         Operator operator();
 
-        List<? extends Expression> rightOperand();
+        List<? extends Meta> rightOperand();
 
     }
 

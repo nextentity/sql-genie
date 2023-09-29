@@ -11,7 +11,7 @@ public interface Slice<T> {
     Sliceable sliceable();
 
     static Sliceable sliceable(int offset, int limit) {
-        return new SliceImpl.SliceableImpl(offset, limit);
+        return new Models.SliceableImpl(offset, limit);
     }
 
     interface Sliceable {

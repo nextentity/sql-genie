@@ -1,33 +1,35 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.Meta;
+
 import java.util.List;
 
 public class Expressions {
 
     public static Expression.Paths ofPaths(List<String> strings) {
-        return BasicExpressions.of(strings);
+        return Metas.fromPaths(strings);
     }
 
     public static Expression.Paths ofPath(String fieldName) {
-        return BasicExpressions.of(List.of(fieldName));
+        return Metas.fromPaths(List.of(fieldName));
     }
 
     public static Expression.Paths concat(Expression.Paths join, String path) {
-        return BasicExpressions.concat(join, path);
+        return Metas.fromPaths(Util.concat(join.paths(), path));
     }
 
     public static boolean isTrue(Predicate<?> predicate) {
-        return BasicExpressions.isTrue(predicate);
+        return Metas.isTrue(predicate.meta());
     }
 
-    public static boolean isTrue(Expression.Meta predicate) {
-        return BasicExpressions.isTrue(predicate);
+    public static boolean isTrue(Meta predicate) {
+        return Metas.isTrue(predicate);
     }
 
-    public static Expression.Meta operate(Expression expression,
-                                          Operator operator,
-                                          List<? extends Expression> expressions) {
-        return BasicExpressions.operate(expression, operator, expressions);
+    public static Meta operate(Meta meta,
+                               Operator operator,
+                               List<? extends Meta> metas) {
+        return Metas.operate(meta, operator, metas);
     }
 
 

@@ -1,8 +1,11 @@
 package io.github.genie.sql.core.executor;
 
 
-import io.github.genie.sql.core.*;
+import io.github.genie.sql.core.Expression.Constant;
+import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.Operation;
 import io.github.genie.sql.core.Expression.Paths;
+import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.ColumnProjection;
 import io.github.genie.sql.core.mapping.*;
 
@@ -88,7 +91,7 @@ class SqlEditor {
                 continue;
             }
             Paths paths = Expressions.ofPath(column.fieldName());
-            columns.add(new ColumnProjection(() -> paths, mapping));
+            columns.add(new ColumnProjection(paths, mapping));
         }
         return columns;
     }
@@ -97,7 +100,7 @@ class SqlEditor {
         String join = NONE_DELIMITER;
         for (ColumnProjection projection : baseColumns) {
             sql.append(join);
-            appendExpression(projection.expression().meta());
+            appendExpression(projection.expression());
             join = DELIMITER;
         }
     }
@@ -119,7 +122,7 @@ class SqlEditor {
                     Paths path =
                             Expressions.concat(fetch, cm.fieldName());
                     appendPath(path);
-                    selectedPath.add(new ColumnProjection(() -> path, field));
+                    selectedPath.add(new ColumnProjection(path, field));
                 }
             }
         }
@@ -162,12 +165,12 @@ class SqlEditor {
     }
 
     protected StringBuilder appendBlank(StringBuilder sql) {
-        return sql.length() == 0 || " (,+-*/=><".indexOf(sql.charAt(sql.length() - 1)) >= 0 ? sql : sql.append(' ');
+        return sql.isEmpty() || " (,+-*/=><".indexOf(sql.charAt(sql.length() - 1)) >= 0 ? sql : sql.append(' ');
     }
 
 
     protected void appendWhere() {
-        Expression.Meta where = queryMetadata.whereClause();
+        Meta where = queryMetadata.whereClause();
         if (where == null || Expressions.isTrue(where)) {
             return;
         }
@@ -176,7 +179,7 @@ class SqlEditor {
     }
 
     protected void appendHaving() {
-        Expression.Meta having = queryMetadata.havingClause();
+        Meta having = queryMetadata.havingClause();
         if (having == null || Expressions.isTrue(having)) {
             return;
         }
@@ -184,13 +187,13 @@ class SqlEditor {
         appendExpression(having);
     }
 
-    protected void appendExpression(Expression.Meta expr) {
+    protected void appendExpression(Meta expr) {
         appendExpressions(args, expr);
     }
 
 
-    protected void appendExpressions(List<Object> args, Expression.Meta e) {
-        if (e instanceof Expression.Constant ce) {
+    protected void appendExpressions(List<Object> args, Meta e) {
+        if (e instanceof Constant ce) {
             Object value = ce.value();
             boolean isNumber = false;
             if (value != null) {
@@ -208,11 +211,11 @@ class SqlEditor {
         } else if (e instanceof Paths pe) {
             appendBlank();
             appendPath(pe);
-        } else if (e instanceof Expression.Operation oe) {
+        } else if (e instanceof Operation oe) {
             Operator operator = oe.operator();
-            Expression leftOperand = oe.leftOperand();
+            Meta leftOperand = oe.leftOperand();
             Operator operator0 = getOperator(leftOperand);
-            List<? extends Expression> rightOperand = oe.rightOperand();
+            List<? extends Meta> rightOperand = oe.rightOperand();
             switch (operator) {
                 case NOT -> {
                     appendOperator(operator);
@@ -220,10 +223,10 @@ class SqlEditor {
                     if (operator0 != null && operator0.priority()
                                              > operator.priority()) {
                         sql.append('(');
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                         sql.append(')');
                     } else {
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                     }
                 }
                 case AND, OR, LIKE, MOD, GT, EQ, NE, GE, LT,
@@ -232,21 +235,21 @@ class SqlEditor {
                     if (operator0 != null && operator0.priority()
                                              > operator.priority()) {
                         sql.append('(');
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                         sql.append(')');
                     } else {
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                     }
-                    for (Expression value : rightOperand) {
+                    for (Meta value : rightOperand) {
                         appendOperator(operator);
                         Operator operator1 = getOperator(value);
                         if (operator1 != null && operator1.priority()
                                                  >= operator.priority()) {
                             sql.append('(');
-                            appendExpressions(args, value.meta());
+                            appendExpressions(args, value);
                             sql.append(')');
                         } else {
-                            appendExpressions(args, value.meta());
+                            appendExpressions(args, value);
                         }
                     }
                 }
@@ -254,10 +257,10 @@ class SqlEditor {
                         NULLIF, IF_NULL, MIN, MAX, COUNT, AVG, SUM -> {
                     appendOperator(operator);
                     sql.append('(');
-                    appendExpressions(args, leftOperand.meta());
-                    for (Expression expression : rightOperand) {
+                    appendExpressions(args, leftOperand);
+                    for (Meta expression : rightOperand) {
                         sql.append(',');
-                        appendExpressions(args, expression.meta());
+                        appendExpressions(args, expression);
                     }
                     sql.append(")");
                 }
@@ -266,12 +269,12 @@ class SqlEditor {
                         appendBlank().append(0);
                     } else {
                         appendBlank();
-                        appendExpression(leftOperand.meta());
+                        appendExpression(leftOperand);
                         appendOperator(operator);
                         char join = '(';
-                        for (Expression expression : rightOperand) {
+                        for (Meta expression : rightOperand) {
                             sql.append(join);
-                            appendExpressions(args, expression.meta());
+                            appendExpressions(args, expression);
                             join = ',';
                         }
                         sql.append(")");
@@ -279,10 +282,10 @@ class SqlEditor {
                 }
                 case BETWEEN -> {
                     appendBlank();
-                    appendExpressions(args, leftOperand.meta());
+                    appendExpressions(args, leftOperand);
                     appendOperator(operator);
                     appendBlank();
-                    Expression.Meta operate = Expressions
+                    Meta operate = Expressions
                             .operate(rightOperand.get(0), Operator.AND, List.of(rightOperand.get(1)));
                     appendExpressions(args, operate);
                 }
@@ -291,10 +294,10 @@ class SqlEditor {
                     if (operator0 != null && operator0.priority()
                                              > operator.priority()) {
                         sql.append('(');
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                         sql.append(')');
                     } else {
-                        appendExpressions(args, leftOperand.meta());
+                        appendExpressions(args, leftOperand);
                     }
                     appendBlank();
                     appendOperator(operator);
@@ -375,7 +378,7 @@ class SqlEditor {
                 sql.append(".").append(join.joinColumnName()).append("=");
                 appendTableAttribute(sql, attribute, v);
                 String referenced = join.referencedColumnName();
-                if (referenced.length() == 0) {
+                if (referenced.isEmpty()) {
                     referenced = ((ColumnMapping) entityInfo.id()).columnName();
                 }
                 sql.append(".").append(referenced);
@@ -396,8 +399,8 @@ class SqlEditor {
         return Expressions.ofPaths(paths);
     }
 
-    Operator getOperator(Expression e) {
-        return e.meta() instanceof Expression.Operation expression ? expression.operator() : null;
+    Operator getOperator(Meta e) {
+        return e instanceof Operation expression ? expression.operator() : null;
     }
 
     protected StringBuilder appendTableAttribute(StringBuilder sb, FieldMapping attribute, Integer index) {
@@ -426,11 +429,11 @@ class SqlEditor {
     }
 
     private void appendGroupBy() {
-        List<? extends Expression.Meta> groupBy = queryMetadata.groupByClause();
+        List<? extends Meta> groupBy = queryMetadata.groupByClause();
         if (groupBy != null && !groupBy.isEmpty()) {
             sql.append(" group by ");
             boolean first = true;
-            for (Expression.Meta e : groupBy) {
+            for (Meta e : groupBy) {
                 if (first) {
                     first = false;
                 } else {
@@ -452,7 +455,7 @@ class SqlEditor {
                 } else {
                     sql.append(",");
                 }
-                appendExpression(order.expression());
+                appendExpression(order.meta());
                 sql.append(" ").append(order.order() == Ordering.SortOrder.DESC ? DESC : ASC);
             }
 

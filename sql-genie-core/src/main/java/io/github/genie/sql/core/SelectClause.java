@@ -1,5 +1,7 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.Expression.Meta;
+
 import java.util.List;
 
 public interface SelectClause {
@@ -8,7 +10,7 @@ public interface SelectClause {
 
 
     interface MultiColumn extends SelectClause {
-        List<? extends Expression> columns();
+        List<? extends Meta> columns();
 
         @Override
         default Class<?> resultType() {
@@ -18,7 +20,7 @@ public interface SelectClause {
     }
 
     interface SingleColumn extends SelectClause {
-        Expression column();
+        Meta column();
 
     }
 
