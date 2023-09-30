@@ -2,7 +2,7 @@ package io.github.genie.sql.core;
 
 import io.github.genie.model.Company;
 import io.github.genie.model.User;
-import io.github.genie.sql.core.Query.Metadata;
+import io.github.genie.sql.core.Query.MetadataBuilder;
 import io.github.genie.sql.core.Query.Select0;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor;
 import io.github.genie.sql.core.executor.MySqlSqlBuilder;
@@ -45,7 +45,7 @@ public class QueryTest {
                         )
                 )
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
-                .metadata()
+                .buildMetadata()
                 .slice(9, 10);
 
 
@@ -69,10 +69,10 @@ public class QueryTest {
         assertEquals(sql0, sql.sql());
 
 
-        Metadata metadataBuilder = root
+        MetadataBuilder metadataBuilder = root
                 .select(User::getId, User::getCompanyId)
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
-                .metadata();
+                .buildMetadata();
         QueryMetadata qm = metadataBuilder
                 .getList(-1, -1, LockModeType.NONE);
         JdbcQueryExecutor.PreparedSql preparedSql = builder.build(qm, mappings);
@@ -88,10 +88,10 @@ public class QueryTest {
     @Test
     void test2() {
         Select0<User, User> users = fromBuilder.from(User.class);
-        Metadata metadataBuilder = users
+        MetadataBuilder metadataBuilder = users
                 .select(User::getId, User::getCompanyId)
                 .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
-                .metadata();
+                .buildMetadata();
         QueryMetadata count = metadataBuilder.exist(-1);
         System.out.println(count);
         System.out.println(builder.build(count, mappings));
@@ -116,7 +116,7 @@ public class QueryTest {
         Select0<User, User> root = fromBuilder.from(User.class);
 
         QueryMetadata metadata = root.where(predicate)
-                .metadata()
+                .buildMetadata()
                 .getList(2, 3, LockModeType.NONE);
         JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, mappings);
 

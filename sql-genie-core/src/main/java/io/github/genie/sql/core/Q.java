@@ -107,7 +107,7 @@ public final class Q {
     }
 
 
-    public static <T> PredicateOps<T> not(Predicate<T> lt) {
+    public static <T> PredicateOps<T> not(TypedExpression<T, Boolean> lt) {
         Meta meta = Metas.operate(lt.meta(), NOT, List.of());
         return ExpressionBuilder.ofBoolOps(meta);
     }

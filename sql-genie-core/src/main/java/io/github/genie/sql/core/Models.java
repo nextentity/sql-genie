@@ -12,30 +12,30 @@ final class Models {
 
     static class QueryMetadataImpl implements QueryMetadata, Cloneable {
 
-        SelectClause selectClause;
+        SelectClause select;
 
-        Class<?> fromClause;
+        Class<?> from;
 
-        Meta whereClause = Metas.TRUE;
+        Meta where = Metas.TRUE;
 
-        List<? extends Meta> groupByClause = List.of();
+        List<? extends Meta> groupBy = List.of();
 
-        List<? extends Ordering<?>> orderByClause = List.of();
+        List<? extends Ordering<?>> orderBy = List.of();
 
         Meta havingClause = Metas.TRUE;
 
-        List<? extends Paths> fetchPaths = List.of();
+        List<? extends Paths> fetch = List.of();
 
         Integer offset;
 
         Integer limit;
 
-        LockModeType lockModeType = LockModeType.NONE;
+        LockModeType lockType = LockModeType.NONE;
 
 
-        public QueryMetadataImpl(Class<?> fromClause) {
-            this.fromClause = fromClause;
-            this.selectClause = new SelectClauseImpl(fromClause);
+        public QueryMetadataImpl(Class<?> from) {
+            this.from = from;
+            this.select = new SelectClauseImpl(from);
         }
 
 
@@ -48,32 +48,32 @@ final class Models {
         }
 
         @Override
-        public SelectClause selectClause() {
-            return selectClause;
+        public SelectClause select() {
+            return select;
         }
 
         @Override
-        public Class<?> fromClause() {
-            return fromClause;
+        public Class<?> from() {
+            return from;
         }
 
         @Override
-        public Meta whereClause() {
-            return whereClause;
+        public Meta where() {
+            return where;
         }
 
         @Override
-        public List<? extends Meta> groupByClause() {
-            return groupByClause;
+        public List<? extends Meta> groupBy() {
+            return groupBy;
         }
 
         @Override
-        public List<? extends Ordering<?>> orderByClause() {
-            return orderByClause;
+        public List<? extends Ordering<?>> orderBy() {
+            return orderBy;
         }
 
         @Override
-        public Meta havingClause() {
+        public Meta having() {
             return havingClause;
         }
 
@@ -88,28 +88,28 @@ final class Models {
         }
 
         @Override
-        public LockModeType lockModeType() {
-            return lockModeType;
+        public LockModeType lockType() {
+            return lockType;
         }
 
         @Override
-        public List<? extends Paths> fetchPaths() {
-            return fetchPaths;
+        public List<? extends Paths> fetch() {
+            return fetch;
         }
 
         @Override
         public String toString() {
 
-            return "select " + selectClause
-                   + " from " + fromClause.getName()
-                   + " where " + whereClause
-                   + " group by " + groupByClause.stream()
+            return "select " + select
+                   + " from " + from.getName()
+                   + " where " + where
+                   + " group by " + groupBy.stream()
                            .map(String::valueOf)
                            .collect(Collectors.joining(","))
                    + " having " + havingClause
                    + "offset " + offset
                    + " limit " + limit
-                   + " lock(" + lockModeType + ")";
+                   + " lock(" + lockType + ")";
 
         }
     }
@@ -159,17 +159,17 @@ final class Models {
         }
     }
 
-    record OperationMeta(Meta leftOperand,
+    record OperationMeta(Meta operand,
                          Operator operator,
-                         List<? extends Meta> rightOperand)
+                         List<? extends Meta> args)
             implements Operation {
 
         @Override
         public String toString() {
-            Meta l = leftOperand();
+            Meta l = operand();
             List<? extends Meta> r;
-            if (rightOperand() != null) {
-                r = rightOperand();
+            if (args() != null) {
+                r = args();
             } else {
                 r = List.of();
             }

@@ -8,23 +8,23 @@ import java.util.List;
 
 public interface QueryMetadata {
 
-    SelectClause selectClause();
+    SelectClause select();
 
-    Class<?> fromClause();
+    Class<?> from();
 
-    Meta whereClause();
+    Meta where();
 
-    List<? extends Meta> groupByClause();
+    List<? extends Meta> groupBy();
 
-    List<? extends Ordering<?>> orderByClause();
+    List<? extends Ordering<?>> orderBy();
 
-    Meta havingClause();
+    Meta having();
 
     Integer offset();
 
     Integer limit();
 
-    LockModeType lockModeType();
+    LockModeType lockType();
 
-    List<? extends Paths> fetchPaths();
+    List<? extends Paths> fetch();
 }

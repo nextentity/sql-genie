@@ -4,16 +4,13 @@ import java.util.List;
 
 public interface Expression {
 
-    default Meta meta() {
-        throw new UnsupportedOperationException();
-    }
+    Meta meta();
 
+    @SuppressWarnings("unused")
     interface TypedExpression<T, U> extends Expression {
-
     }
 
     sealed interface Meta permits Constant, Paths, Operation {
-
     }
 
     non-sealed interface Constant extends Meta {
@@ -26,11 +23,11 @@ public interface Expression {
     }
 
     non-sealed interface Operation extends Meta {
-        Meta leftOperand();
+        Meta operand();
 
         Operator operator();
 
-        List<? extends Meta> rightOperand();
+        List<? extends Meta> args();
 
     }
 

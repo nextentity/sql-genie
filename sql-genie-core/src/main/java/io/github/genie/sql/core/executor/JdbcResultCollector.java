@@ -72,4 +72,6 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             }
         }
     }
+
+
 }

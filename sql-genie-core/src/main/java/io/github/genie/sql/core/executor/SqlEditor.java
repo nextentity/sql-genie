@@ -17,8 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.github.genie.sql.core.Ordering.SortOrder.DESC;
-
 class SqlEditor {
 
 
@@ -62,13 +60,13 @@ class SqlEditor {
         appendHaving();
         appendOffsetAndLimit();
         insertJoin(sqlIndex);
-        appendLockModeType(queryMetadata.lockModeType());
+        appendLockModeType(queryMetadata.lockType());
         return new PreparedSqlImpl(sql.toString(), args, projectionPaths);
     }
 
     private List<ColumnProjection> buildProjectionPaths() {
         List<ColumnProjection> projectionPaths;
-        SelectClause selected = queryMetadata.selectClause();
+        SelectClause selected = queryMetadata.select();
         if (selected instanceof SingleColumn singleColumn) {
             projectionPaths = List.of(new ColumnProjection(singleColumn.column(), null));
         } else if (selected instanceof MultiColumn multiColumn) {
@@ -87,7 +85,7 @@ class SqlEditor {
 
     protected List<ColumnProjection> getProjectionSelects() {
         List<ColumnProjection> columns = new ArrayList<>();
-        TableMapping projectionMapping = mappers.getMapping(queryMetadata.selectClause().resultType());
+        TableMapping projectionMapping = mappers.getMapping(queryMetadata.select().resultType());
         for (FieldMapping mapping : projectionMapping.fields()) {
             if (!(mapping instanceof ColumnMapping column)) {
                 continue;
@@ -111,7 +109,7 @@ class SqlEditor {
     }
 
     protected void appendFetchPath(List<ColumnProjection> selectedPath) {
-        List<? extends Paths> fetchClause = queryMetadata.fetchPaths();
+        List<? extends Paths> fetchClause = queryMetadata.fetch();
         if (fetchClause != null) {
             for (Paths fetch : fetchClause) {
                 FieldMapping attribute = getAttribute(fetch);
@@ -175,7 +173,7 @@ class SqlEditor {
 
 
     protected void appendWhere() {
-        Meta where = queryMetadata.whereClause();
+        Meta where = queryMetadata.where();
         if (where == null || Expressions.isTrue(where)) {
             return;
         }
@@ -184,7 +182,7 @@ class SqlEditor {
     }
 
     protected void appendHaving() {
-        Meta having = queryMetadata.havingClause();
+        Meta having = queryMetadata.having();
         if (having == null || Expressions.isTrue(having)) {
             return;
         }
@@ -218,9 +216,9 @@ class SqlEditor {
             appendPath(pe);
         } else if (e instanceof Operation oe) {
             Operator operator = oe.operator();
-            Meta leftOperand = oe.leftOperand();
+            Meta leftOperand = oe.operand();
             Operator operator0 = getOperator(leftOperand);
-            List<? extends Meta> rightOperand = oe.rightOperand();
+            List<? extends Meta> rightOperand = oe.args();
             switch (operator) {
                 case NOT -> {
                     appendOperator(operator);
@@ -434,7 +432,7 @@ class SqlEditor {
     }
 
     private void appendGroupBy() {
-        List<? extends Meta> groupBy = queryMetadata.groupByClause();
+        List<? extends Meta> groupBy = queryMetadata.groupBy();
         if (groupBy != null && !groupBy.isEmpty()) {
             sql.append(" group by ");
             boolean first = true;
@@ -450,7 +448,7 @@ class SqlEditor {
     }
 
     protected void appendOrderBy() {
-        List<? extends Ordering<?>> orders = queryMetadata.orderByClause();
+        List<? extends Ordering<?>> orders = queryMetadata.orderBy();
         if (orders != null && !orders.isEmpty()) {
             sql.append(ORDER_BY);
             boolean first = true;

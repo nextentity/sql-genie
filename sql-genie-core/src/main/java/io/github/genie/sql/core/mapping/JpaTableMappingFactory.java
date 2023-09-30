@@ -34,6 +34,12 @@ public class JpaTableMappingFactory implements MappingFactory {
         return createMapping(type);
     }
 
+    @Override
+    public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
+        return null;
+    }
+
+
     @NotNull
     private TableMappingImpl createMapping(Class<?> type) {
         TableMappingImpl tableMapping = new TableMappingImpl();

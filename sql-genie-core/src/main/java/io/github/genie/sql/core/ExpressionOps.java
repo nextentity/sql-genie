@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
     B eq(U value);
@@ -23,6 +24,11 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
     B in(U... values);
 
     B in(@NotNull List<? extends TypedExpression<T, U>> values);
+
+    @SuppressWarnings({"unchecked"})
+    B notIn(U... values);
+
+    B notIn(@NotNull List<? extends TypedExpression<T, U>> values);
 
     B isNull();
 
@@ -65,6 +71,22 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
         default B contains(String value) {
             return like('%' + value + '%');
         }
+
+
+        B notLike(String value);
+
+        default B nitStartWith(String value) {
+            return notLike(value + '%');
+        }
+
+        default B notEndsWith(String value) {
+            return notLike('%' + value);
+        }
+
+        default B notContains(String value) {
+            return notLike('%' + value + '%');
+        }
+
 
         StringOps<T, B> lower();
 
@@ -123,6 +145,8 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         B between(U l, U r);
 
+        B notBetween(U l, U r);
+
         B ge(TypedExpression<T, U> value);
 
         B gt(TypedExpression<T, U> value);
@@ -136,6 +160,12 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
         B between(TypedExpression<T, U> l, U r);
 
         B between(U l, TypedExpression<T, U> r);
+
+        B notBetween(TypedExpression<T, U> l, TypedExpression<T, U> r);
+
+        B notBetween(TypedExpression<T, U> l, U r);
+
+        B notBetween(U l, TypedExpression<T, U> r);
 
         Ordering<T> asc();
 
@@ -187,12 +217,6 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
         B and(TypedExpression<T, Boolean> value);
 
         B or(TypedExpression<T, Boolean> value);
-
-        @SuppressWarnings("unchecked")
-        B and(TypedExpression<T, Boolean>... values);
-
-        @SuppressWarnings("unchecked")
-        B or(TypedExpression<T, Boolean>... values);
 
         B and(List<TypedExpression<T, Boolean>> values);
 

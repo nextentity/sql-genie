@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+@SuppressWarnings("unused")
 public interface Query {
 
     <T> Select0<T, T> from(Class<T> type);
@@ -313,11 +314,11 @@ public interface Query {
             }
         }
 
-        Metadata metadata();
+        MetadataBuilder buildMetadata();
 
     }
 
-    interface Metadata {
+    interface MetadataBuilder {
 
         QueryMetadata count();
 

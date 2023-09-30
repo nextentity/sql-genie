@@ -38,11 +38,11 @@ public class JdbcQueryExecutor implements QueryExecutor {
                 List<R> result = new ArrayList<>();
                 while (resultSet.next()) {
                     R row = collector.collect(resultSet,
-                            queryMetadata.selectClause(),
+                            queryMetadata.select(),
                             sql.projectionPaths());
                     result.add(row);
                 }
-                if (queryMetadata.selectClause() instanceof SingleColumn) {
+                if (queryMetadata.select() instanceof SingleColumn) {
                     return result.stream()
                             .map(it -> {
                                 // noinspection unchecked
