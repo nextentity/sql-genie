@@ -1,6 +1,7 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.TypedExpression;
 import io.github.genie.sql.core.ExpressionBuilder.PathExpressionImpl;
 import io.github.genie.sql.core.ExpressionOps.*;
 import io.github.genie.sql.core.Models.OrderingImpl;
@@ -70,14 +71,14 @@ public final class Q {
     }
 
     @SafeVarargs
-    public static <T> PredicateOps<T> and(Predicate<T> predicate, Predicate<T>... predicates) {
+    public static <T> PredicateOps<T> and(TypedExpression<T, Boolean> predicate, TypedExpression<T, Boolean>... predicates) {
         List<Meta> metas = Arrays.stream(predicates).map(Expression::meta).toList();
         Meta meta = Metas.operate(predicate.meta(), AND, metas);
         return ExpressionBuilder.ofBoolOps(meta);
     }
 
     @SafeVarargs
-    public static <T> PredicateOps<T> or(Predicate<T> predicate, Predicate<T>... predicates) {
+    public static <T> PredicateOps<T> or(TypedExpression<T, Boolean> predicate, TypedExpression<T, Boolean>... predicates) {
         List<Meta> metas = Arrays.stream(predicates).map(Expression::meta).toList();
         Meta meta = Metas.operate(predicate.meta(), OR, metas);
         return ExpressionBuilder.ofBoolOps(meta);

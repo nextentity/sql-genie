@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public interface Query {
 
@@ -48,27 +47,21 @@ public interface Query {
 
     interface Fetch<T> {
 
-        GroupBy0<T, T> fetch(List<PathExpression<T, ?>> path);
-
+        GroupBy0<T, T> fetch(List<PathExpression<T, ?>> expressions);
 
         default GroupBy0<T, T> fetch(Path<T, ?> path) {
-            return fetch(Stream.of(path)
-                    .<PathExpression<T, ?>>map(Q::path)
-                    .toList());
+            return fetch(Metas.toExpressionList(path));
         }
 
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
-            return fetch(Stream.of(p0, p1)
-                    .<PathExpression<T, ?>>map(Q::path)
-                    .toList());
+            return fetch(Metas.toExpressionList(p0, p1));
         }
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
-            return fetch(Stream.of(p0, p1, p3)
-                    .<PathExpression<T, ?>>map(Q::path)
-                    .toList());
+            return fetch(Metas.toExpressionList(p0, p1, p3));
         }
+
     }
 
     interface Select<T> {
@@ -137,7 +130,7 @@ public interface Query {
     }
 
     interface GroupBy<T, U> {
-        OrderBy0<T, U> groupBy(List<TypedExpression<T, ?>> expressions);
+        OrderBy0<T, U> groupBy(List<? extends TypedExpression<T, ?>> expressions);
 
         Having0<T, U> groupBy(Path<T, ?> path);
 
@@ -172,11 +165,6 @@ public interface Query {
     interface OrderBy<T, U> {
 
         Collector<U> orderBy(List<? extends Ordering<T>> path);
-
-        @SuppressWarnings("unchecked")
-        default Collector<U> orderBy(Ordering<T>... orderings) {
-            return orderBy(List.of(orderings));
-        }
 
         default Collector<U> orderBy(Ordering<T> path) {
             return orderBy(List.of(path));

@@ -19,12 +19,8 @@ public class Expressions {
         return Metas.fromPaths(Util.concat(join.paths(), path));
     }
 
-    public static boolean isTrue(Predicate<?> predicate) {
-        return Metas.isTrue(predicate.meta());
-    }
-
-    public static boolean isTrue(Meta predicate) {
-        return Metas.isTrue(predicate);
+    public static boolean isTrue(Meta meta) {
+        return Metas.isTrue(meta);
     }
 
     public static Meta operate(Meta meta,

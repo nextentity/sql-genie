@@ -59,9 +59,9 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> paths) {
+    public AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.selectClause = new MultiColumnSelect(paths.stream().map(Expression::meta).toList());
+        metadata.selectClause = new MultiColumnSelect(expressions.stream().map(Expression::meta).toList());
         return update(metadata);
     }
 
@@ -158,7 +158,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     @Override
-    public OrderBy0<T, U> groupBy(List<TypedExpression<T, ?>> expressions) {
+    public OrderBy0<T, U> groupBy(List<? extends TypedExpression<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.groupByClause = expressions.stream().map(Expression::meta).toList();
         return update(metadata);
@@ -172,9 +172,9 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public GroupBy0<T, T> fetch(List<PathExpression<T, ?>> paths) {
+    public GroupBy0<T, T> fetch(List<PathExpression<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.fetchPaths = paths
+        metadata.fetchPaths = expressions
                 .stream()
                 .map(PathExpression::meta)
                 .toList();

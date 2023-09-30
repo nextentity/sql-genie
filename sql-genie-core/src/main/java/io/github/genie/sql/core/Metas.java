@@ -4,6 +4,7 @@ import io.github.genie.sql.core.Expression.Constant;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Paths;
 import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.ExpressionBuilder.PathExpressionImpl;
 import io.github.genie.sql.core.ExpressionBuilder.TypedExpressionImpl;
 import io.github.genie.sql.core.Models.ConstantMeta;
 import io.github.genie.sql.core.Models.OperationMeta;
@@ -65,10 +66,10 @@ interface Metas {
         return new OperationMeta(l, o, r);
     }
 
-    static <T> List<TypedExpression<T, ?>> toExpressionList(Path<?, ?>... paths) {
+    static <T> List<PathExpression<T, ?>> toExpressionList(Path<?, ?>... paths) {
         return Arrays.stream(paths)
-                .<Meta>map(Metas::of)
-                .<TypedExpression<T, ?>>map(Metas::toExpression)
+                .map(Metas::of)
+                .<PathExpression<T, ?>>map(PathExpressionImpl::new)
                 .toList();
     }
 
