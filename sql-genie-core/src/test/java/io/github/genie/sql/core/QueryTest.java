@@ -4,6 +4,7 @@ import io.github.genie.model.Company;
 import io.github.genie.model.User;
 import io.github.genie.sql.core.Query.MetadataBuilder;
 import io.github.genie.sql.core.Query.Select0;
+import io.github.genie.sql.core.Query.SliceMeta;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor;
 import io.github.genie.sql.core.executor.MySqlSqlBuilder;
 import io.github.genie.sql.core.mapping.JpaTableMappingFactory;
@@ -33,9 +34,9 @@ public class QueryTest {
 
 
         Select0<User, User> root = fromBuilder.from(User.class);
-        List<QueryMetadata> metadata = root
+        SliceMeta metadata = root
                 // .select(User::getId)
-                .where(Q.get(User::getId).add(2)
+                .where(get(User::getId).add(2)
                         .eq(10)
                         .and(User::getId).in(1, 2, 3)
                         .or(
@@ -44,29 +45,31 @@ public class QueryTest {
                                         .and(User::getId).eq(100)
                         )
                 )
-                .orderBy(Q.get(User::getUsername).asc(), Q.get(User::getId).asc())
+                .orderBy(get(User::getUsername).asc(), get(User::getId).asc())
                 .buildMetadata()
                 .slice(9, 10);
 
+        System.out.println(metadata);
 
-        assertEquals(metadata.size(), 2);
         String name = User.class.getName();
-        String s0 = "select (1 count) from " + User.class.getName() +
-                    " where ((((id + 2) = 10) and (id in [1, 2, 3])) or ((company.name = cpn)" +
-                    " and (id = 111) and (id = 100))) group by  having offset null limit null lock(NONE)";
-        assertEquals(s0, String.valueOf(metadata.get(0).toString()));
+        String s0 = "select count(1) from " + User.class.getName() +
+                    " where id + 2 = 10 and id in(1, 2, 3) or company.name = cpn and id = 111 and id = 100" +
+                    " orderBy username ASC,id ASC";
+        assertEquals(s0, metadata.count().toString());
         String s1 = "select " + name + " from " + name +
-                    " where ((((id + 2) = 10) and (id in [1, 2, 3])) or ((company.name = cpn)" +
-                    " and (id = 111) and (id = 100))) group by  having offset 9 limit 10 lock(NONE)";
-        assertEquals(s1, String.valueOf(metadata.get(1).toString()));
+                    " where id + 2 = 10 and id in(1, 2, 3) or company.name = cpn and id = 111 and id = 100" +
+                    " orderBy username ASC,id ASC offset 9 limit 10";
+        assertEquals(s1, metadata.list().toString());
 
 
-        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata.get(0), mappings);
+        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata.count(), mappings);
         String sql0 = "select count(1) from `user` u left join `company` c0 on u.company_id=c0.id where u.id+2=10 " +
                       "and u.id in(1,2,3) or c0.name=? and u.id=111 and u.id=100 order by u.username asc,u.id asc";
         System.out.println(sql.sql());
         System.out.println(sql.projectionPaths());
         assertEquals(sql0, sql.sql());
+
+
 
 
         MetadataBuilder metadataBuilder = root
@@ -82,6 +85,15 @@ public class QueryTest {
         QueryMetadata count = metadataBuilder.exist(-1);
         System.out.println(count);
         System.out.println(builder.build(count, mappings));
+
+        SliceMeta slice = root.where(get(User::getId).eq(10)
+                        .and(get(User::getId).eq(11).or(User::getId).eq(12)))
+                .buildMetadata()
+                .slice(10, 5);
+
+        String expected = "select count(1) from io.github.genie.model.User where id = 10 and (id = 11 or id = 12)";
+        assertEquals(expected, slice.count().toString());
+
 
     }
 

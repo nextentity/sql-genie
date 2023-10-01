@@ -3,7 +3,9 @@ package io.github.genie.sql.core;
 import io.github.genie.sql.core.Expression.*;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,7 +24,7 @@ final class Models {
 
         List<? extends Ordering<?>> orderBy = List.of();
 
-        Meta havingClause = Metas.TRUE;
+        Meta having = Metas.TRUE;
 
         List<? extends Paths> fetch = List.of();
 
@@ -74,7 +76,7 @@ final class Models {
 
         @Override
         public Meta having() {
-            return havingClause;
+            return having;
         }
 
         @Override
@@ -101,16 +103,25 @@ final class Models {
         public String toString() {
 
             return "select " + select
+                   + (isEmpty(fetch) ? "" : " fetch " + toString(fetch))
                    + " from " + from.getName()
-                   + " where " + where
-                   + " group by " + groupBy.stream()
-                           .map(String::valueOf)
-                           .collect(Collectors.joining(","))
-                   + " having " + havingClause
-                   + "offset " + offset
-                   + " limit " + limit
-                   + " lock(" + lockType + ")";
+                   + (where == null || Metas.isTrue(where) ? "" : " where " + where)
+                   + (isEmpty(groupBy) ? "" : " group by " + toString(groupBy))
+                   + (having == null || Metas.isTrue(having) ? "" : " having " + having)
+                   + (isEmpty(orderBy) ? "" : " orderBy " + toString(orderBy))
+                   + (offset == null ? "" : " offset " + offset)
+                   + (limit == null ? "" : " limit " + limit)
+                   + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
+        }
 
+        private boolean isEmpty(Collection<?> objects) {
+            return objects == null || objects.isEmpty();
+        }
+
+        private String toString(List<?> list) {
+            return list.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
         }
     }
 
@@ -119,6 +130,10 @@ final class Models {
             return new OrderingImpl<>(meta.meta(), order);
         }
 
+        @Override
+        public String toString() {
+            return meta + " " + order;
+        }
     }
 
     record SelectClauseImpl(Class<?> resultType) implements SelectClause {
@@ -132,9 +147,7 @@ final class Models {
     record MultiColumnSelect(List<? extends Meta> columns) implements MultiColumn {
         @Override
         public String toString() {
-            return columns.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
+            return String.valueOf(columns);
         }
 
     }
@@ -174,17 +187,32 @@ final class Models {
                 r = List.of();
             }
             if (operator().isMultivalued()) {
-                return '(' + Stream.concat(Stream.of(l), r.stream())
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(" " + operator() + ' '))
-                       + ')';
+                return Stream.concat(Stream.of(l), r.stream())
+                        .map(this::toString)
+                        .collect(Collectors.joining(" " + operator() + ' '));
             } else if (r.isEmpty()) {
-                return "(" + l + ' ' + operator().sign() + ')';
+                return operator().sign() + '(' + l + ')';
             } else if (r.size() == 1) {
-                return "(" + l + ' ' + operator().sign() + ' ' + r.get(0) + ")";
+                return toString(l) + ' ' + operator().sign() + ' ' + toString(r.get(0));
             } else {
-                return "(" + l + ' ' + operator().sign() + ' ' + r + ")";
+                return toString(l) + " " + operator().sign() + toString(r);
             }
+        }
+
+        @NotNull
+        private static String toString(List<?> list) {
+            return '(' + list.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", ")) + ')';
+        }
+
+        private String toString(Meta subMeta) {
+            if (subMeta instanceof Operation o) {
+                if (o.operator().priority() > operator().priority()) {
+                    return "(" + subMeta + ')';
+                }
+            }
+            return subMeta.toString();
         }
 
     }

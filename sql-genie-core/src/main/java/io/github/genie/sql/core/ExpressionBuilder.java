@@ -401,6 +401,12 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
             return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
         }
 
+        @Override
+        public PredicateOps<T> then() {
+            return new PredicateOpsImpl<>(
+                    new Metadata<>(List.of(), TRUE, merge(), PredicateOpsImpl::new));
+        }
+
         public <R> PathOps<T, R, OrConnector<T>> or(Path<T, R> path) {
             List<Meta> expressions = Util.concat(metadata.expressions, merge());
             return new ExpressionBuilder<>(new Metadata<>(expressions, TRUE, Metas.of(path), OrConnectorImpl::new));

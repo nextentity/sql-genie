@@ -16,6 +16,7 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
     @Override
     public <R> R collect(@NotNull ResultSet resultSet,
                          @NotNull SelectClause selectClause,
+                         @NotNull Class<?> fromType,
                          @NotNull List<? extends ColumnProjection> projectionPaths)
             throws SQLException {
         int columnsCount = resultSet.getMetaData().getColumnCount();

@@ -56,6 +56,9 @@ final class Util {
         return Stream.concat(collection.stream(), Stream.of(value)).toList();
     }
 
+    static <T> List<T> concat(Collection<? extends T> collection, Collection<? extends T> value) {
+        return Stream.concat(collection.stream(), value.stream()).toList();
+    }
 
     private Util() {
     }

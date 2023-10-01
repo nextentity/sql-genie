@@ -222,6 +222,7 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         B or(List<TypedExpression<T, Boolean>> values);
 
+        PredicateOps<T> then();
 
     }
 

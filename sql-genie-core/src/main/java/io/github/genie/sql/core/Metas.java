@@ -1,9 +1,6 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.Constant;
-import io.github.genie.sql.core.Expression.Meta;
-import io.github.genie.sql.core.Expression.Paths;
-import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.Expression.*;
 import io.github.genie.sql.core.ExpressionBuilder.PathExpressionImpl;
 import io.github.genie.sql.core.ExpressionBuilder.TypedExpressionImpl;
 import io.github.genie.sql.core.Models.ConstantMeta;
@@ -45,10 +42,6 @@ interface Metas {
     }
 
 
-    static <T, U> TypedExpression<T, U> toExpression(Meta meta) {
-        return new TypedExpressionImpl<>(meta);
-    }
-
     static List<Meta> ofList(Expression expression) {
         return List.of(of(expression));
     }
@@ -63,6 +56,10 @@ interface Metas {
     }
 
     static Meta operate(Meta l, Operator o, List<? extends Meta> r) {
+        if (o.isMultivalued() && l instanceof Operation lo && lo.operator() == o) {
+            List<Meta> args = Util.concat(lo.args(), r);
+            return new OperationMeta(lo.operand(), o, args);
+        }
         return new OperationMeta(l, o, r);
     }
 

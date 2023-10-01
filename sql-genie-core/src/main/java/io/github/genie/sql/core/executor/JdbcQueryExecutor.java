@@ -39,6 +39,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
                 while (resultSet.next()) {
                     R row = collector.collect(resultSet,
                             queryMetadata.select(),
+                            queryMetadata.from(),
                             sql.projectionPaths());
                     result.add(row);
                 }
@@ -84,6 +85,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
     public interface ResultCollector {
         <R> R collect(@NotNull ResultSet resultSet,
                       @NotNull SelectClause selectClause,
+                      @NotNull Class<?> fromType,
                       @NotNull List<? extends ColumnProjection> projectionPaths)
                 throws SQLException;
 

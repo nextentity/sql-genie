@@ -184,7 +184,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public OrderBy0<T, U> having(TypedExpression<T, Boolean> predicate) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.havingClause = predicate.meta();
+        metadata.having = predicate.meta();
         return update(metadata);
     }
 

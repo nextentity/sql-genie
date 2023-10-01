@@ -1,9 +1,9 @@
 package io.github.genie.sql.core.executor;
 
-import io.github.genie.sql.core.QueryMetadata;
+import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.SqlBuilder;
-import io.github.genie.sql.core.mapping.MappingFactory;
+import io.github.genie.sql.core.mapping.*;
 
 public class MySqlSqlBuilder implements SqlBuilder {
     @Override

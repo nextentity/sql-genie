@@ -1,15 +1,15 @@
 package io.github.genie.sql.core.executor;
 
-
+import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.Expression.Constant;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Operation;
 import io.github.genie.sql.core.Expression.Paths;
-import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.Ordering.SortOrder;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.ColumnProjection;
+import io.github.genie.sql.core.executor.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.core.mapping.*;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ class SqlEditor {
         this.tableMapping = mappers.getMapping(type);
     }
 
-    protected JdbcQueryExecutor.PreparedSql build() {
+    protected PreparedSql build() {
         List<ColumnProjection> projectionPaths = buildProjectionPaths();
         sql.append(SELECT);
         appendSelects(projectionPaths);
@@ -465,5 +465,3 @@ class SqlEditor {
         }
     }
 }
-
-

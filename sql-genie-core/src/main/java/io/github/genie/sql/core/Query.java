@@ -326,16 +326,19 @@ public interface Query {
 
         QueryMetadata exist(int offset);
 
-        default List<QueryMetadata> slice(Slice.Sliceable sliceable) {
+        default SliceMeta slice(Slice.Sliceable sliceable) {
             QueryMetadata count = count();
             QueryMetadata list = getList(sliceable.offset(), sliceable.size(), LockModeType.NONE);
-            return List.of(count, list);
+            return new SliceMeta(count, list);
         }
 
-        default List<QueryMetadata> slice(int offset, int limit) {
+        default SliceMeta slice(int offset, int limit) {
             return slice(Slice.sliceable(offset, limit));
         }
 
+    }
+
+    record SliceMeta(QueryMetadata count, QueryMetadata list) {
     }
 
 }
