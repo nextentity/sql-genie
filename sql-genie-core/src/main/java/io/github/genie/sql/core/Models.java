@@ -103,26 +103,21 @@ final class Models {
         public String toString() {
 
             return "select " + select
-                   + (isEmpty(fetch) ? "" : " fetch " + toString(fetch))
+                   + (isEmpty(fetch) ? "" : " fetch " + Models.toString(fetch))
                    + " from " + from.getName()
                    + (where == null || Metas.isTrue(where) ? "" : " where " + where)
-                   + (isEmpty(groupBy) ? "" : " group by " + toString(groupBy))
+                   + (isEmpty(groupBy) ? "" : " group by " + Models.toString(groupBy))
                    + (having == null || Metas.isTrue(having) ? "" : " having " + having)
-                   + (isEmpty(orderBy) ? "" : " orderBy " + toString(orderBy))
+                   + (isEmpty(orderBy) ? "" : " orderBy " + Models.toString(orderBy))
                    + (offset == null ? "" : " offset " + offset)
                    + (limit == null ? "" : " limit " + limit)
                    + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
         }
 
-        private boolean isEmpty(Collection<?> objects) {
+        private static boolean isEmpty(Collection<?> objects) {
             return objects == null || objects.isEmpty();
         }
 
-        private String toString(List<?> list) {
-            return list.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
-        }
     }
 
     record OrderingImpl<T>(Meta meta, SortOrder order) implements Ordering<T> {
@@ -179,40 +174,7 @@ final class Models {
 
         @Override
         public String toString() {
-            Meta l = operand();
-            List<? extends Meta> r;
-            if (args() != null) {
-                r = args();
-            } else {
-                r = List.of();
-            }
-            if (operator().isMultivalued()) {
-                return Stream.concat(Stream.of(l), r.stream())
-                        .map(this::toString)
-                        .collect(Collectors.joining(" " + operator() + ' '));
-            } else if (r.isEmpty()) {
-                return operator().sign() + '(' + l + ')';
-            } else if (r.size() == 1) {
-                return toString(l) + ' ' + operator().sign() + ' ' + toString(r.get(0));
-            } else {
-                return toString(l) + " " + operator().sign() + toString(r);
-            }
-        }
-
-        @NotNull
-        private static String toString(List<?> list) {
-            return '(' + list.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(", ")) + ')';
-        }
-
-        private String toString(Meta subMeta) {
-            if (subMeta instanceof Operation o) {
-                if (o.operator().priority() > operator().priority()) {
-                    return "(" + subMeta + ')';
-                }
-            }
-            return subMeta.toString();
+            return Models.toString(this);
         }
 
     }
@@ -222,6 +184,43 @@ final class Models {
         public String toString() {
             return String.join(".", paths);
         }
+    }
+
+    public static String toString(Operation o) {
+        Meta l = o.operand();
+        List<? extends Meta> r;
+        if (o.args() != null) {
+            r = o.args();
+        } else {
+            r = List.of();
+        }
+        if (o.operator().isMultivalued()) {
+            return Stream.concat(Stream.of(l), r.stream())
+                    .map(it -> toString(o, it))
+                    .collect(Collectors.joining(" " + o.operator() + ' '));
+        } else if (r.isEmpty()) {
+            return o.operator().sign() + '(' + l + ')';
+        } else if (r.size() == 1) {
+            return toString(o, l) + ' ' + o.operator().sign() + ' ' + toString(o, r.get(0));
+        } else {
+            return toString(o, l) + " " + o.operator().sign() + '(' + toString(r) + ')';
+        }
+    }
+
+    @NotNull
+    private static String toString(List<?> list) {
+        return list.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+    }
+
+    private static String toString(Operation parent, Meta subMeta) {
+        if (subMeta instanceof Operation o) {
+            if (o.operator().priority() > parent.operator().priority()) {
+                return "(" + subMeta + ')';
+            }
+        }
+        return subMeta.toString();
     }
 
     private Models() {

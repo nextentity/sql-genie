@@ -21,7 +21,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
             new SingleColumnSelect(Integer.class, CONSTANT_1);
 
     static final SingleColumnSelect COUNT_1 =
-            new SingleColumnSelect(Integer.class, Metas.operate(CONSTANT_1, Operator.COUNT, List.of()));
+            new SingleColumnSelect(Integer.class, Metas.operate(CONSTANT_1, Operator.COUNT));
 
 
     private final QueryExecutor queryExecutor;

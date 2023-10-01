@@ -1,8 +1,10 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.*;
+import io.github.genie.sql.core.Expression.Constant;
+import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.Operation;
+import io.github.genie.sql.core.Expression.Paths;
 import io.github.genie.sql.core.ExpressionBuilder.PathExpressionImpl;
-import io.github.genie.sql.core.ExpressionBuilder.TypedExpressionImpl;
 import io.github.genie.sql.core.Models.ConstantMeta;
 import io.github.genie.sql.core.Models.OperationMeta;
 import io.github.genie.sql.core.Models.PathsMeta;
@@ -42,10 +44,6 @@ interface Metas {
     }
 
 
-    static List<Meta> ofList(Expression expression) {
-        return List.of(of(expression));
-    }
-
     static Paths fromPath(String path) {
         List<String> paths = Collections.singletonList(path);
         return fromPaths(paths);
@@ -53,6 +51,18 @@ interface Metas {
 
     static Paths fromPaths(List<String> paths) {
         return new PathsMeta(paths);
+    }
+
+    static Meta operate(Meta l, Operator o, Meta r) {
+        if (o.isMultivalued() && l instanceof Operation lo && lo.operator() == o) {
+            List<Meta> args = Util.concat(lo.args(), r);
+            return new OperationMeta(lo.operand(), o, args);
+        }
+        return new OperationMeta(l, o, List.of(r));
+    }
+
+    static Meta operate(Meta l, Operator o) {
+        return operate(l, o, List.of());
     }
 
     static Meta operate(Meta l, Operator o, List<? extends Meta> r) {

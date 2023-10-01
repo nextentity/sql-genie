@@ -28,9 +28,9 @@ public enum Operator {
     TRIM("trim", 0),
     LENGTH("length", 0),
 
-    ADD("+", 4),
+    ADD("+", 4, true),
     SUBTRACT("-", 4),
-    MULTIPLY("*", 3),
+    MULTIPLY("*", 3, true),
     DIVIDE("/", 3),
     MOD("mod", 3),
     NULLIF("nullif", 0),

@@ -112,13 +112,13 @@ class SqlEditor {
                 }
                 TableMapping entityInfo = am.referenced();
                 for (FieldMapping field : entityInfo.fields()) {
-                    if (!(field instanceof ColumnMapping cm)) {
+                    if (!(field instanceof ColumnMapping mapping)) {
                         continue;
                     }
                     sql.append(",");
-                    Paths path = Expressions.concat(fetch, cm.fieldName());
-                    appendPath(path);
-                    selectMetas.add(path);
+                    Paths paths = Expressions.concat(fetch, mapping.fieldName());
+                    appendPaths(paths);
+                    selectMetas.add(paths);
                     selectFields.add(field);
                 }
             }
@@ -185,124 +185,130 @@ class SqlEditor {
     }
 
     protected void appendExpression(Meta expr) {
-        appendExpressions(args, expr);
+        appendExpression(args, expr);
     }
 
 
-    protected void appendExpressions(List<Object> args, Meta e) {
-        if (e instanceof Constant ce) {
-            Object value = ce.value();
-            boolean isNumber = false;
-            if (value != null) {
-                Class<?> valueType = value.getClass();
-                if (valueType.isPrimitive() || Number.class.isAssignableFrom(valueType)) {
-                    isNumber = true;
-                }
+    protected void appendExpression(List<Object> args, Meta meta) {
+        if (meta instanceof Constant constant) {
+            appendConstant(args, constant);
+        } else if (meta instanceof Paths paths) {
+            appendPaths(paths);
+        } else if (meta instanceof Operation operation) {
+            appendOperation(args, operation);
+        } else {
+            throw new UnsupportedOperationException("unknown type " + meta.getClass());
+        }
+    }
+
+    private void appendConstant(List<Object> args, Constant constant) {
+        Object value = constant.value();
+        boolean isNumber = false;
+        if (value != null) {
+            if (value instanceof Number) {
+                isNumber = true;
+            } else if (value instanceof Boolean b) {
+                isNumber = true;
+                value = b ? 1 : 0;
             }
-            if (isNumber) {
-                appendBlank().append(value);
-            } else {
-                appendBlank().append('?');
-                args.add(value);
-            }
-        } else if (e instanceof Paths pe) {
-            appendBlank();
-            appendPath(pe);
-        } else if (e instanceof Operation oe) {
-            Operator operator = oe.operator();
-            Meta leftOperand = oe.operand();
-            Operator operator0 = getOperator(leftOperand);
-            List<? extends Meta> rightOperand = oe.args();
-            switch (operator) {
-                case NOT -> {
-                    appendOperator(operator);
-                    sql.append(' ');
-                    if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
-                        sql.append('(');
-                        appendExpressions(args, leftOperand);
-                        sql.append(')');
-                    } else {
-                        appendExpressions(args, leftOperand);
-                    }
-                }
-                case AND, OR, LIKE, MOD, GT, EQ, NE, GE, LT,
-                        LE, ADD, SUBTRACT, MULTIPLY, DIVIDE -> {
-                    appendBlank();
-                    if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
-                        sql.append('(');
-                        appendExpressions(args, leftOperand);
-                        sql.append(')');
-                    } else {
-                        appendExpressions(args, leftOperand);
-                    }
-                    for (Meta value : rightOperand) {
-                        appendOperator(operator);
-                        Operator operator1 = getOperator(value);
-                        if (operator1 != null && operator1.priority()
-                                                 >= operator.priority()) {
-                            sql.append('(');
-                            appendExpressions(args, value);
-                            sql.append(')');
-                        } else {
-                            appendExpressions(args, value);
-                        }
-                    }
-                }
-                case LOWER, UPPER, SUBSTRING, TRIM, LENGTH,
-                        NULLIF, IF_NULL, MIN, MAX, COUNT, AVG, SUM -> {
-                    appendOperator(operator);
+        }
+        if (isNumber) {
+            appendBlank().append(value);
+        } else {
+            appendBlank().append('?');
+            args.add(value);
+        }
+    }
+
+    private void appendOperation(List<Object> args, Operation operation) {
+        Operator operator = operation.operator();
+        Meta leftOperand = operation.operand();
+        Operator operator0 = getOperator(leftOperand);
+        List<? extends Meta> rightOperand = operation.args();
+        switch (operator) {
+            case NOT -> {
+                appendOperator(operator);
+                sql.append(' ');
+                if (operator0 != null && operator0.priority() > operator.priority()) {
                     sql.append('(');
-                    appendExpressions(args, leftOperand);
+                    appendExpression(args, leftOperand);
+                    sql.append(')');
+                } else {
+                    appendExpression(args, leftOperand);
+                }
+            }
+            case AND, OR, LIKE, MOD, GT, EQ, NE, GE, LT,
+                    LE, ADD, SUBTRACT, MULTIPLY, DIVIDE -> {
+                appendBlank();
+                if (operator0 != null && operator0.priority() > operator.priority()) {
+                    sql.append('(');
+                    appendExpression(args, leftOperand);
+                    sql.append(')');
+                } else {
+                    appendExpression(args, leftOperand);
+                }
+                for (Meta value : rightOperand) {
+                    appendOperator(operator);
+                    Operator operator1 = getOperator(value);
+                    if (operator1 != null && operator1.priority() >= operator.priority()) {
+                        sql.append('(');
+                        appendExpression(args, value);
+                        sql.append(')');
+                    } else {
+                        appendExpression(args, value);
+                    }
+                }
+            }
+            case LOWER, UPPER, SUBSTRING, TRIM, LENGTH,
+                    NULLIF, IF_NULL, MIN, MAX, COUNT, AVG, SUM -> {
+                appendOperator(operator);
+                sql.append('(');
+                appendExpression(args, leftOperand);
+                for (Meta expression : rightOperand) {
+                    sql.append(',');
+                    appendExpression(args, expression);
+                }
+                sql.append(")");
+            }
+            case IN -> {
+                if (rightOperand.isEmpty()) {
+                    appendBlank().append(0);
+                } else {
+                    appendBlank();
+                    appendExpression(leftOperand);
+                    appendOperator(operator);
+                    char join = '(';
                     for (Meta expression : rightOperand) {
-                        sql.append(',');
-                        appendExpressions(args, expression);
+                        sql.append(join);
+                        appendExpression(args, expression);
+                        join = ',';
                     }
                     sql.append(")");
                 }
-                case IN -> {
-                    if (rightOperand.isEmpty()) {
-                        appendBlank().append(0);
-                    } else {
-                        appendBlank();
-                        appendExpression(leftOperand);
-                        appendOperator(operator);
-                        char join = '(';
-                        for (Meta expression : rightOperand) {
-                            sql.append(join);
-                            appendExpressions(args, expression);
-                            join = ',';
-                        }
-                        sql.append(")");
-                    }
-                }
-                case BETWEEN -> {
-                    appendBlank();
-                    appendExpressions(args, leftOperand);
-                    appendOperator(operator);
-                    appendBlank();
-                    Meta operate = Expressions
-                            .operate(rightOperand.get(0), Operator.AND, List.of(rightOperand.get(1)));
-                    appendExpressions(args, operate);
-                }
-                case IS_NULL, IS_NOT_NULL -> {
-                    appendBlank();
-                    if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
-                        sql.append('(');
-                        appendExpressions(args, leftOperand);
-                        sql.append(')');
-                    } else {
-                        appendExpressions(args, leftOperand);
-                    }
-                    appendBlank();
-                    appendOperator(operator);
-                }
-                default -> throw new UnsupportedOperationException("unknown operator " + operator);
             }
-        } else {
-            throw new UnsupportedOperationException("unknown expression type " + e.getClass());
+            case BETWEEN -> {
+                appendBlank();
+                appendExpression(args, leftOperand);
+                appendOperator(operator);
+                appendBlank();
+                Meta operate = Expressions
+                        .operate(rightOperand.get(0), Operator.AND, List.of(rightOperand.get(1)));
+                appendExpression(args, operate);
+            }
+            case IS_NULL, IS_NOT_NULL -> {
+                appendBlank();
+                if (operator0 != null && operator0.priority()
+                                         > operator.priority()) {
+                    sql.append('(');
+                    appendExpression(args, leftOperand);
+                    sql.append(')');
+                } else {
+                    appendExpression(args, leftOperand);
+                }
+                appendBlank();
+                appendOperator(operator);
+            }
+            default -> throw new UnsupportedOperationException("unknown operator " + operator);
         }
     }
 
@@ -315,7 +321,8 @@ class SqlEditor {
     }
 
 
-    protected void appendPath(Paths paths) {
+    protected void appendPaths(Paths paths) {
+        appendBlank();
         List<String> expression = paths.paths();
         StringBuilder sb = sql;
         int iMax = expression.size() - 1;

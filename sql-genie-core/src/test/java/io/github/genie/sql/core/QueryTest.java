@@ -54,11 +54,11 @@ public class QueryTest {
         String name = User.class.getName();
         String s0 = "select count(1) from " + User.class.getName() +
                     " where id + 2 = 10 and id in(1, 2, 3) or company.name = cpn and id = 111 and id = 100" +
-                    " orderBy username ASC,id ASC";
+                    " orderBy username ASC, id ASC";
         assertEquals(s0, metadata.count().toString());
         String s1 = "select " + name + " from " + name +
                     " where id + 2 = 10 and id in(1, 2, 3) or company.name = cpn and id = 111 and id = 100" +
-                    " orderBy username ASC,id ASC offset 9 limit 10";
+                    " orderBy username ASC, id ASC offset 9 limit 10";
         assertEquals(s1, metadata.list().toString());
 
 
@@ -112,12 +112,12 @@ public class QueryTest {
     @Test
     void testAndOr() {
         Predicate<User> predicate = Q.and(
-                // get(User::getRandomNumber).ne(1),
-                // get(User::getRandomNumber).gt(100),
-                // get(User::getRandomNumber).ne(125),
+                get(User::getRandomNumber).ne(1),
+                get(User::getRandomNumber).gt(100),
+                get(User::getRandomNumber).ne(125),
                 get(User::getRandomNumber).le(666),
                 or(
-                        // get(User::getRandomNumber).lt(106),
+                        get(User::getRandomNumber).lt(106),
                         get(User::getRandomNumber).gt(120),
                         get(User::getRandomNumber).eq(109)
                 ),

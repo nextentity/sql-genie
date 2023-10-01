@@ -5,7 +5,7 @@ import java.io.Serializable;
 @FunctionalInterface
 public interface Path<T, R> extends Serializable {
 
-    R $(T t);
+    R apply(T t);
 
     @FunctionalInterface
     interface NumberPath<T, R extends Number & Comparable<R>> extends Path<T, R> {

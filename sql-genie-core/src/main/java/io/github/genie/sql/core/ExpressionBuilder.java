@@ -132,7 +132,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
     protected Meta merge() {
         return Metas.isTrue(metadata.left)
                 ? metadata.right
-                : Metas.operate(metadata.left, Operator.AND, List.of(metadata.right));
+                : Metas.operate(metadata.left, Operator.AND, metadata.right);
     }
 
     protected Metadata<B> toPaths(Path<?, ?> path) {
@@ -379,13 +379,13 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
 
         public B and(TypedExpression<T, Boolean> value) {
             Meta mt = meta();
-            Meta meta = Metas.operate(mt, Operator.AND, Metas.ofList(value));
+            Meta meta = Metas.operate(mt, Operator.AND, value.meta());
             return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
         }
 
         public B or(TypedExpression<T, Boolean> value) {
             Meta mt = meta();
-            Meta meta = Metas.operate(mt, Operator.OR, Metas.ofList(value));
+            Meta meta = Metas.operate(mt, Operator.OR, value.meta());
             return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
         }
 
@@ -490,7 +490,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         @Override
         public PredicateOps<T> not() {
             Meta meta = meta();
-            Meta m = Metas.operate(meta, Operator.NOT, List.of());
+            Meta m = Metas.operate(meta, Operator.NOT);
             return new PredicateOpsImpl<>(new Metadata<>(List.of(), TRUE, m, PredicateOpsImpl::new));
         }
 
@@ -502,9 +502,6 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
             super(new Metadata<>(List.of(), TRUE, EMPTY_PATH, PredicateOpsImpl::new));
         }
 
-    }
-
-    record TypedExpressionImpl<T, U>(Meta meta) implements TypedExpression<T, U> {
     }
 
     record PathExpressionImpl<T, U>(Paths meta) implements PathExpression<T, U> {
@@ -529,7 +526,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         }
 
         Metadata<B> not() {
-            right = Metas.operate(right, Operator.NOT, List.of());
+            right = Metas.operate(right, Operator.NOT);
             return this;
         }
 
