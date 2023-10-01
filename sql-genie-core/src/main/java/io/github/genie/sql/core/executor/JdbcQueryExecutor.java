@@ -1,10 +1,8 @@
 package io.github.genie.sql.core.executor;
 
-import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.QueryExecutor;
 import io.github.genie.sql.core.QueryMetadata;
 import io.github.genie.sql.core.SelectClause;
-import io.github.genie.sql.core.SelectClause.SingleColumn;
 import io.github.genie.sql.core.exception.SqlExecuteException;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import io.github.genie.sql.core.mapping.MappingFactory;
@@ -43,14 +41,6 @@ public class JdbcQueryExecutor implements QueryExecutor {
                             sql.projectionPaths());
                     result.add(row);
                 }
-                if (queryMetadata.select() instanceof SingleColumn) {
-                    return result.stream()
-                            .map(it -> {
-                                // noinspection unchecked
-                                return (R) ((Object[]) it)[0];
-                            })
-                            .toList();
-                }
                 return result;
             }
         } catch (SQLException e) {
@@ -71,11 +61,8 @@ public class JdbcQueryExecutor implements QueryExecutor {
 
         List<?> args();
 
-        List<ColumnProjection> projectionPaths();
+        List<FieldMapping> projectionPaths();
 
-    }
-
-    public record ColumnProjection(Meta expression, FieldMapping field) {
     }
 
     public interface SqlExecutor {
@@ -86,7 +73,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
         <R> R collect(@NotNull ResultSet resultSet,
                       @NotNull SelectClause selectClause,
                       @NotNull Class<?> fromType,
-                      @NotNull List<? extends ColumnProjection> projectionPaths)
+                      @NotNull List<? extends FieldMapping> projectionPaths)
                 throws SQLException;
 
     }

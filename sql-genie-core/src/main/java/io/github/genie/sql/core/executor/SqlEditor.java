@@ -1,14 +1,13 @@
 package io.github.genie.sql.core.executor;
 
-import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.Expression.Constant;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Operation;
 import io.github.genie.sql.core.Expression.Paths;
+import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.Ordering.SortOrder;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.ColumnProjection;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.core.mapping.*;
 
@@ -40,6 +39,9 @@ class SqlEditor {
     protected final QueryMetadata queryMetadata;
     protected final TableMapping tableMapping;
     protected final MappingFactory mappers;
+    protected final List<Meta> selectMetas = new ArrayList<>();
+    protected final List<FieldMapping> selectFields = new ArrayList<>();
+
 
     public SqlEditor(QueryMetadata queryMetadata, Class<?> type, MappingFactory mappers) {
         this.queryMetadata = queryMetadata;
@@ -48,10 +50,10 @@ class SqlEditor {
     }
 
     protected PreparedSql build() {
-        List<ColumnProjection> projectionPaths = buildProjectionPaths();
+        buildProjectionPaths();
         sql.append(SELECT);
-        appendSelects(projectionPaths);
-        appendFetchPath(projectionPaths);
+        appendSelects();
+        appendFetchPath();
         appendTableName();
         int sqlIndex = sql.length();
         appendWhere();
@@ -61,54 +63,46 @@ class SqlEditor {
         appendOffsetAndLimit();
         insertJoin(sqlIndex);
         appendLockModeType(queryMetadata.lockType());
-        return new PreparedSqlImpl(sql.toString(), args, projectionPaths);
+        return new PreparedSqlImpl(sql.toString(), args, selectFields);
     }
 
-    private List<ColumnProjection> buildProjectionPaths() {
-        List<ColumnProjection> projectionPaths;
+    private void buildProjectionPaths() {
         SelectClause selected = queryMetadata.select();
         if (selected instanceof SingleColumn singleColumn) {
-            projectionPaths = List.of(new ColumnProjection(singleColumn.column(), null));
+            selectMetas.add(singleColumn.column());
         } else if (selected instanceof MultiColumn multiColumn) {
-            projectionPaths = multiColumn.columns().stream()
-                    .map(expression -> new ColumnProjection(expression, null))
-                    .toList();
+            selectMetas.addAll(multiColumn.columns());
         } else {
-            projectionPaths = getProjectionSelects();
+            TableMapping projectionMapping = mappers
+                    .getMapping(queryMetadata.select().resultType());
+            for (FieldMapping mapping : projectionMapping.fields()) {
+                if (!(mapping instanceof ColumnMapping column)) {
+                    continue;
+                }
+                if (tableMapping.getFieldMapping(column.fieldName()) == null) {
+                    continue;
+                }
+                Paths paths = Expressions.ofPath(column.fieldName());
+                selectMetas.add(paths);
+                selectFields.add(mapping);
+            }
         }
-        return projectionPaths;
     }
 
     private static int unwrap(Integer offset) {
         return offset == null ? -1 : offset;
     }
 
-    protected List<ColumnProjection> getProjectionSelects() {
-        List<ColumnProjection> columns = new ArrayList<>();
-        TableMapping projectionMapping = mappers.getMapping(queryMetadata.select().resultType());
-        for (FieldMapping mapping : projectionMapping.fields()) {
-            if (!(mapping instanceof ColumnMapping column)) {
-                continue;
-            }
-            if (tableMapping.getFieldMapping(column.fieldName()) == null) {
-                continue;
-            }
-            Paths paths = Expressions.ofPath(column.fieldName());
-            columns.add(new ColumnProjection(paths, mapping));
-        }
-        return columns;
-    }
-
-    private void appendSelects(List<ColumnProjection> baseColumns) {
+    private void appendSelects() {
         String join = NONE_DELIMITER;
-        for (ColumnProjection projection : baseColumns) {
+        for (Meta meta : selectMetas) {
             sql.append(join);
-            appendExpression(projection.expression());
+            appendExpression(meta);
             join = DELIMITER;
         }
     }
 
-    protected void appendFetchPath(List<ColumnProjection> selectedPath) {
+    protected void appendFetchPath() {
         List<? extends Paths> fetchClause = queryMetadata.fetch();
         if (fetchClause != null) {
             for (Paths fetch : fetchClause) {
@@ -122,10 +116,10 @@ class SqlEditor {
                         continue;
                     }
                     sql.append(",");
-                    Paths path =
-                            Expressions.concat(fetch, cm.fieldName());
+                    Paths path = Expressions.concat(fetch, cm.fieldName());
                     appendPath(path);
-                    selectedPath.add(new ColumnProjection(path, field));
+                    selectMetas.add(path);
+                    selectFields.add(field);
                 }
             }
         }
