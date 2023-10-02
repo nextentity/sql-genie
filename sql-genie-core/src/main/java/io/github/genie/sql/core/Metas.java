@@ -4,7 +4,7 @@ import io.github.genie.sql.core.Expression.Constant;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Operation;
 import io.github.genie.sql.core.Expression.Paths;
-import io.github.genie.sql.core.ExpressionBuilder.PathExpressionImpl;
+import io.github.genie.sql.core.ExpressionOps.PathExpr;
 import io.github.genie.sql.core.Models.ConstantMeta;
 import io.github.genie.sql.core.Models.OperationMeta;
 import io.github.genie.sql.core.Models.PathsMeta;
@@ -22,7 +22,7 @@ interface Metas {
                && Boolean.TRUE.equals(constant.value());
     }
 
-    static Meta of(Expression expression) {
+    static Meta of(Expression<?, ?> expression) {
         return expression.meta();
     }
 
@@ -73,10 +73,10 @@ interface Metas {
         return new OperationMeta(l, o, r);
     }
 
-    static <T> List<PathExpression<T, ?>> toExpressionList(Path<?, ?>... paths) {
+    @SafeVarargs
+    static <T> List<PathExpr<T, ?>> toExpressionList(Path<T, ?>... paths) {
         return Arrays.stream(paths)
-                .map(Metas::of)
-                .<PathExpression<T, ?>>map(PathExpressionImpl::new)
+                .<PathExpr<T, ?>>map(Q::get)
                 .toList();
     }
 

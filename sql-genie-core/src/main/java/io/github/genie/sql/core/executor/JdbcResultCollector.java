@@ -10,7 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import static io.github.genie.sql.core.SelectClause.*;
+import static io.github.genie.sql.core.SelectClause.MultiColumn;
+import static io.github.genie.sql.core.SelectClause.SingleColumn;
 
 public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
 

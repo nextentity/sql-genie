@@ -1,7 +1,8 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
-import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.Expression.Paths;
+import io.github.genie.sql.core.ExpressionOps.PathExpr;
 import io.github.genie.sql.core.Models.MultiColumnSelect;
 import io.github.genie.sql.core.Models.QueryMetadataImpl;
 import io.github.genie.sql.core.Models.SelectClauseImpl;
@@ -11,6 +12,7 @@ import io.github.genie.sql.core.exception.BeanReflectiveException;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U> {
@@ -59,7 +61,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> expressions) {
+    public AggWhere0<T, Object[]> select(List<? extends Expression<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.select = new MultiColumnSelect(expressions.stream().map(Expression::meta).toList());
         return update(metadata);
@@ -78,7 +80,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public AggGroupBy0<T, U> where(TypedExpression<T, Boolean> predicate) {
+    public AggGroupBy0<T, U> where(Expression<T, Boolean> predicate) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.where = predicate.meta();
         return update(metadata);
@@ -158,7 +160,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     @Override
-    public OrderBy0<T, U> groupBy(List<? extends TypedExpression<T, ?>> expressions) {
+    public OrderBy0<T, U> groupBy(List<? extends Expression<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.groupBy = expressions.stream().map(Expression::meta).toList();
         return update(metadata);
@@ -172,17 +174,21 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public GroupBy0<T, T> fetch(List<PathExpression<T, ?>> expressions) {
+    public GroupBy0<T, T> fetch(List<PathExpr<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.fetch = expressions
-                .stream()
-                .map(PathExpression::meta)
-                .toList();
+        List<Paths> list = new ArrayList<>();
+        for (PathExpr<T, ?> expression : expressions) {
+            Meta meta = expression.meta();
+            if (meta instanceof Paths paths) {
+                list.add(paths);
+            }
+        }
+        metadata.fetch = list;
         return update(metadata);
     }
 
     @Override
-    public OrderBy0<T, U> having(TypedExpression<T, Boolean> predicate) {
+    public OrderBy0<T, U> having(Expression<T, Boolean> predicate) {
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.having = predicate.meta();
         return update(metadata);

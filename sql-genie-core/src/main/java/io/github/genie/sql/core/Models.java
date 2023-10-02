@@ -1,6 +1,9 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.*;
+import io.github.genie.sql.core.Expression.Constant;
+import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.core.Expression.Operation;
+import io.github.genie.sql.core.Expression.Paths;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
 import org.jetbrains.annotations.NotNull;
@@ -121,7 +124,7 @@ final class Models {
     }
 
     record OrderingImpl<T>(Meta meta, SortOrder order) implements Ordering<T> {
-        public static <T> OrderingImpl<T> of(TypedExpression<T, ?> meta, SortOrder order) {
+        public static <T> OrderingImpl<T> of(Expression<T, ?> meta, SortOrder order) {
             return new OrderingImpl<>(meta.meta(), order);
         }
 

@@ -1,6 +1,5 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.TypedExpression;
 import io.github.genie.sql.core.Path.BooleanPath;
 import io.github.genie.sql.core.Path.ComparablePath;
 import io.github.genie.sql.core.Path.NumberPath;
@@ -10,25 +9,25 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
+public interface ExpressionOps<T, U, B> extends Expression<T, U> {
 
     B eq(U value);
 
-    B eq(TypedExpression<T, U> value);
+    B eq(Expression<T, U> value);
 
     B ne(U value);
 
-    B ne(TypedExpression<T, U> value);
+    B ne(Expression<T, U> value);
 
     @SuppressWarnings({"unchecked"})
     B in(U... values);
 
-    B in(@NotNull List<? extends TypedExpression<T, U>> values);
+    B in(@NotNull List<? extends Expression<T, U>> values);
 
     @SuppressWarnings({"unchecked"})
     B notIn(U... values);
 
-    B notIn(@NotNull List<? extends TypedExpression<T, U>> values);
+    B notIn(@NotNull List<? extends Expression<T, U>> values);
 
     B isNull();
 
@@ -36,10 +35,43 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
     B isNotNull();
 
+    interface Root<T> extends PathOps<T, T, Predicate<T>> {
 
-    interface RootPath<T> extends PathOps<T, T, PredicateOps<T>> {
+        @Override
+        <U> PathExpr<T, U> get(Path<T, U> path);
+
+        @Override
+        StringExpr<T> get(StringPath<T> path);
+
+        @Override
+        <U extends Number & Comparable<U>> NumberExpr<T, U> get(NumberPath<T, U> path);
+
+        @Override
+        <U extends Comparable<U>> ComparableExpr<T, U> get(ComparablePath<T, U> path);
+
+        @Override
+        Predicate<T> get(BooleanPath<T> path);
 
     }
+
+    interface ComparableExpr<T, U extends Comparable<U>> extends ComparableOps<T, U, Predicate<T>> {
+    }
+
+    interface NumberExpr<T, U extends Number & Comparable<U>> extends NumberOps<T, U, Predicate<T>> {
+    }
+
+    interface PathExpr<T, U> extends PathOps<T, U, Predicate<T>> {
+        @Override
+        <V> PathExpr<T, V> get(Path<U, V> path);
+    }
+
+    interface Predicate<T> extends BooleanOps<T, Predicate<T>>, OpsAnd<T>, OpsOr<T> {
+        Predicate<T> not();
+    }
+
+    interface StringExpr<T> extends StringOps<T, Predicate<T>> {
+    }
+
 
     interface PathOps<T, U, B> extends ExpressionOps<T, U, B> {
 
@@ -113,15 +145,15 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         NumberOps<T, U, B> mod(U value);
 
-        NumberOps<T, U, B> add(TypedExpression<T, U> value);
+        NumberOps<T, U, B> add(Expression<T, U> value);
 
-        NumberOps<T, U, B> subtract(TypedExpression<T, U> value);
+        NumberOps<T, U, B> subtract(Expression<T, U> value);
 
-        NumberOps<T, U, B> multiply(TypedExpression<T, U> value);
+        NumberOps<T, U, B> multiply(Expression<T, U> value);
 
-        NumberOps<T, U, B> divide(TypedExpression<T, U> value);
+        NumberOps<T, U, B> divide(Expression<T, U> value);
 
-        NumberOps<T, U, B> mod(TypedExpression<T, U> value);
+        NumberOps<T, U, B> mod(Expression<T, U> value);
 
         <V extends Number & Comparable<V>> NumberOps<T, V, B> sum();
 
@@ -147,25 +179,25 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         B notBetween(U l, U r);
 
-        B ge(TypedExpression<T, U> value);
+        B ge(Expression<T, U> value);
 
-        B gt(TypedExpression<T, U> value);
+        B gt(Expression<T, U> value);
 
-        B le(TypedExpression<T, U> value);
+        B le(Expression<T, U> value);
 
-        B lt(TypedExpression<T, U> value);
+        B lt(Expression<T, U> value);
 
-        B between(TypedExpression<T, U> l, TypedExpression<T, U> r);
+        B between(Expression<T, U> l, Expression<T, U> r);
 
-        B between(TypedExpression<T, U> l, U r);
+        B between(Expression<T, U> l, U r);
 
-        B between(U l, TypedExpression<T, U> r);
+        B between(U l, Expression<T, U> r);
 
-        B notBetween(TypedExpression<T, U> l, TypedExpression<T, U> r);
+        B notBetween(Expression<T, U> l, Expression<T, U> r);
 
-        B notBetween(TypedExpression<T, U> l, U r);
+        B notBetween(Expression<T, U> l, U r);
 
-        B notBetween(U l, TypedExpression<T, U> r);
+        B notBetween(U l, Expression<T, U> r);
 
         Ordering<T> asc();
 
@@ -188,6 +220,10 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
 
         StringOps<T, OrConnector<T>> or(StringPath<T> path);
 
+        OrConnector<T> or(Expression<T, Boolean> value);
+
+        OrConnector<T> or(List<Expression<T, Boolean>> values);
+
     }
 
     interface OpsAnd<T> {
@@ -204,25 +240,15 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
         StringOps<T, AndConnector<T>> and(StringPath<T> path);
 
         AndConnector<T> and(BooleanPath<T> path);
+
+        AndConnector<T> and(Expression<T, Boolean> value);
+
+        AndConnector<T> and(List<Expression<T, Boolean>> values);
     }
 
-    interface PredicateOps<T> extends BooleanOps<T, PredicateOps<T>>, OpsAnd<T>, OpsOr<T> {
+    interface BooleanOps<T, B> extends ComparableOps<T, Boolean, B> {
 
-        PredicateOps<T> not();
-
-    }
-
-    interface BooleanOps<T, B> extends Predicate<T>, ComparableOps<T, Boolean, B> {
-
-        B and(TypedExpression<T, Boolean> value);
-
-        B or(TypedExpression<T, Boolean> value);
-
-        B and(List<TypedExpression<T, Boolean>> values);
-
-        B or(List<TypedExpression<T, Boolean>> values);
-
-        PredicateOps<T> then();
+        Predicate<T> then();
 
     }
 
@@ -234,5 +260,6 @@ public interface ExpressionOps<T, U, B> extends TypedExpression<T, U> {
     interface AndConnector<T> extends BooleanOps<T, AndConnector<T>>, OpsAnd<T> {
 
     }
+
 
 }

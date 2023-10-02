@@ -58,7 +58,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
 
 
     @Override
-    public B eq(TypedExpression<T, U> value) {
+    public B eq(Expression<T, U> value) {
         return build(operateRight(Operator.EQ, value));
     }
 
@@ -68,7 +68,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
     }
 
     @Override
-    public B ne(TypedExpression<T, U> value) {
+    public B ne(Expression<T, U> value) {
         return build(operateRight(Operator.NE, value));
     }
 
@@ -79,7 +79,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
     }
 
     @Override
-    public B in(@NotNull List<? extends TypedExpression<T, U>> values) {
+    public B in(@NotNull List<? extends Expression<T, U>> values) {
         return build(operateRight(Operator.IN, values));
     }
 
@@ -91,7 +91,7 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
     }
 
     @Override
-    public B notIn(@NotNull List<? extends TypedExpression<T, U>> values) {
+    public B notIn(@NotNull List<? extends Expression<T, U>> values) {
         return build(operateRight(Operator.IN, values).not());
     }
 
@@ -205,31 +205,31 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))));
         }
 
-        public B ge(TypedExpression<T, U> value) {
+        public B ge(Expression<T, U> value) {
             return build(operateRight(Operator.GE, value));
         }
 
-        public B gt(TypedExpression<T, U> value) {
+        public B gt(Expression<T, U> value) {
             return build(operateRight(Operator.GT, value));
         }
 
-        public B le(TypedExpression<T, U> value) {
+        public B le(Expression<T, U> value) {
             return build(operateRight(Operator.LE, value));
         }
 
-        public B lt(TypedExpression<T, U> value) {
+        public B lt(Expression<T, U> value) {
             return build(operateRight(Operator.LT, value));
         }
 
-        public B between(TypedExpression<T, U> l, TypedExpression<T, U> r) {
+        public B between(Expression<T, U> l, Expression<T, U> r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))));
         }
 
-        public B between(TypedExpression<T, U> l, U r) {
+        public B between(Expression<T, U> l, U r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))));
         }
 
-        public B between(U l, TypedExpression<T, U> r) {
+        public B between(U l, Expression<T, U> r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))));
         }
 
@@ -240,17 +240,17 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         }
 
         @Override
-        public B notBetween(TypedExpression<T, U> l, TypedExpression<T, U> r) {
+        public B notBetween(Expression<T, U> l, Expression<T, U> r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))).not());
         }
 
         @Override
-        public B notBetween(TypedExpression<T, U> l, U r) {
+        public B notBetween(Expression<T, U> l, U r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))).not());
         }
 
         @Override
-        public B notBetween(U l, TypedExpression<T, U> r) {
+        public B notBetween(U l, Expression<T, U> r) {
             return build(operateRight(Operator.BETWEEN, List.of(Metas.of(l), Metas.of(r))).not());
         }
     }
@@ -327,27 +327,27 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         }
 
         @Override
-        public NumberOps<T, U, B> add(TypedExpression<T, U> value) {
+        public NumberOps<T, U, B> add(Expression<T, U> value) {
             return new NumberOpsImpl<>(operateRight(Operator.ADD, value));
         }
 
         @Override
-        public NumberOps<T, U, B> subtract(TypedExpression<T, U> value) {
+        public NumberOps<T, U, B> subtract(Expression<T, U> value) {
             return new NumberOpsImpl<>(operateRight(Operator.SUBTRACT, value));
         }
 
         @Override
-        public NumberOps<T, U, B> multiply(TypedExpression<T, U> value) {
+        public NumberOps<T, U, B> multiply(Expression<T, U> value) {
             return new NumberOpsImpl<>(operateRight(Operator.MULTIPLY, value));
         }
 
         @Override
-        public NumberOps<T, U, B> divide(TypedExpression<T, U> value) {
+        public NumberOps<T, U, B> divide(Expression<T, U> value) {
             return new NumberOpsImpl<>(operateRight(Operator.DIVIDE, value));
         }
 
         @Override
-        public NumberOps<T, U, B> mod(TypedExpression<T, U> value) {
+        public NumberOps<T, U, B> mod(Expression<T, U> value) {
             return new NumberOpsImpl<>(operateRight(Operator.MOD, value));
         }
 
@@ -377,32 +377,32 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
             super(metadata);
         }
 
-        public B and(TypedExpression<T, Boolean> value) {
+        public AndConnector<T> and(Expression<T, Boolean> value) {
             Meta mt = meta();
             Meta meta = Metas.operate(mt, Operator.AND, value.meta());
-            return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
+            return new AndConnectorImpl<>(new Metadata<>(List.of(), TRUE, meta, AndConnectorImpl::new));
         }
 
-        public B or(TypedExpression<T, Boolean> value) {
+        public OrConnector<T> or(Expression<T, Boolean> value) {
             Meta mt = meta();
             Meta meta = Metas.operate(mt, Operator.OR, value.meta());
-            return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
+            return new OrConnectorImpl<>(new Metadata<>(List.of(), TRUE, meta, OrConnectorImpl::new));
         }
 
-        public B and(List<TypedExpression<T, Boolean>> values) {
+        public AndConnector<T> and(List<Expression<T, Boolean>> values) {
             Meta mt = meta();
             Meta meta = Metas.operate(mt, Operator.AND, values.stream().map(Expression::meta).toList());
-            return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
+            return new AndConnectorImpl<>(new Metadata<>(List.of(), TRUE, meta, AndConnectorImpl::new));
         }
 
-        public B or(List<TypedExpression<T, Boolean>> values) {
+        public OrConnector<T> or(List<Expression<T, Boolean>> values) {
             Meta mt = meta();
             Meta meta = Metas.operate(mt, Operator.OR, values.stream().map(Expression::meta).toList());
-            return build(new Metadata<>(List.of(), TRUE, meta, metadata.getBuilder()));
+            return new OrConnectorImpl<>(new Metadata<>(List.of(), TRUE, meta, OrConnectorImpl::new));
         }
 
         @Override
-        public PredicateOps<T> then() {
+        public Root.Predicate<T> then() {
             return new PredicateOpsImpl<>(
                     new Metadata<>(List.of(), TRUE, merge(), PredicateOpsImpl::new));
         }
@@ -482,13 +482,13 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         }
     }
 
-    static class PredicateOpsImpl<T> extends BooleanOpsImpl<T, PredicateOps<T>> implements PredicateOps<T> {
-        public PredicateOpsImpl(Metadata<PredicateOps<T>> metadata) {
+    static class PredicateOpsImpl<T> extends BooleanOpsImpl<T, Root.Predicate<T>> implements Root.Predicate<T> {
+        public PredicateOpsImpl(Metadata<Root.Predicate<T>> metadata) {
             super(metadata);
         }
 
         @Override
-        public PredicateOps<T> not() {
+        public Root.Predicate<T> not() {
             Meta meta = meta();
             Meta m = Metas.operate(meta, Operator.NOT);
             return new PredicateOpsImpl<>(new Metadata<>(List.of(), TRUE, m, PredicateOpsImpl::new));
@@ -497,19 +497,30 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
 
     }
 
-    static class RootImpl<T> extends ExpressionBuilder<T, T, PredicateOps<T>> implements RootPath<T> {
+    static class RootImpl<T> extends ExpressionBuilder<T, T, Root.Predicate<T>> implements Root<T> {
         public RootImpl() {
             super(new Metadata<>(List.of(), TRUE, EMPTY_PATH, PredicateOpsImpl::new));
         }
 
-    }
-
-    record PathExpressionImpl<T, U>(Paths meta) implements PathExpression<T, U> {
-        public <V> PathExpression<T, V> get(Path<U, V> path) {
-            return new PathExpressionImpl<>(Metas.fromPaths(
-                    Util.concat(meta().paths(), Metas.asString(path))
-            ));
+        public <U> PathExpr<T, U> get(Path<T, U> path) {
+            return new PathExpressionImpl<>(toPaths(path));
         }
+
+        @Override
+        public StringExpr<T> get(StringPath<T> path) {
+            return new StringExpressionImpl<>(toPaths(path));
+        }
+
+        @Override
+        public <V extends Number & Comparable<V>> NumberExpr<T, V> get(NumberPath<T, V> path) {
+            return new NumberExpressionImpl<T, V>(toPaths(path));
+        }
+
+        @Override
+        public <V extends Comparable<V>> ComparableExpr<T, V> get(ComparablePath<T, V> path) {
+            return new ComparableExpressionImpl<>(toPaths(path));
+        }
+
     }
 
     @NotNull
@@ -546,5 +557,42 @@ class ExpressionBuilder<T, U, B> implements PathOps<T, U, B> {
         ));
     }
 
+    static class PathExpressionImpl<T, U>
+            extends ExpressionBuilder<T, U, Root.Predicate<T>>
+            implements PathExpr<T, U> {
+        public PathExpressionImpl(Metadata<? extends Root.Predicate<T>> metadata) {
+            super(metadata);
+        }
+
+        public @Override <V> PathExpr<T, V> get(Path<U, V> path) {
+            return new PathExpressionImpl<>(toPaths(path));
+        }
+
+    }
+
+    static class StringExpressionImpl<T>
+            extends StringOpsImpl<T, Root.Predicate<T>>
+            implements StringExpr<T> {
+        public StringExpressionImpl(Metadata<Root.Predicate<T>> metadata) {
+            super(metadata);
+        }
+    }
+
+    static class NumberExpressionImpl<T, U extends Number & Comparable<U>>
+            extends NumberOpsImpl<T, U, Root.Predicate<T>>
+            implements NumberExpr<T, U> {
+
+        public NumberExpressionImpl(Metadata<Root.Predicate<T>> metadata) {
+            super(metadata);
+        }
+    }
+
+    static class ComparableExpressionImpl<T, U extends Comparable<U>>
+            extends ComparableOpsImpl<T, U, Root.Predicate<T>>
+            implements ComparableExpr<T, U> {
+        public ComparableExpressionImpl(Metadata<Root.Predicate<T>> metadata) {
+            super(metadata);
+        }
+    }
 
 }

@@ -2,13 +2,10 @@ package io.github.genie.sql.core;
 
 import java.util.List;
 
-public interface Expression {
+@SuppressWarnings("unused")
+public interface Expression<T, U> {
 
     Meta meta();
-
-    @SuppressWarnings("unused")
-    interface TypedExpression<T, U> extends Expression {
-    }
 
     sealed interface Meta permits Constant, Paths, Operation {
     }

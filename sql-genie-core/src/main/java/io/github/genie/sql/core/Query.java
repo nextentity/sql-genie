@@ -1,6 +1,6 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.TypedExpression;
+import io.github.genie.sql.core.ExpressionOps.PathExpr;
 import io.github.genie.sql.core.Models.SliceImpl;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +48,7 @@ public interface Query {
 
     interface Fetch<T> {
 
-        GroupBy0<T, T> fetch(List<PathExpression<T, ?>> expressions);
+        GroupBy0<T, T> fetch(List<PathExpr<T, ?>> expressions);
 
         default GroupBy0<T, T> fetch(Path<T, ?> path) {
             return fetch(Metas.toExpressionList(path));
@@ -69,7 +69,7 @@ public interface Query {
 
         <R> Where0<T, R> select(Class<R> projectionType);
 
-        AggWhere0<T, Object[]> select(List<? extends TypedExpression<T, ?>> paths);
+        AggWhere0<T, Object[]> select(List<? extends Expression<T, ?>> paths);
 
         <R> AggWhere0<T, R> select(Path<T, ? extends R> expression);
 
@@ -120,18 +120,18 @@ public interface Query {
 
     interface AggWhere<T, U> extends Where<T, U> {
 
-        AggGroupBy0<T, U> where(TypedExpression<T, Boolean> predicate);
+        AggGroupBy0<T, U> where(Expression<T, Boolean> predicate);
 
     }
 
     interface Where<T, U> {
 
-        OrderBy0<T, U> where(TypedExpression<T, Boolean> predicate);
+        OrderBy0<T, U> where(Expression<T, Boolean> predicate);
 
     }
 
     interface GroupBy<T, U> {
-        OrderBy0<T, U> groupBy(List<? extends TypedExpression<T, ?>> expressions);
+        OrderBy0<T, U> groupBy(List<? extends Expression<T, ?>> expressions);
 
         Having0<T, U> groupBy(Path<T, ?> path);
 
@@ -159,7 +159,7 @@ public interface Query {
 
     interface Having<T, U> {
 
-        OrderBy0<T, U> having(TypedExpression<T, Boolean> predicate);
+        OrderBy0<T, U> having(Expression<T, Boolean> predicate);
 
     }
 

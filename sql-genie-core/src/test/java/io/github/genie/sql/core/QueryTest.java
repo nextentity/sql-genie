@@ -36,15 +36,14 @@ public class QueryTest {
         Select0<User, User> root = fromBuilder.from(User.class);
         SliceMeta metadata = root
                 // .select(User::getId)
-                .where(get(User::getId).add(2)
-                        .eq(10)
-                        .and(User::getId).in(1, 2, 3)
-                        .or(
-                                get(User::getCompany).get(Company::getName).eq("cpn")
-                                        .and(User::getId).eq(111)
-                                        .and(User::getId).eq(100)
-                        )
-                )
+                .where(or(
+                        get(User::getId).add(2)
+                                .eq(10)
+                                .and(User::getId).in(1, 2, 3),
+                        get(User::getCompany).get(Company::getName).eq("cpn")
+                                .and(User::getId).eq(111)
+                                .and(User::getId).eq(100)
+                ))
                 .orderBy(get(User::getUsername).asc(), get(User::getId).asc())
                 .buildMetadata()
                 .slice(9, 10);
@@ -68,8 +67,6 @@ public class QueryTest {
         System.out.println(sql.sql());
         System.out.println(sql.projectionPaths());
         assertEquals(sql0, sql.sql());
-
-
 
 
         MetadataBuilder metadataBuilder = root
@@ -111,7 +108,7 @@ public class QueryTest {
 
     @Test
     void testAndOr() {
-        Predicate<User> predicate = Q.and(
+        ExpressionOps.Root.Predicate<User> predicate = Q.and(
                 get(User::getRandomNumber).ne(1),
                 get(User::getRandomNumber).gt(100),
                 get(User::getRandomNumber).ne(125),
