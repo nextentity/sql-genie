@@ -11,25 +11,25 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-final class Util {
+public final class Util {
 
     private static final Map<Object, String> PROPERTY_NAME_CACHE = new ConcurrentHashMap<>();
 
     public static String getPropertyName(Serializable getterReference) {
         return PROPERTY_NAME_CACHE.computeIfAbsent(getterReference,
-                k -> getterNameToPropertyName(getMethodReferenceName(getterReference)));
+                k -> getPropertyName(getReferenceMethodName(getterReference)));
     }
 
-    public static String getterNameToPropertyName(String getterName) {
-        StringBuilder builder = null;
-        if (getterName != null) {
-            if (getterName.length() > 3 && getterName.startsWith("get")) {
-                builder = new StringBuilder(getterName.substring(3));
-            } else if (getterName.length() > 2 && getterName.startsWith("is")) {
-                builder = new StringBuilder(getterName.substring(2));
-            }
+    public static String getPropertyName(String methodName) {
+        StringBuilder builder;
+        Objects.requireNonNull(methodName, "methodName");
+        if (methodName.length() > 3 && methodName.startsWith("get")) {
+            builder = new StringBuilder(methodName.substring(3));
+        } else if (methodName.length() > 2 && methodName.startsWith("is")) {
+            builder = new StringBuilder(methodName.substring(2));
+        } else {
+            return methodName;
         }
-        Objects.requireNonNull(builder, "the function is not getters");
         if (builder.length() == 1) {
             return builder.toString().toLowerCase();
         }
@@ -40,7 +40,7 @@ final class Util {
         return builder.toString();
     }
 
-    public static String getMethodReferenceName(Serializable getterReference) {
+    public static String getReferenceMethodName(Serializable getterReference) {
         try {
             Class<? extends Serializable> clazz = getterReference.getClass();
             Method method = clazz.getDeclaredMethod("writeReplace");

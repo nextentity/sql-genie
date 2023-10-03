@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class Mappings {
@@ -102,7 +103,7 @@ public class Mappings {
     @Data
     @EqualsAndHashCode(callSuper = true)
     public static class ColumnMappingImpl extends FieldMappingImpl implements ColumnMapping {
-        String columnName;
+        private final String columnName;
 
         @Override
         public String columnName() {
@@ -136,4 +137,11 @@ public class Mappings {
 
     }
 
+    record ProjectionFieldImpl(FieldMapping baseField, FieldMapping field) implements ProjectionField {
+
+    }
+
+    record ProjectionImpl(List<ProjectionField> fields) implements Projection {
+
+    }
 }

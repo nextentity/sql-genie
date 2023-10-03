@@ -65,7 +65,7 @@ public class QueryTest {
         String sql0 = "select count(1) from `user` u left join `company` c0 on u.company_id=c0.id where u.id+2=10 " +
                       "and u.id in(1,2,3) or c0.name=? and u.id=111 and u.id=100 order by u.username asc,u.id asc";
         System.out.println(sql.sql());
-        System.out.println(sql.projectionPaths());
+        System.out.println(sql.selectedFields());
         assertEquals(sql0, sql.sql());
 
 
@@ -77,7 +77,7 @@ public class QueryTest {
                 .getList(-1, -1, LockModeType.NONE);
         JdbcQueryExecutor.PreparedSql preparedSql = builder.build(qm, mappings);
         System.out.println(preparedSql.sql());
-        System.out.println(preparedSql.projectionPaths());
+        System.out.println(preparedSql.selectedFields());
 
         QueryMetadata count = metadataBuilder.exist(-1);
         System.out.println(count);

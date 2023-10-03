@@ -69,7 +69,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     private Class<?> getType(Path<?, ?> path) {
         Class<?> fromClause = queryMetadata.from;
-        String name = Util.getMethodReferenceName(path);
+        String name = Util.getReferenceMethodName(path);
         Method method;
         try {
             method = fromClause.getDeclaredMethod(name);
@@ -176,7 +176,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public GroupBy0<T, T> fetch(List<PathExpr<T, ?>> expressions) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        List<Paths> list = new ArrayList<>();
+        List<Paths> list = new ArrayList<>(expressions.size());
         for (PathExpr<T, ?> expression : expressions) {
             Meta meta = expression.meta();
             if (meta instanceof Paths paths) {

@@ -1,10 +1,8 @@
 package io.github.genie.sql.core.mapping;
 
 
-import io.github.genie.sql.core.mapping.Mappings.AssociationMappingImpl;
-import io.github.genie.sql.core.mapping.Mappings.ColumnMappingImpl;
-import io.github.genie.sql.core.mapping.Mappings.FieldMappingImpl;
-import io.github.genie.sql.core.mapping.Mappings.TableMappingImpl;
+import io.github.genie.sql.core.Util;
+import io.github.genie.sql.core.mapping.Mappings.*;
 import jakarta.persistence.*;
 import lombok.experimental.Delegate;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +14,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,46 @@ public class JpaTableMappingFactory implements MappingFactory {
 
     @Override
     public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
-        return null;
+        TableMapping mapping = getMapping(baseType);
+        ArrayList<ProjectionField> list = new ArrayList<>();
+        if (projectionType.isInterface()) {
+            Method[] methods = projectionType.getMethods();
+            for (Method method : methods) {
+                if (method.getParameterCount() == 0) {
+                    String name = Util.getPropertyName(method.getName());
+                    FieldMapping baseField = mapping.getFieldMapping(name);
+                    if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
+                        FieldMappingImpl fieldMapping = new FieldMappingImpl();
+                        fieldMapping.setGetter(method);
+                        fieldMapping.setFieldName(name);
+                        fieldMapping.setJavaType(method.getReturnType());
+                        list.add(new ProjectionFieldImpl(baseField, fieldMapping));
+                    }
+                }
+            }
+        } else if (projectionType.isRecord()) {
+            RecordComponent[] components = projectionType.getRecordComponents();
+            for (RecordComponent method : components) {
+                String name = method.getName();
+                FieldMapping baseField = mapping.getFieldMapping(name);
+                if (baseField != null && baseField.getter().getReturnType() == method.getType()) {
+                    FieldMappingImpl fieldMapping = new FieldMappingImpl();
+                    fieldMapping.setFieldName(name);
+                    fieldMapping.setJavaType(method.getType());
+                    list.add(new ProjectionFieldImpl(baseField, fieldMapping));
+                }
+            }
+        } else {
+            List<FieldMappingImpl> fields = getColumnMappings(projectionType);
+            for (FieldMappingImpl field : fields) {
+                FieldMapping baseField = mapping.getFieldMapping(field.getFieldName());
+                if (field.javaType() == baseField.javaType()) {
+                    list.add(new ProjectionFieldImpl(baseField, field));
+                }
+            }
+        }
+        list.trimToSize();
+        return new ProjectionImpl(list);
     }
 
 
@@ -93,7 +131,7 @@ public class JpaTableMappingFactory implements MappingFactory {
     }
 
     private List<FieldMappingImpl> getColumnMappings(Class<?> javaType) {
-        List<FieldMappingImpl> ColumnMappings = new ArrayList<>();
+        List<FieldMappingImpl> mappings = new ArrayList<>();
         Field[] fields = javaType.getDeclaredFields();
         Map<Field, Method> readerMap = new HashMap<>();
         Map<Field, Method> writeMap = new HashMap<>();
@@ -144,10 +182,8 @@ public class JpaTableMappingFactory implements MappingFactory {
             FieldMappingImpl fieldMapping;
 
             if (isBasicField(field, getter)) {
-                ColumnMappingImpl m = new ColumnMappingImpl();
                 Column column = getAnnotation(field, getter, Column.class);
-                m.setColumnName(getColumnName(field, column));
-                fieldMapping = m;
+                fieldMapping = new ColumnMappingImpl(getColumnName(field, column));
             } else {
                 AssociationMappingImpl m = new AssociationMappingImpl();
                 JoinColumn joinColumn = getAnnotation(field, getter, JoinColumn.class);
@@ -170,14 +206,15 @@ public class JpaTableMappingFactory implements MappingFactory {
             fieldMapping.setSetter(writeMap.get(field));
             fieldMapping.setJavaType(field.getType());
             fieldMapping.setField(field);
-            ColumnMappings.add(fieldMapping);
+            mappings.add(fieldMapping);
         }
-        return ColumnMappings;
+        return mappings;
     }
 
-    private static final List<Class<? extends Annotation>> JOIN_ANNOTATIONS = List.of(ManyToOne.class, OneToMany.class, ManyToMany.class, OneToOne.class);
+    private static final List<Class<? extends Annotation>> JOIN_ANNOTATIONS =
+            List.of(ManyToOne.class, OneToMany.class, ManyToMany.class, OneToOne.class);
 
-    static class LazyTableMapping implements TableMapping {
+    private static class LazyTableMapping implements TableMapping {
 
         volatile Object data;
 

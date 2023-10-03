@@ -80,19 +80,28 @@ public class MySqlSqlBuilder implements SqlBuilder {
                 selectMetas.add(singleColumn.column());
             } else if (selected instanceof MultiColumn multiColumn) {
                 selectMetas.addAll(multiColumn.columns());
-            } else {
+            } else if (queryMetadata.select().resultType() == queryMetadata.from()) {
                 TableMapping projectionMapping = mappers
                         .getMapping(queryMetadata.select().resultType());
                 for (FieldMapping mapping : projectionMapping.fields()) {
                     if (!(mapping instanceof ColumnMapping column)) {
                         continue;
                     }
-                    if (tableMapping.getFieldMapping(column.fieldName()) == null) {
-                        continue;
-                    }
                     Paths paths = Expressions.ofPath(column.fieldName());
                     selectMetas.add(paths);
                     selectFields.add(mapping);
+                }
+            } else {
+                Projection projectionMapping = mappers
+                        .getProjection(queryMetadata.from(), queryMetadata.select().resultType());
+                for (ProjectionField mapping : projectionMapping.fields()) {
+                    if (!(mapping.baseField() instanceof ColumnMapping column)) {
+                        continue;
+                    }
+
+                    Paths paths = Expressions.ofPath(column.fieldName());
+                    selectMetas.add(paths);
+                    selectFields.add(mapping.field());
                 }
             }
         }

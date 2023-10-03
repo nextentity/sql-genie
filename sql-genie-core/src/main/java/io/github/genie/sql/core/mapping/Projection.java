@@ -1,12 +1,9 @@
 package io.github.genie.sql.core.mapping;
 
-import lombok.Data;
-
 import java.util.List;
 
-@Data
-public class Projection {
+public interface Projection {
 
-    private List<ProjectionAttribute> attributes;
+    List<ProjectionField> fields();
 
 }

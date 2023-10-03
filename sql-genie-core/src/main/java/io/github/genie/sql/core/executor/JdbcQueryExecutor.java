@@ -33,12 +33,21 @@ public class JdbcQueryExecutor implements QueryExecutor {
             PreparedSql sql = sqlBuilder.build(queryMetadata, mappings);
             ResultSet resultSet = sqlExecutor.execute(sql.sql(), sql.args());
             try (resultSet) {
-                List<R> result = new ArrayList<>();
+                int type = resultSet.getType();
+                List<R> result;
+                if (type != ResultSet.TYPE_FORWARD_ONLY) {
+                    resultSet.last();
+                    int size = resultSet.getRow();
+                    result = new ArrayList<>(size);
+                    resultSet.beforeFirst();
+                } else {
+                    result = new ArrayList<>();
+                }
                 while (resultSet.next()) {
                     R row = collector.collect(resultSet,
                             queryMetadata.select(),
                             queryMetadata.from(),
-                            sql.projectionPaths());
+                            sql.selectedFields());
                     result.add(row);
                 }
                 return result;
@@ -61,7 +70,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
 
         List<?> args();
 
-        List<FieldMapping> projectionPaths();
+        List<FieldMapping> selectedFields();
 
     }
 
