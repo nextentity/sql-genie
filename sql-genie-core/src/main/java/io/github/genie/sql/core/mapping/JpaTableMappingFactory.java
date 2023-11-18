@@ -35,46 +35,66 @@ public class JpaTableMappingFactory implements MappingFactory {
 
     @Override
     public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
-        TableMapping mapping = getMapping(baseType);
-        ArrayList<ProjectionField> list = new ArrayList<>();
+        ArrayList<ProjectionField> list;
         if (projectionType.isInterface()) {
-            Method[] methods = projectionType.getMethods();
-            for (Method method : methods) {
-                if (method.getParameterCount() == 0) {
-                    String name = Util.getPropertyName(method.getName());
-                    FieldMapping baseField = mapping.getFieldMapping(name);
-                    if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
-                        FieldMappingImpl fieldMapping = new FieldMappingImpl();
-                        fieldMapping.setGetter(method);
-                        fieldMapping.setFieldName(name);
-                        fieldMapping.setJavaType(method.getReturnType());
-                        list.add(new ProjectionFieldImpl(baseField, fieldMapping));
-                    }
-                }
-            }
+            list = getInterfaceProjectionFields(baseType, projectionType);
         } else if (projectionType.isRecord()) {
-            RecordComponent[] components = projectionType.getRecordComponents();
-            for (RecordComponent method : components) {
-                String name = method.getName();
-                FieldMapping baseField = mapping.getFieldMapping(name);
-                if (baseField != null && baseField.getter().getReturnType() == method.getType()) {
-                    FieldMappingImpl fieldMapping = new FieldMappingImpl();
-                    fieldMapping.setFieldName(name);
-                    fieldMapping.setJavaType(method.getType());
-                    list.add(new ProjectionFieldImpl(baseField, fieldMapping));
-                }
-            }
+            list = getRecordProjectionFields(baseType, projectionType);
         } else {
-            List<FieldMappingImpl> fields = getColumnMappings(projectionType);
-            for (FieldMappingImpl field : fields) {
-                FieldMapping baseField = mapping.getFieldMapping(field.getFieldName());
-                if (field.javaType() == baseField.javaType()) {
-                    list.add(new ProjectionFieldImpl(baseField, field));
-                }
-            }
+            list = getBeanProjectionFields(baseType, projectionType);
         }
         list.trimToSize();
         return new ProjectionImpl(list);
+    }
+
+    private ArrayList<ProjectionField> getBeanProjectionFields(Class<?> baseType, Class<?> projectionType) {
+        TableMapping mapping = getMapping(baseType);
+        ArrayList<ProjectionField> list = new ArrayList<>();
+        List<FieldMappingImpl> fields = getColumnMappings(projectionType);
+        for (FieldMappingImpl field : fields) {
+            FieldMapping baseField = mapping.getFieldMapping(field.getFieldName());
+            if (field.javaType() == baseField.javaType()) {
+                list.add(new ProjectionFieldImpl(baseField, field));
+            }
+        }
+        return list;
+    }
+
+    private ArrayList<ProjectionField> getRecordProjectionFields(Class<?> baseType, Class<?> projectionType) {
+        TableMapping mapping = getMapping(baseType);
+        ArrayList<ProjectionField> list = new ArrayList<>();
+        RecordComponent[] components = projectionType.getRecordComponents();
+        for (RecordComponent method : components) {
+            String name = method.getName();
+            FieldMapping baseField = mapping.getFieldMapping(name);
+            if (baseField != null && baseField.getter().getReturnType() == method.getType()) {
+                FieldMappingImpl fieldMapping = new FieldMappingImpl();
+                fieldMapping.setFieldName(name);
+                fieldMapping.setJavaType(method.getType());
+                list.add(new ProjectionFieldImpl(baseField, fieldMapping));
+            }
+        }
+        return list;
+    }
+
+    private ArrayList<ProjectionField> getInterfaceProjectionFields(Class<?> baseType, Class<?> projectionType) {
+        TableMapping mapping = getMapping(baseType);
+        ArrayList<ProjectionField> list = new ArrayList<>();
+        Method[] methods = projectionType.getMethods();
+        for (Method method : methods) {
+            if (method.getParameterCount() == 0) {
+                String name = Util.getPropertyName(method.getName());
+                FieldMapping baseField = mapping.getFieldMapping(name);
+                if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
+                    FieldMappingImpl fieldMapping = new FieldMappingImpl();
+                    fieldMapping.setGetter(method);
+                    fieldMapping.setFieldName(name);
+                    fieldMapping.setJavaType(method.getReturnType());
+                    list.add(new ProjectionFieldImpl(baseField, fieldMapping));
+                }
+            }
+        }
+        return list;
     }
 
 
