@@ -15,6 +15,4 @@ public interface FieldMapping extends Mapping {
 
     Field field();
 
-    Class<?> javaType();
-
 }

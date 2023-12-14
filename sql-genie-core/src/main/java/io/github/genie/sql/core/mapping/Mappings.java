@@ -12,30 +12,24 @@ import java.util.Map;
 public class Mappings {
 
     @Data
-    public static class MappingImpl implements Mapping {
+    public static class FieldMappingImpl implements FieldMapping {
 
-        private Mapping parent;
-        private Class<?> javaType;
-
-        @Override
-        public Class<?> javaType() {
-            return javaType;
-        }
+        protected Class<?> javaType;
+        protected Mapping parent;
+        protected String fieldName;
+        protected Method getter;
+        protected Method setter;
+        protected Field field;
 
         @Override
         public Mapping parent() {
             return parent;
         }
-    }
 
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    public static class FieldMappingImpl extends MappingImpl implements FieldMapping {
-
-        private String fieldName;
-        private Method getter;
-        private Method setter;
-        private Field field;
+        @Override
+        public Class<?> javaType() {
+            return javaType;
+        }
 
         @Override
         public String fieldName() {
@@ -64,9 +58,10 @@ public class Mappings {
     }
 
     @Data
-    @EqualsAndHashCode(callSuper = true)
-    public static class TableMappingImpl extends MappingImpl implements TableMapping {
+    public static class TableMappingImpl implements TableMapping {
 
+        private Class<?> javaType;
+        private Mapping parent;
         private FieldMapping id;
         private String tableName;
         private Map<String, FieldMappingImpl> fields;
@@ -74,6 +69,16 @@ public class Mappings {
         @Override
         public FieldMapping id() {
             return id;
+        }
+
+        @Override
+        public Mapping parent() {
+            return parent;
+        }
+
+        @Override
+        public Class<?> javaType() {
+            return javaType;
         }
 
         @Override

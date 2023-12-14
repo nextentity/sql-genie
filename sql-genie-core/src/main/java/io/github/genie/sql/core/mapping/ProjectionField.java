@@ -1,6 +1,6 @@
 package io.github.genie.sql.core.mapping;
 
-public interface ProjectionField  {
+public interface ProjectionField {
 
     FieldMapping field();
 

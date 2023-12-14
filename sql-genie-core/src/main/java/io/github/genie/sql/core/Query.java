@@ -301,16 +301,16 @@ public interface Query {
         }
 
         default Slice<T> slice(int offset, int limit) {
-            return slice(Slice.sliceable(offset, limit));
+            return slice(Sliceable.of(offset, limit));
         }
 
-        default Slice<T> slice(Slice.Sliceable sliceable) {
+        default Slice<T> slice(Sliceable sliceable) {
             int count = count();
             if (count <= sliceable.offset()) {
-                return new SliceImpl<>(List.of(), count, sliceable);
+                return Slice.of(List.of(), count, sliceable);
             } else {
-                List<T> list = getList(sliceable.offset(), sliceable.size());
-                return new SliceImpl<>(list, count, sliceable);
+                List<T> list = getList(sliceable.offset(), sliceable.limit());
+                return Slice.of(list, count, sliceable);
             }
         }
 
@@ -326,14 +326,14 @@ public interface Query {
 
         QueryMetadata exist(int offset);
 
-        default SliceMeta slice(Slice.Sliceable sliceable) {
+        default SliceMeta slice(Sliceable sliceable) {
             QueryMetadata count = count();
-            QueryMetadata list = getList(sliceable.offset(), sliceable.size(), LockModeType.NONE);
+            QueryMetadata list = getList(sliceable.offset(), sliceable.limit(), LockModeType.NONE);
             return new SliceMeta(count, list);
         }
 
         default SliceMeta slice(int offset, int limit) {
-            return slice(Slice.sliceable(offset, limit));
+            return slice(Sliceable.of(offset, limit));
         }
 
     }

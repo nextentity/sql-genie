@@ -12,4 +12,6 @@ public interface TableMapping extends Mapping {
 
     Class<?> javaType();
 
+    FieldMapping getFieldMapping(String fieldName);
+
 }

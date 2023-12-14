@@ -7,11 +7,11 @@
   <parent>
     <groupId>io.github.genie</groupId>
     <artifactId>sql-genie</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
   </parent>
 
   <artifactId>sql-genie-core</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>

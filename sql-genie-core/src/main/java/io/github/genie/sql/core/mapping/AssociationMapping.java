@@ -8,8 +8,4 @@ public interface AssociationMapping extends FieldMapping {
 
     TableMapping referenced();
 
-    @Override
-    default FieldMapping getFieldMapping(String fieldName) {
-        return referenced().getFieldMapping(fieldName);
-    }
 }

@@ -45,7 +45,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         protected final List<Object> args = new ArrayList<>();
         protected final Map<Paths, Integer> joins = new LinkedHashMap<>();
         protected final QueryMetadata queryMetadata;
-        protected final TableMapping tableMapping;
+        protected final TableMapping tableSchema;
         protected final MappingFactory mappers;
         protected final List<Meta> selectMetas = new ArrayList<>();
         protected final List<FieldMapping> selectFields = new ArrayList<>();
@@ -54,7 +54,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         public Builder(QueryMetadata queryMetadata, Class<?> type, MappingFactory mappers) {
             this.queryMetadata = queryMetadata;
             this.mappers = mappers;
-            this.tableMapping = mappers.getMapping(type);
+            this.tableSchema = mappers.getMapping(type);
         }
 
         protected PreparedSql build() {
@@ -156,7 +156,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         private void appendTableName() {
             appendBlank()
                     .append(FROM + "`")
-                    .append(tableMapping.tableName())
+                    .append(tableSchema.tableName())
                     .append("` ");
             appendRootTableAlias();
         }
@@ -166,7 +166,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         }
 
         protected StringBuilder appendRootTableAlias(StringBuilder sql) {
-            String table = tableMapping.tableName();
+            String table = tableSchema.tableName();
             return sql.append(table, 0, 1);
         }
 
@@ -349,7 +349,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
             if (expression.size() == 1) {
                 appendRootTableAlias().append(".");
             }
-            Class<?> type = tableMapping.javaType();
+            Class<?> type = tableSchema.javaType();
 
             Paths join = Expressions.ofPaths(List.of(expression.get(0)));
 
@@ -431,11 +431,18 @@ public class MySqlSqlBuilder implements SqlBuilder {
         }
 
         protected FieldMapping getAttribute(Paths path) {
-            Mapping mapping = tableMapping;
+            Mapping schema = tableSchema;
             for (String s : path.paths()) {
-                mapping = mapping.getFieldMapping(s);
+                if (schema instanceof AssociationMapping associationProperty) {
+                    schema = associationProperty.referenced();
+                }
+                if (schema instanceof TableMapping ts) {
+                    schema = ts.getFieldMapping(s);
+                } else {
+                    throw new IllegalStateException();
+                }
             }
-            return (FieldMapping) mapping;
+            return (FieldMapping) schema;
         }
 
         protected void appendOffsetAndLimit() {

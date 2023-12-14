@@ -1,26 +1,17 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Models.SliceableImpl;
+import io.github.genie.sql.core.Models.SliceImpl;
 
 import java.util.List;
 
-public interface Slice<T> {
+public interface Slice<T> extends Sliceable {
 
     List<T> data();
 
     long total();
 
-    Sliceable sliceable();
-
-    static Sliceable sliceable(int offset, int limit) {
-        return new SliceableImpl(offset, limit);
+    static <T> Slice<T> of(List<T> data, long total, Sliceable sliceable) {
+        return new SliceImpl<>(data, total, sliceable);
     }
 
-    interface Sliceable {
-
-        int offset();
-
-        int size();
-
-    }
 }

@@ -22,15 +22,15 @@ public abstract class JdbcUtil {
 
     @NotNull
     private static Map<Class<?>, Class<?>> getPrimitiveMap() {
-        HashMap<Class<?>, Class<?>> map = new HashMap<>();
+        Map<Class<?>, Class<?>> map = new HashMap<>();
         Class<?>[]
-                types = {Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE,
+                primitiveTypes = {Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE,
                 Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE},
-                types2 = {Boolean.class, Character.class, Byte.class, Short.class, Integer.class,
+                wrapperTypes = {Boolean.class, Character.class, Byte.class, Short.class, Integer.class,
                         Long.class, Float.class, Double.class, Void.class};
 
-        for (int i = 0; i < types.length; i++) {
-            map.put(types[i], types2[i]);
+        for (int i = 0; i < primitiveTypes.length; i++) {
+            map.put(primitiveTypes[i], wrapperTypes[i]);
         }
         return map;
     }

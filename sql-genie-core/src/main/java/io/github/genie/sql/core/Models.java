@@ -158,9 +158,18 @@ final class Models {
     }
 
     record SliceImpl<T>(List<T> data, long total, Sliceable sliceable) implements Slice<T> {
+        @Override
+        public int offset() {
+            return sliceable.offset();
+        }
+
+        @Override
+        public int limit() {
+            return sliceable.limit();
+        }
     }
 
-    record SliceableImpl(int offset, int size) implements Slice.Sliceable {
+    record SliceableImpl(int offset, int limit) implements Sliceable {
     }
 
     record ConstantMeta(Object value) implements Constant {
