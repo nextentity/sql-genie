@@ -2,11 +2,20 @@ package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Paths;
+import io.github.genie.sql.core.ExpressionBuilder.Metadata;
+import io.github.genie.sql.core.ExpressionBuilder.NumberOpsImpl;
+import io.github.genie.sql.core.ExpressionOps.ComparableOps;
+import io.github.genie.sql.core.ExpressionOps.NumberOps;
 import io.github.genie.sql.core.ExpressionOps.PathExpr;
+import io.github.genie.sql.core.ExpressionOps.StringOps;
 import io.github.genie.sql.core.Models.MultiColumnSelect;
 import io.github.genie.sql.core.Models.QueryMetadataImpl;
 import io.github.genie.sql.core.Models.SelectClauseImpl;
 import io.github.genie.sql.core.Models.SingleColumnSelect;
+import io.github.genie.sql.core.Path.BooleanPath;
+import io.github.genie.sql.core.Path.ComparablePath;
+import io.github.genie.sql.core.Path.NumberPath;
+import io.github.genie.sql.core.Path.StringPath;
 import io.github.genie.sql.core.Query.*;
 import io.github.genie.sql.core.exception.BeanReflectiveException;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +24,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U> {
+public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U>, OrderBy1<T, U> {
 
     public static final Meta CONSTANT_1 = Metas.of(1);
 
@@ -84,6 +93,26 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         QueryMetadataImpl metadata = queryMetadata.copy();
         metadata.where = predicate.meta();
         return update(metadata);
+    }
+
+    @Override
+    public <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> where(NumberPath<T, N> path) {
+        return null;
+    }
+
+    @Override
+    public <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> where(ComparablePath<T, N> path) {
+        return null;
+    }
+
+    @Override
+    public StringOps<T, OrderBy1<T, U>> where(StringPath<T> path) {
+        return null;
+    }
+
+    @Override
+    public OrderBy1<T, U> where(BooleanPath<T> path) {
+        return null;
     }
 
     @Override
@@ -195,4 +224,23 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
 
+    @Override
+    public <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy0<T, U>> and(NumberPath<T, N> path) {
+        return null;
+    }
+
+    @Override
+    public <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> and(ComparablePath<T, N> path) {
+        return null;
+    }
+
+    @Override
+    public StringOps<T, OrderBy1<T, U>> and(StringPath<T> path) {
+        return null;
+    }
+
+    @Override
+    public OrderBy1<T, U> and(BooleanPath<T> path) {
+        return null;
+    }
 }

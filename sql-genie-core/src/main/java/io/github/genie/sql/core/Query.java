@@ -1,7 +1,13 @@
 package io.github.genie.sql.core;
 
+import io.github.genie.sql.core.ExpressionOps.ComparableOps;
+import io.github.genie.sql.core.ExpressionOps.NumberOps;
 import io.github.genie.sql.core.ExpressionOps.PathExpr;
-import io.github.genie.sql.core.Models.SliceImpl;
+import io.github.genie.sql.core.ExpressionOps.StringOps;
+import io.github.genie.sql.core.Path.BooleanPath;
+import io.github.genie.sql.core.Path.ComparablePath;
+import io.github.genie.sql.core.Path.NumberPath;
+import io.github.genie.sql.core.Path.StringPath;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -127,6 +133,27 @@ public interface Query {
     interface Where<T, U> {
 
         OrderBy0<T, U> where(Expression<T, Boolean> predicate);
+
+        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> where(NumberPath<T, N> path);
+
+        <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> where(ComparablePath<T, N> path);
+
+        StringOps<T, OrderBy1<T, U>> where(StringPath<T> path);
+
+        OrderBy1<T, U> where(BooleanPath<T> path);
+
+    }
+
+    interface OrderBy1<T, U> extends OrderBy0<T, U> {
+
+        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy0<T, U>> and(NumberPath<T, N> path);
+
+        <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> and(ComparablePath<T, N> path);
+
+        StringOps<T, OrderBy1<T, U>> and(StringPath<T> path);
+
+        OrderBy1<T, U> and(BooleanPath<T> path);
+
 
     }
 
