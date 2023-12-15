@@ -207,28 +207,34 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     @Override
-    public <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> where(NumberPath<T, N> path) {
+    public <N extends Number & Comparable<N>> NumberOps<T, N, AggAndBuilder<T, U>> where(NumberPath<T, N> path) {
         return new NumberOpsImpl<>(new Metadata<>(List.of(), Metas.TRUE, Metas.of(path), this::newChanAndBuilder));
     }
 
     @NotNull
-    private AndBuilderImpl<T, U> newChanAndBuilder(Metadata<OrderBy1<T, U>> metadata) {
+    private Query.AggAndBuilder<T, U> newChanAndBuilder(Metadata<AggAndBuilder<T, U>> metadata) {
         return new AndBuilderImpl<>(QueryBuilder.this, metadata);
     }
 
     @Override
-    public <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> where(ComparablePath<T, N> path) {
+    public <N extends Comparable<N>> ComparableOps<T, N, AggAndBuilder<T, U>> where(ComparablePath<T, N> path) {
         return new ComparableOpsImpl<>(new Metadata<>(List.of(), Metas.TRUE, Metas.of(path), this::newChanAndBuilder));
     }
 
     @Override
-    public StringOps<T, OrderBy1<T, U>> where(StringPath<T> path) {
+    public StringOps<T, AggAndBuilder<T, U>> where(StringPath<T> path) {
         return new StringOpsImpl<>(new Metadata<>(List.of(), Metas.TRUE, Metas.of(path), this::newChanAndBuilder));
     }
 
     @Override
-    public OrderBy1<T, U> where(BooleanPath<T> path) {
+    public AggAndBuilder<T, U> where(BooleanPath<T> path) {
         return newChanAndBuilder(new Metadata<>(List.of(), Metas.TRUE, Metas.of(path), this::newChanAndBuilder));
+    }
+
+
+    @Override
+    public <N> ExpressionOps.PathOps<T, N, AggAndBuilder<T, U>> where(Path<T, N> path) {
+        return new ExpressionBuilder<>(new Metadata<>(List.of(), Metas.TRUE, Metas.of(path), this::newChanAndBuilder));
     }
 
     QueryMetadataImpl queryMetadata() {

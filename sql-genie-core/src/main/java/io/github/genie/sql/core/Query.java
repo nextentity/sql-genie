@@ -1,9 +1,6 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.ExpressionOps.ComparableOps;
-import io.github.genie.sql.core.ExpressionOps.NumberOps;
-import io.github.genie.sql.core.ExpressionOps.PathExpr;
-import io.github.genie.sql.core.ExpressionOps.StringOps;
+import io.github.genie.sql.core.ExpressionOps.*;
 import io.github.genie.sql.core.Path.BooleanPath;
 import io.github.genie.sql.core.Path.ComparablePath;
 import io.github.genie.sql.core.Path.NumberPath;
@@ -128,34 +125,74 @@ public interface Query {
 
         AggGroupBy0<T, U> where(Expression<T, Boolean> predicate);
 
+        @Override
+        <N> PathOps<T, N, AggAndBuilder<T, U>> where(Path<T, N> path);
+
+        @Override
+        <N extends Comparable<N>> ComparableOps<T, N, AggAndBuilder<T, U>> where(ComparablePath<T, N> path);
+
+        @Override
+        <N extends Number & Comparable<N>> NumberOps<T, N, AggAndBuilder<T, U>> where(NumberPath<T, N> path);
+
+        @Override
+        StringOps<T, AggAndBuilder<T, U>> where(StringPath<T> path);
+
+        @Override
+        AggAndBuilder<T, U> where(BooleanPath<T> path);
+
     }
 
     interface Where<T, U> {
 
         OrderBy0<T, U> where(Expression<T, Boolean> predicate);
 
-        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> where(NumberPath<T, N> path);
+        <N> PathOps<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
 
-        <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> where(ComparablePath<T, N> path);
+        <N extends Number & Comparable<N>> NumberOps<T, N, ? extends AndBuilder<T, U>> where(NumberPath<T, N> path);
 
-        StringOps<T, OrderBy1<T, U>> where(StringPath<T> path);
+        <N extends Comparable<N>> ComparableOps<T, N, ? extends AndBuilder<T, U>> where(ComparablePath<T, N> path);
 
-        OrderBy1<T, U> where(BooleanPath<T> path);
+        StringOps<T, ? extends AndBuilder<T, U>> where(StringPath<T> path);
+
+        AndBuilder<T, U> where(BooleanPath<T> path);
 
     }
 
-    interface OrderBy1<T, U> extends OrderBy0<T, U> {
+    interface AggAndBuilder<T, U> extends AndBuilder<T, U>, AggGroupBy0<T, U> {
+        @Override
+        <N> PathOps<T, N, AggAndBuilder<T, U>> and(Path<T, N> path);
 
-        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> and(NumberPath<T, N> path);
+        @Override
+        <N extends Number & Comparable<N>> NumberOps<T, N, AggAndBuilder<T, U>> and(NumberPath<T, N> path);
 
-        <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> and(ComparablePath<T, N> path);
+        @Override
+        <N extends Comparable<N>> ComparableOps<T, N, AggAndBuilder<T, U>> and(ComparablePath<T, N> path);
 
-        StringOps<T, OrderBy1<T, U>> and(StringPath<T> path);
+        @Override
+        AggAndBuilder<T, U> and(BooleanPath<T> path);
 
-        OrderBy1<T, U> and(BooleanPath<T> path);
+        @Override
+        StringOps<T, AggAndBuilder<T, U>> and(StringPath<T> path);
 
-        OrderBy1<T, U> and(Expression<T, Boolean> predicate);
+        @Override
+        AggAndBuilder<T, U> and(Expression<T, Boolean> predicate);
 
+
+    }
+
+    interface AndBuilder<T, U> extends OrderBy0<T, U> {
+
+        <N> PathOps<T, N, ? extends AndBuilder<T, U>> and(Path<T, N> path);
+
+        <N extends Number & Comparable<N>> NumberOps<T, N, ? extends AndBuilder<T, U>> and(NumberPath<T, N> path);
+
+        <N extends Comparable<N>> ComparableOps<T, N, ? extends AndBuilder<T, U>> and(ComparablePath<T, N> path);
+
+        StringOps<T, ? extends AndBuilder<T, U>> and(StringPath<T> path);
+
+        AndBuilder<T, U> and(BooleanPath<T> path);
+
+        AndBuilder<T, U> and(Expression<T, Boolean> predicate);
 
     }
 

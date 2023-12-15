@@ -10,17 +10,25 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
+class AndBuilderImpl<T, U> implements Query.AggAndBuilder<T, U> {
     private final QueryBuilder<T, U> queryBuilder;
     ExpressionBuilder<T, U, AndBuilderImpl<T, U>> expressionBuilder;
 
-    AndBuilderImpl(QueryBuilder<T, U> queryBuilder, Metadata<Query.OrderBy1<T, U>> metadata) {
+    AndBuilderImpl(QueryBuilder<T, U> queryBuilder, Metadata<Query.AggAndBuilder<T, U>> metadata) {
         expressionBuilder = new ExpressionBuilder<>(cast(metadata));
         this.queryBuilder = queryBuilder;
     }
 
     @Override
-    public <N extends Number & Comparable<N>> ExpressionOps.NumberOps<T, N, Query.OrderBy1<T, U>> and(Path.NumberPath<T, N> path) {
+    public <N> ExpressionOps.PathOps<T, N, Query.AggAndBuilder<T, U>> and(Path<T, N> path) {
+        List<Meta> expressions = expressionBuilder.metadata.expressions;
+        Meta left = expressionBuilder.merge();
+        Meta right = Metas.of(path);
+        return new ExpressionBuilder<>(new Metadata<>(expressions, left, right, this::update));
+    }
+
+    @Override
+    public <N extends Number & Comparable<N>> ExpressionOps.NumberOps<T, N, Query.AggAndBuilder<T, U>> and(Path.NumberPath<T, N> path) {
         List<Meta> expressions = expressionBuilder.metadata.expressions;
         Meta left = expressionBuilder.merge();
         Meta right = Metas.of(path);
@@ -28,15 +36,21 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
     }
 
     @Override
-    public <N extends Comparable<N>> ExpressionOps.ComparableOps<T, N, Query.OrderBy1<T, U>> and(Path.ComparablePath<T, N> path) {
+    public <N extends Comparable<N>> ExpressionOps.ComparableOps<T, N, Query.AggAndBuilder<T, U>> and(Path.ComparablePath<T, N> path) {
+        Metadata<Query.AggAndBuilder<T, U>> metadata = getAggAndBuilderMetadata(path);
+        return new ComparableOpsImpl<>(metadata);
+    }
+
+    @NotNull
+    private <N extends Comparable<N>> Metadata<Query.AggAndBuilder<T, U>> getAggAndBuilderMetadata(Path<T, N> path) {
         List<Meta> expressions = expressionBuilder.metadata.expressions;
         Meta left = expressionBuilder.merge();
         Meta right = Metas.of(path);
-        return new ComparableOpsImpl<>(new Metadata<>(expressions, left, right, this::update));
+        return new Metadata<>(expressions, left, right, this::update);
     }
 
     @Override
-    public ExpressionOps.StringOps<T, Query.OrderBy1<T, U>> and(Path.StringPath<T> path) {
+    public ExpressionOps.StringOps<T, Query.AggAndBuilder<T, U>> and(Path.StringPath<T> path) {
         List<Meta> expressions = expressionBuilder.metadata.expressions;
         Meta left = expressionBuilder.merge();
         Meta right = Metas.of(path);
@@ -45,7 +59,7 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
 
 
     @Override
-    public Query.OrderBy1<T, U> and(Path.BooleanPath<T> path) {
+    public Query.AggAndBuilder<T, U> and(Path.BooleanPath<T> path) {
         List<Meta> expressions = expressionBuilder.metadata.expressions;
         Meta left = expressionBuilder.merge();
         Meta right = Metas.of(path);
@@ -53,7 +67,7 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
     }
 
     @Override
-    public Query.OrderBy1<T, U> and(Expression<T, Boolean> predicate) {
+    public Query.AggAndBuilder<T, U> and(Expression<T, Boolean> predicate) {
         List<Meta> expressions = expressionBuilder.metadata.expressions;
         Meta left = expressionBuilder.merge();
         Meta right = Metas.of(predicate);
@@ -61,7 +75,7 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
     }
 
     @NotNull
-    private AndBuilderImpl<T, U> update(Metadata<Query.OrderBy1<T, U>> metadata) {
+    private AndBuilderImpl<T, U> update(Metadata<Query.AggAndBuilder<T, U>> metadata) {
         return new AndBuilderImpl<>(queryBuilder, metadata);
     }
 
@@ -71,7 +85,7 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
     }
 
 
-    private Query.OrderBy0<T, U> getQueryBuilder() {
+    private QueryBuilder<T, U> getQueryBuilder() {
         QueryMetadataImpl queryMetadata = queryBuilder.queryMetadata().copy();
         queryMetadata.where = expressionBuilder.meta();
         return queryBuilder.update(queryMetadata);
@@ -100,5 +114,15 @@ class AndBuilderImpl<T, U> implements Query.OrderBy1<T, U> {
     @Override
     public Query.MetadataBuilder buildMetadata() {
         return getQueryBuilder().buildMetadata();
+    }
+
+    @Override
+    public Query.OrderBy0<T, U> groupBy(List<? extends Expression<T, ?>> expressions) {
+        return getQueryBuilder().groupBy(expressions);
+    }
+
+    @Override
+    public Query.Having0<T, U> groupBy(Path<T, ?> path) {
+        return getQueryBuilder().groupBy(path);
     }
 }
