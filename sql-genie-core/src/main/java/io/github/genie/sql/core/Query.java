@@ -146,13 +146,15 @@ public interface Query {
 
     interface OrderBy1<T, U> extends OrderBy0<T, U> {
 
-        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy0<T, U>> and(NumberPath<T, N> path);
+        <N extends Number & Comparable<N>> NumberOps<T, N, OrderBy1<T, U>> and(NumberPath<T, N> path);
 
         <N extends Comparable<N>> ComparableOps<T, N, OrderBy1<T, U>> and(ComparablePath<T, N> path);
 
         StringOps<T, OrderBy1<T, U>> and(StringPath<T> path);
 
         OrderBy1<T, U> and(BooleanPath<T> path);
+
+        OrderBy1<T, U> and(Expression<T, Boolean> predicate);
 
 
     }
