@@ -12,6 +12,7 @@
 
   <modules>
     <module>sql-genie-core</module>
+    <module>sql-genie-test</module>
   </modules>
 
 
@@ -20,7 +21,7 @@
 
       <dependency>
         <groupId>io.github.genie</groupId>
-        <artifactId>sql-genie-core</artifactId>
+        <artifactId>sql-genie</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -83,7 +84,6 @@
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
 
   <licenses>
     <license>

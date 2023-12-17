@@ -7,13 +7,17 @@ import io.github.genie.sql.core.exception.SqlExecuteException;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import io.github.genie.sql.core.mapping.MappingFactory;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Data
 public class JdbcQueryExecutor implements QueryExecutor {
 
@@ -22,39 +26,55 @@ public class JdbcQueryExecutor implements QueryExecutor {
     @NotNull
     private SqlBuilder sqlBuilder;
     @NotNull
-    private SqlExecutor sqlExecutor;
+    private ConnectionProvider connectionProvider;
     @NotNull
     private ResultCollector collector;
 
     @Override
     @NotNull
     public <R> List<R> getList(@NotNull QueryMetadata queryMetadata) {
+        PreparedSql sql = sqlBuilder.build(queryMetadata, mappings);
         try {
-            PreparedSql sql = sqlBuilder.build(queryMetadata, mappings);
-            ResultSet resultSet = sqlExecutor.execute(sql.sql(), sql.args());
-            try (resultSet) {
-                int type = resultSet.getType();
-                List<R> result;
-                if (type != ResultSet.TYPE_FORWARD_ONLY) {
-                    resultSet.last();
-                    int size = resultSet.getRow();
-                    result = new ArrayList<>(size);
-                    resultSet.beforeFirst();
-                } else {
-                    result = new ArrayList<>();
+            return connectionProvider.execute(connection -> {
+                //noinspection SqlSourceToSinkFlow
+                try (PreparedStatement statement = connection.prepareStatement(sql.sql())) {
+                    JdbcUtil.setParam(statement, sql.args());
+                    if (log.isDebugEnabled()) {
+                        log.debug("SQL: {}", sql.sql());
+                        log.debug("ARGS: {}", sql.args());
+                    }
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        return resolveResult(queryMetadata, sql, resultSet);
+                    }
                 }
-                while (resultSet.next()) {
-                    R row = collector.collect(resultSet,
-                            queryMetadata.select(),
-                            queryMetadata.from(),
-                            sql.selectedFields());
-                    result.add(row);
-                }
-                return result;
-            }
+            });
         } catch (SQLException e) {
             throw new SqlExecuteException(e);
         }
+    }
+
+    @NotNull
+    private <R> List<R> resolveResult(QueryMetadata queryMetadata,
+                                      PreparedSql sql,
+                                      ResultSet resultSet) throws SQLException {
+        int type = resultSet.getType();
+        List<R> result;
+        if (type != ResultSet.TYPE_FORWARD_ONLY) {
+            resultSet.last();
+            int size = resultSet.getRow();
+            result = new ArrayList<>(size);
+            resultSet.beforeFirst();
+        } else {
+            result = new ArrayList<>();
+        }
+        while (resultSet.next()) {
+            R row = collector.collect(resultSet,
+                    queryMetadata.select(),
+                    queryMetadata.from(),
+                    sql.selectedFields());
+            result.add(row);
+        }
+        return result;
     }
 
 
@@ -74,8 +94,12 @@ public class JdbcQueryExecutor implements QueryExecutor {
 
     }
 
-    public interface SqlExecutor {
-        ResultSet execute(String sql, List<?> args) throws SQLException;
+    public interface ConnectionProvider {
+        <T> T execute(ConnectionCallback<T> action) throws SQLException;
+    }
+
+    public interface ConnectionCallback<T> {
+        T doInConnection(Connection connection) throws SQLException;
     }
 
     public interface ResultCollector {

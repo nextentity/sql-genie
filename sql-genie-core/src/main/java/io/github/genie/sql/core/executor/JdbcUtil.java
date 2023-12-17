@@ -91,7 +91,7 @@ public abstract class JdbcUtil {
     }
 
 
-    public static void setParam(PreparedStatement pst, List<Object> args) throws SQLException {
+    public static void setParam(PreparedStatement pst, List<?> args) throws SQLException {
         int i = 0;
         for (Object arg : args) {
             if (arg instanceof Enum) {
