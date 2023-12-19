@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +49,15 @@ public abstract class JdbcUtil {
         put(Long.class, ResultSet::getLong);
         put(long.class, ResultSet::getLong);
         put(Double.class, ResultSet::getDouble);
+        ResultSetGetter<Character> getChar = (resultSet, index) -> {
+            String string = resultSet.getString(index);
+            if (string == null || string.length() != 1) {
+                throw new IllegalStateException(string + " is not a character");
+            }
+            return string.charAt(0);
+        };
+        put(char.class, getChar);
+        put(Character.class, getChar);
         put(double.class, ResultSet::getDouble);
         put(Boolean.class, ResultSet::getBoolean);
         put(boolean.class, ResultSet::getBoolean);
@@ -63,6 +73,7 @@ public abstract class JdbcUtil {
         put(java.io.InputStream.class, ResultSet::getBinaryStream);
         put(byte[].class, ResultSet::getBytes);
         put(Timestamp.class, ResultSet::getTimestamp);
+        put(Instant.class, (resultSet, columnIndex) -> resultSet.getTimestamp(columnIndex).toInstant());
 
     }
 
@@ -72,19 +83,19 @@ public abstract class JdbcUtil {
 
 
     public static <X> X getValue(ResultSet resultSet, int column, Class<X> targetType) throws SQLException {
-        Object result;
-        if (resultSet.getObject(column) == null) {
+        Object result = resultSet.getObject(column);
+        if (result == null) {
             return null;
         }
-        ResultSetGetter<?> getter = GETTER_MAPS.get(targetType);
-        if (getter == null) {
-            if (Enum.class.isAssignableFrom(targetType)) {
-                result = getEnum(targetType, resultSet.getInt(column));
+        if (!targetType.isInstance(result)) {
+            ResultSetGetter<?> getter = GETTER_MAPS.get(targetType);
+            if (getter == null) {
+                if (Enum.class.isAssignableFrom(targetType)) {
+                    result = getEnum(targetType, resultSet.getInt(column));
+                }
             } else {
-                result = resultSet.getObject(column);
+                result = getter.getValue(resultSet, column);
             }
-        } else {
-            result = getter.getValue(resultSet, column);
         }
         // noinspection unchecked
         return (X) result;

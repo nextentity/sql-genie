@@ -7,7 +7,6 @@ import java.util.List;
 @FunctionalInterface
 public interface QueryExecutor {
 
-    <R> List<R> getList(@NotNull QueryMetadata queryMetadata);
-
+    <T> List<T> getList(@NotNull QueryMetadata queryMetadata);
 
 }

@@ -10,7 +10,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,7 +23,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
     @NotNull
     private MappingFactory mappings;
     @NotNull
-    private SqlBuilder sqlBuilder;
+    private QuerySqlBuilder sqlBuilder;
     @NotNull
     private ConnectionProvider connectionProvider;
     @NotNull
@@ -36,7 +35,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
         PreparedSql sql = sqlBuilder.build(queryMetadata, mappings);
         try {
             return connectionProvider.execute(connection -> {
-                //noinspection SqlSourceToSinkFlow
+                // noinspection SqlSourceToSinkFlow
                 try (PreparedStatement statement = connection.prepareStatement(sql.sql())) {
                     JdbcUtil.setParam(statement, sql.args());
                     if (log.isDebugEnabled()) {
@@ -54,11 +53,11 @@ public class JdbcQueryExecutor implements QueryExecutor {
     }
 
     @NotNull
-    private <R> List<R> resolveResult(QueryMetadata queryMetadata,
+    private <T> List<T> resolveResult(QueryMetadata queryMetadata,
                                       PreparedSql sql,
                                       ResultSet resultSet) throws SQLException {
         int type = resultSet.getType();
-        List<R> result;
+        List<T> result;
         if (type != ResultSet.TYPE_FORWARD_ONLY) {
             resultSet.last();
             int size = resultSet.getRow();
@@ -68,7 +67,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
             result = new ArrayList<>();
         }
         while (resultSet.next()) {
-            R row = collector.collect(resultSet,
+            T row = collector.collect(resultSet,
                     queryMetadata.select(),
                     queryMetadata.from(),
                     sql.selectedFields());
@@ -78,7 +77,7 @@ public class JdbcQueryExecutor implements QueryExecutor {
     }
 
 
-    public interface SqlBuilder {
+    public interface QuerySqlBuilder {
         PreparedSql build(QueryMetadata metadata, MappingFactory mappings);
 
     }
@@ -92,14 +91,6 @@ public class JdbcQueryExecutor implements QueryExecutor {
 
         List<FieldMapping> selectedFields();
 
-    }
-
-    public interface ConnectionProvider {
-        <T> T execute(ConnectionCallback<T> action) throws SQLException;
-    }
-
-    public interface ConnectionCallback<T> {
-        T doInConnection(Connection connection) throws SQLException;
     }
 
     public interface ResultCollector {

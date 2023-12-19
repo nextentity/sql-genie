@@ -28,13 +28,11 @@ import java.util.List;
 
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U> {
 
-    public static final Meta CONSTANT_1 = Metas.of(1);
-
     static final SingleColumnSelect SELECT_1 =
-            new SingleColumnSelect(Integer.class, CONSTANT_1);
+            new SingleColumnSelect(Integer.class, Metas.TRUE);
 
     static final SingleColumnSelect COUNT_1 =
-            new SingleColumnSelect(Integer.class, Metas.operate(CONSTANT_1, Operator.COUNT));
+            new SingleColumnSelect(Integer.class, Metas.operate(Metas.TRUE, Operator.COUNT));
 
 
     private final QueryExecutor queryExecutor;

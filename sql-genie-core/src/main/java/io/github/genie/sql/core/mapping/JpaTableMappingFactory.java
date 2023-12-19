@@ -5,6 +5,7 @@ import io.github.genie.sql.core.Util;
 import io.github.genie.sql.core.mapping.Mappings.*;
 import jakarta.persistence.*;
 import lombok.experimental.Delegate;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.beans.BeanInfo;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+@Slf4j
 public class JpaTableMappingFactory implements MappingFactory {
 
     public static final String FIX = "`";
@@ -155,6 +157,7 @@ public class JpaTableMappingFactory implements MappingFactory {
         Field[] fields = javaType.getDeclaredFields();
         Map<Field, Method> readerMap = new HashMap<>();
         Map<Field, Method> writeMap = new HashMap<>();
+        boolean hasVersion = false;
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(javaType);
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
@@ -203,7 +206,21 @@ public class JpaTableMappingFactory implements MappingFactory {
 
             if (isBasicField(field, getter)) {
                 Column column = getAnnotation(field, getter, Column.class);
-                fieldMapping = new ColumnMappingImpl(getColumnName(field, column));
+                Version version = getAnnotation(field, getter, Version.class);
+                boolean versionColumn = false;
+                if (version != null) {
+                    Class<?> type = field.getType();
+                    if (type == long.class || type == Long.class || type == Integer.class || type == int.class) {
+                        if (hasVersion) {
+                            log.warn("duplicate attributes: " + field.getName() + ", ignored");
+                        } else {
+                            versionColumn = hasVersion = true;
+                        }
+                    } else {
+                        log.warn("not support version type: " + type);
+                    }
+                }
+                fieldMapping = new ColumnMappingImpl(getColumnName(field, column), versionColumn);
             } else {
                 AssociationMappingImpl m = new AssociationMappingImpl();
                 JoinColumn joinColumn = getAnnotation(field, getter, JoinColumn.class);

@@ -9,7 +9,7 @@ import io.github.genie.sql.core.Ordering.SortOrder;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor.PreparedSql;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.SqlBuilder;
+import io.github.genie.sql.core.executor.JdbcQueryExecutor.QuerySqlBuilder;
 import io.github.genie.sql.core.mapping.*;
 
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MySqlSqlBuilder implements SqlBuilder {
+public class MySqlSqlBuilder implements QuerySqlBuilder {
     @Override
     public PreparedSql build(QueryMetadata metadata, MappingFactory mappings) {
         return new Builder(metadata, metadata.from(), mappings).build();
@@ -45,7 +45,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         protected final List<Object> args = new ArrayList<>();
         protected final Map<Paths, Integer> joins = new LinkedHashMap<>();
         protected final QueryMetadata queryMetadata;
-        protected final TableMapping tableSchema;
+        protected final TableMapping tableMapping;
         protected final MappingFactory mappers;
         protected final List<Meta> selectMetas = new ArrayList<>();
         protected final List<FieldMapping> selectFields = new ArrayList<>();
@@ -54,7 +54,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         public Builder(QueryMetadata queryMetadata, Class<?> type, MappingFactory mappers) {
             this.queryMetadata = queryMetadata;
             this.mappers = mappers;
-            this.tableSchema = mappers.getMapping(type);
+            this.tableMapping = mappers.getMapping(type);
         }
 
         protected PreparedSql build() {
@@ -156,7 +156,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         private void appendTableName() {
             appendBlank()
                     .append(FROM + "`")
-                    .append(tableSchema.tableName())
+                    .append(tableMapping.tableName())
                     .append("` ");
             appendRootTableAlias();
         }
@@ -166,7 +166,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         }
 
         protected StringBuilder appendRootTableAlias(StringBuilder sql) {
-            String table = tableSchema.tableName();
+            String table = tableMapping.tableName();
             return sql.append(table, 0, 1);
         }
 
@@ -220,17 +220,8 @@ public class MySqlSqlBuilder implements SqlBuilder {
 
         private void appendConstant(List<Object> args, Constant constant) {
             Object value = constant.value();
-            boolean isNumber = false;
-            if (value != null) {
-                if (value instanceof Number) {
-                    isNumber = true;
-                } else if (value instanceof Boolean b) {
-                    isNumber = true;
-                    value = b ? 1 : 0;
-                }
-            }
-            if (isNumber) {
-                appendBlank().append(value);
+            if (value instanceof Boolean b) {
+                appendBlank().append(b ? 1 : 0);
             } else {
                 appendBlank().append('?');
                 args.add(value);
@@ -349,7 +340,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
             if (expression.size() == 1) {
                 appendRootTableAlias().append(".");
             }
-            Class<?> type = tableSchema.javaType();
+            Class<?> type = tableMapping.javaType();
 
             Paths join = Expressions.ofPaths(List.of(expression.get(0)));
 
@@ -431,7 +422,7 @@ public class MySqlSqlBuilder implements SqlBuilder {
         }
 
         protected FieldMapping getAttribute(Paths path) {
-            Mapping schema = tableSchema;
+            Mapping schema = tableMapping;
             for (String s : path.paths()) {
                 if (schema instanceof AssociationMapping associationProperty) {
                     schema = associationProperty.referenced();
@@ -489,5 +480,8 @@ public class MySqlSqlBuilder implements SqlBuilder {
 
             }
         }
+    }
+
+    public record PreparedSqlImpl(String sql, List<?> args, List<FieldMapping> selectedFields) implements PreparedSql {
     }
 }

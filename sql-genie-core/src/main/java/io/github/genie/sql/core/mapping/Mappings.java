@@ -63,6 +63,7 @@ public class Mappings {
         private Class<?> javaType;
         private Mapping parent;
         private FieldMapping id;
+        private FieldMapping version;
         private String tableName;
         private Map<String, FieldMappingImpl> fields;
 
@@ -97,6 +98,11 @@ public class Mappings {
         }
 
         @Override
+        public FieldMapping version() {
+            return version;
+        }
+
+        @Override
         public String toString() {
             return "TableMapping{" +
                    ", tableName='" + tableName + '\'' +
@@ -109,10 +115,16 @@ public class Mappings {
     @EqualsAndHashCode(callSuper = true)
     public static class ColumnMappingImpl extends FieldMappingImpl implements ColumnMapping {
         private final String columnName;
+        private final boolean versionColumn;
 
         @Override
         public String columnName() {
             return columnName;
+        }
+
+        @Override
+        public boolean versionColumn() {
+            return versionColumn;
         }
 
     }

@@ -4,4 +4,6 @@ public interface ColumnMapping extends FieldMapping {
 
     String columnName();
 
+    boolean versionColumn();
+
 }

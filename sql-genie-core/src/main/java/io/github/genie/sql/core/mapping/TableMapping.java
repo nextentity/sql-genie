@@ -14,4 +14,6 @@ public interface TableMapping extends Mapping {
 
     FieldMapping getFieldMapping(String fieldName);
 
+    FieldMapping version();
+
 }

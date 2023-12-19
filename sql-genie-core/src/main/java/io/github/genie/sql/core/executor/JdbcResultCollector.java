@@ -172,14 +172,14 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             Object obj = row;
             for (int i = 0; i < mappings.length - 1; i++) {
                 FieldMapping mapping = mappings[i];
-                Object tmp = mapping.getter().invoke(obj);
+                Object tmp = mapping.invokeGetter(obj);
                 if (tmp == null) {
                     tmp = mapping.javaType().getConstructor().newInstance();
-                    mapping.setter().invoke(obj, tmp);
+                    mapping.invokeSetter(obj, tmp);
                 }
                 obj = tmp;
             }
-            projection.setter().invoke(obj, value);
+            projection.invokeSetter(obj, value);
         }
         return cast(row);
     }

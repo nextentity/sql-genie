@@ -3,9 +3,8 @@ package io.github.genie.sql.core;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.entity.User;
+import io.github.genie.sql.core.executor.ConnectionProvider;
 import io.github.genie.sql.core.executor.JdbcQueryExecutor;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.ConnectionCallback;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.ConnectionProvider;
 import io.github.genie.sql.core.executor.JdbcResultCollector;
 import io.github.genie.sql.core.executor.MySqlSqlBuilder;
 import io.github.genie.sql.core.mapping.JpaTableMappingFactory;
@@ -31,7 +30,6 @@ public class JdbcTest extends JpaTest {
 
     @BeforeAll
     public static void init() {
-        Logger log1 = log;
         JpaTest.init();
         MysqlDataSource source = new MysqlDataSource();
         source.setUrl("jdbc:mysql:///sql-dsl");
@@ -78,13 +76,13 @@ public class JdbcTest extends JpaTest {
 
         List<User> ftList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 1
-                        && user.getRandomNumber() > 100
-                        && user.getRandomNumber() != 125
-                        && user.getRandomNumber() <= 666
-                        && (user.getRandomNumber() < 106
-                        || user.getRandomNumber() > 120
-                        || user.getRandomNumber() == 109)
-                        && user.getRandomNumber() != 128
+                                && user.getRandomNumber() > 100
+                                && user.getRandomNumber() != 125
+                                && user.getRandomNumber() <= 666
+                                && (user.getRandomNumber() < 106
+                                    || user.getRandomNumber() > 120
+                                    || user.getRandomNumber() == 109)
+                                && user.getRandomNumber() != 128
                 )
                 .collect(Collectors.toList());
 
@@ -114,13 +112,13 @@ public class JdbcTest extends JpaTest {
 
         List<User> ftList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 1
-                        && user.getRandomNumber() > 100
-                        && user.getRandomNumber() != 125
-                        && user.getRandomNumber() <= 666
-                        && (user.getRandomNumber() < 106
-                        || user.getRandomNumber() > 120
-                        || user.getRandomNumber() == 109)
-                        && user.getRandomNumber() != 128
+                                && user.getRandomNumber() > 100
+                                && user.getRandomNumber() != 125
+                                && user.getRandomNumber() <= 666
+                                && (user.getRandomNumber() < 106
+                                    || user.getRandomNumber() > 120
+                                    || user.getRandomNumber() == 109)
+                                && user.getRandomNumber() != 128
                 )
                 .collect(Collectors.toList());
 
@@ -150,13 +148,13 @@ public class JdbcTest extends JpaTest {
 
         List<User> ftList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 1
-                        && user.getRandomNumber() > 100
-                        && user.getRandomNumber() != 125
-                        && user.getRandomNumber() <= 666
-                        && (user.getRandomNumber() < 106
-                        || user.getRandomNumber() > 120
-                        || user.getRandomNumber() == 109)
-                        && user.getRandomNumber() != 128
+                                && user.getRandomNumber() > 100
+                                && user.getRandomNumber() != 125
+                                && user.getRandomNumber() <= 666
+                                && (user.getRandomNumber() < 106
+                                    || user.getRandomNumber() > 120
+                                    || user.getRandomNumber() == 109)
+                                && user.getRandomNumber() != 128
                 )
                 .collect(Collectors.toList());
 
@@ -185,13 +183,13 @@ public class JdbcTest extends JpaTest {
 
         List<User> ftList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 1
-                        && user.getRandomNumber() > 100
-                        && user.getRandomNumber() != 125
-                        && user.getRandomNumber() <= 666
-                        && (user.getRandomNumber() < 106
-                        || user.getRandomNumber() > 120
-                        || user.getRandomNumber() == 109)
-                        && user.getRandomNumber() != 128
+                                && user.getRandomNumber() > 100
+                                && user.getRandomNumber() != 125
+                                && user.getRandomNumber() <= 666
+                                && (user.getRandomNumber() < 106
+                                    || user.getRandomNumber() > 120
+                                    || user.getRandomNumber() == 109)
+                                && user.getRandomNumber() != 128
                 )
                 .collect(Collectors.toList());
 
@@ -260,12 +258,12 @@ public class JdbcTest extends JpaTest {
         System.out.println(sql.sql());
 
         String actual = "select" +
-                " min(u.id),u.random_number" +
-                " from `user` u" +
-                " where u.valid=1" +
-                " group by u.random_number" +
-                " having u.random_number=10" +
-                " limit 1,5 for update";
+                        " min(u.id),u.random_number" +
+                        " from `user` u" +
+                        " where u.valid=1" +
+                        " group by u.random_number" +
+                        " having u.random_number=?" +
+                        " limit 1,5 for update";
 
         assertEquals(sql.sql(), actual);
     }
@@ -462,7 +460,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(it -> !(it.getUsername().equalsIgnoreCase("Jeremy Keynes")
-                        || it.getId() == 3))
+                                || it.getId() == 3))
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
@@ -474,7 +472,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(it -> !(it.getUsername().equalsIgnoreCase("Jeremy Keynes")
-                        && it.getId() == 3))
+                                && it.getId() == 3))
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
@@ -516,7 +514,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(it -> !(it.getUsername().equalsIgnoreCase("Jeremy Keynes")
-                        || it.getId() == 3))
+                                || it.getId() == 3))
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
@@ -528,7 +526,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(it -> !(it.getUsername().equalsIgnoreCase("Jeremy Keynes")
-                        && it.getId() == 3))
+                                && it.getId() == 3))
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
@@ -681,7 +679,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = validUsers.stream().filter(user ->
                         !(user.getRandomNumber() >= 10 && user.getRandomNumber() <= 15)
-                                && user.getId() % 3 == 0)
+                        && user.getId() % 3 == 0)
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
@@ -729,8 +727,8 @@ public class JdbcTest extends JpaTest {
                 .getList();
         List<User> fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        && user.getParentUser() != null
-                        && Objects.equals(user.getParentUser().getUsername(), username))
+                                && user.getParentUser() != null
+                                && Objects.equals(user.getParentUser().getUsername(), username))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -741,7 +739,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        && Objects.equals(user.getRandomNumber(), 10))
+                                && Objects.equals(user.getRandomNumber(), 10))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -751,7 +749,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        || Objects.equals(user.getRandomNumber(), 10))
+                                || Objects.equals(user.getRandomNumber(), 10))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -762,7 +760,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        && !Objects.equals(user.getRandomNumber(), 10))
+                                && !Objects.equals(user.getRandomNumber(), 10))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -772,7 +770,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        || !Objects.equals(user.getRandomNumber(), 10))
+                                || !Objects.equals(user.getRandomNumber(), 10))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -801,9 +799,9 @@ public class JdbcTest extends JpaTest {
 
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        || (user.getParentUser() != null
-                        && Objects.equals(user.getParentUser().getUsername(), username)
-                        && user.getTime().getTime() >= time.getTime()))
+                                || (user.getParentUser() != null
+                                    && Objects.equals(user.getParentUser().getUsername(), username)
+                                    && user.getTime().getTime() >= time.getTime()))
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -815,7 +813,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        && user.getRandomNumber() != 5)
+                                && user.getRandomNumber() != 5)
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -825,7 +823,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.isValid()
-                        || user.getRandomNumber() == 5)
+                                || user.getRandomNumber() == 5)
                 .collect(Collectors.toList());
 
         assertEquals(qList, fList);
@@ -835,7 +833,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 6
-                        || !user.isValid())
+                                || !user.isValid())
                 .collect(Collectors.toList());
 
         assertEquals((qList), (fList));
@@ -845,7 +843,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 6
-                        && (user.getParentUser() != null && user.getParentUser().isValid()))
+                                && (user.getParentUser() != null && user.getParentUser().isValid()))
                 .collect(Collectors.toList());
 
         assertEquals((qList), (fList));
@@ -855,7 +853,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 6
-                        && (user.getParentUser() != null && !user.getParentUser().isValid()))
+                                && (user.getParentUser() != null && !user.getParentUser().isValid()))
                 .collect(Collectors.toList());
 
         assertEquals((qList), (fList));
@@ -865,7 +863,7 @@ public class JdbcTest extends JpaTest {
                 .getList();
         fList = allUsers.stream()
                 .filter(user -> user.getRandomNumber() != 6
-                        || (user.getParentUser() != null && !user.getParentUser().isValid()))
+                                || (user.getParentUser() != null && !user.getParentUser().isValid()))
                 .collect(Collectors.toList());
 
         assertEquals((qList), (fList));
