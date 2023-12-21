@@ -28,10 +28,10 @@ import java.util.List;
 
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U> {
 
-    static final SingleColumnSelect SELECT_1 =
+    static final SingleColumnSelect SELECT_ANY =
             new SingleColumnSelect(Integer.class, Metas.TRUE);
 
-    static final SingleColumnSelect COUNT_1 =
+    static final SingleColumnSelect COUNT_ANY =
             new SingleColumnSelect(Integer.class, Metas.operate(Metas.TRUE, Operator.COUNT));
 
 
@@ -111,7 +111,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @NotNull
     private QueryMetadataImpl buildCountData() {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.select = COUNT_1;
+        metadata.select = COUNT_ANY;
         metadata.lockType = LockModeType.NONE;
         return metadata;
     }
@@ -140,7 +140,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @NotNull
     private QueryMetadataImpl buildExistData(int offset) {
         QueryMetadataImpl metadata = queryMetadata.copy();
-        metadata.select = SELECT_1;
+        metadata.select = SELECT_ANY;
         metadata.offset = offset;
         metadata.limit = 1;
         return metadata;
