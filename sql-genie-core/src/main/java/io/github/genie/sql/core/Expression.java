@@ -26,6 +26,16 @@ public interface Expression<T, U> {
 
         List<? extends Meta> args();
 
+        default Meta firstArg() {
+            List<? extends Meta> args = args();
+            return args == null || args.isEmpty() ? null : args.get(0);
+        }
+
+        default Meta secondArg() {
+            List<? extends Meta> args = args();
+            return args == null || args.size() < 2 ? null : args.get(1);
+        }
+
     }
 
 }

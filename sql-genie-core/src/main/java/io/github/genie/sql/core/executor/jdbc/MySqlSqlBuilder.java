@@ -81,9 +81,9 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
             } else if (selected instanceof MultiColumn multiColumn) {
                 selectMetas.addAll(multiColumn.columns());
             } else if (queryMetadata.select().resultType() == queryMetadata.from()) {
-                TableMapping projectionMapping = mappers
+                TableMapping table = mappers
                         .getMapping(queryMetadata.select().resultType());
-                for (FieldMapping mapping : projectionMapping.fields()) {
+                for (FieldMapping mapping : table.fields()) {
                     if (!(mapping instanceof ColumnMapping column)) {
                         continue;
                     }

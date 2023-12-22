@@ -9,11 +9,12 @@ import io.github.genie.sql.core.Models.ConstantMeta;
 import io.github.genie.sql.core.Models.OperationMeta;
 import io.github.genie.sql.core.Models.PathsMeta;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-interface Metas {
+public interface Metas {
 
     Meta TRUE = Metas.of(true);
 
@@ -45,11 +46,16 @@ interface Metas {
 
 
     static Paths fromPath(String path) {
-        List<String> paths = Collections.singletonList(path);
+        List<String> paths = new ArrayList<>(1);
+        paths.add(path);
         return fromPaths(paths);
     }
 
     static Paths fromPaths(List<String> paths) {
+        Objects.requireNonNull(paths);
+        if (paths.getClass() != ArrayList.class) {
+            paths = new ArrayList<>(paths);
+        }
         return new PathsMeta(paths);
     }
 
@@ -66,6 +72,11 @@ interface Metas {
     }
 
     static Meta operate(Meta l, Operator o, List<? extends Meta> r) {
+        if (o == Operator.NOT
+            && l instanceof Operation operation
+            && operation.operator() == Operator.NOT) {
+            return operation.operand();
+        }
         if (o.isMultivalued() && l instanceof Operation lo && lo.operator() == o) {
             List<Meta> args = Util.concat(lo.args(), r);
             return new OperationMeta(lo.operand(), o, args);
