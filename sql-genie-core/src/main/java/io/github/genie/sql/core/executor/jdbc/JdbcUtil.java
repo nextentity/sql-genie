@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.executor;
+package io.github.genie.sql.core.executor.jdbc;
 
 import lombok.Lombok;
 import org.jetbrains.annotations.NotNull;

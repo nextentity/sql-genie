@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.executor;
+package io.github.genie.sql.core.executor.jdbc;
 
 import io.github.genie.sql.core.*;
 import io.github.genie.sql.core.Expression.Constant;
@@ -8,8 +8,8 @@ import io.github.genie.sql.core.Expression.Paths;
 import io.github.genie.sql.core.Ordering.SortOrder;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.PreparedSql;
-import io.github.genie.sql.core.executor.JdbcQueryExecutor.QuerySqlBuilder;
+import io.github.genie.sql.core.executor.jdbc.JdbcQueryExecutor.PreparedSql;
+import io.github.genie.sql.core.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import io.github.genie.sql.core.mapping.*;
 
 import java.util.ArrayList;

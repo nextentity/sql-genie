@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.executor;
+package io.github.genie.sql.core.executor.jdbc;
 
 import io.github.genie.sql.core.SelectClause;
 import io.github.genie.sql.core.exception.BeanReflectiveException;
