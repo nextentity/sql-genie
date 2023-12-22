@@ -1,5 +1,6 @@
-package io.github.genie.sql.core;
+package io.github.genie.sql.core.executor.jdbc;
 
+import io.github.genie.sql.core.Update;
 import io.github.genie.sql.core.exception.OptimisticLockException;
 import io.github.genie.sql.core.exception.SqlExecuteException;
 import io.github.genie.sql.core.exception.TransactionRequiredException;
@@ -46,7 +47,7 @@ public class JdbcUpdate implements Update {
     }
 
     @Override
-    public <T> void update(List<T> entities, Class<T> entityType) {
+    public <T> List<T> update(List<T> entities, Class<T> entityType) {
         PreparedSql preparedSql = sqlBuilder.buildUpdate(mappingFactory.getMapping(entityType));
         execute(connection -> {
             String sql = preparedSql.sql();
@@ -73,6 +74,7 @@ public class JdbcUpdate implements Update {
                 return null;
             }
         });
+        return entities;
     }
 
     private static boolean isNotEmpty(List<?> columnMappings) {

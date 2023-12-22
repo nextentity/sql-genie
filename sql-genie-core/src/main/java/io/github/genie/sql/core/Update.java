@@ -10,7 +10,7 @@ public interface Update {
 
     <T> List<T> insert(List<T> entities, Class<T> entityType);
 
-    <T> void update(List<T> entities, Class<T> entityType);
+    <T>  List<T> update(List<T> entities, Class<T> entityType);
 
     <T> void updateNonNullColumn(T entity, Class<T> entityType);
 
