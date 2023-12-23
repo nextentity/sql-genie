@@ -2,11 +2,14 @@ package io.github.genie.sql.core.executor.jpa;
 
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.Expression.Paths;
-import io.github.genie.sql.core.*;
+import io.github.genie.sql.core.Metas;
+import io.github.genie.sql.core.Ordering;
 import io.github.genie.sql.core.Ordering.SortOrder;
+import io.github.genie.sql.core.QueryExecutor;
+import io.github.genie.sql.core.QueryMetadata;
+import io.github.genie.sql.core.SelectClause;
 import io.github.genie.sql.core.SelectClause.MultiColumn;
 import io.github.genie.sql.core.SelectClause.SingleColumn;
-import io.github.genie.sql.core.exception.BeanReflectiveException;
 import io.github.genie.sql.core.executor.ProjectionUtil;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import io.github.genie.sql.core.mapping.MappingFactory;
@@ -15,17 +18,18 @@ import io.github.genie.sql.core.mapping.ProjectionField;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-
-import static io.github.genie.sql.core.executor.ProjectionUtil.newProxyInstance;
 
 public class JpaQueryExecutor implements QueryExecutor {
 
@@ -67,15 +71,15 @@ public class JpaQueryExecutor implements QueryExecutor {
                 List<FieldMapping> list = fields.stream().map(ProjectionField::field).toList();
                 if (resultType.isInterface()) {
                     return objectsList.stream()
-                            .<T>map(it -> getInterfaceResult(it, list, resultType))
+                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getResultSet(it), list, resultType))
                             .toList();
                 } else if (resultType.isRecord()) {
                     return objectsList.stream()
-                            .<T>map(it -> getRecordResult(it, list, resultType))
+                            .<T>map(it -> ProjectionUtil.getRecordResult(getResultSet(it), list, resultType))
                             .toList();
                 } else {
                     return objectsList.stream()
-                            .<T>map(it -> getBeanResult(it, list, resultType))
+                            .<T>map(it -> ProjectionUtil.getBeanResult(getResultSet(it), list, resultType))
                             .toList();
                 }
             }
@@ -84,45 +88,8 @@ public class JpaQueryExecutor implements QueryExecutor {
 
 
     @NotNull
-    private <R> R getBeanResult(Object[] resultSet,
-                                @NotNull List<? extends FieldMapping> fields,
-                                Class<?> resultType) {
-        try {
-            return ProjectionUtil.getBeanResult((index, resultType1) -> resultSet[index], fields, resultType);
-        } catch (ReflectiveOperationException e) {
-            throw new BeanReflectiveException(e);
-        }
-    }
-
-    @NotNull
-    private <R> R getRecordResult(@NotNull Object[] resultSet,
-                                  @NotNull List<? extends FieldMapping> fields,
-                                  Class<?> resultType) {
-        Map<String, Object> map = new HashMap<>();
-        int i = 0;
-        for (FieldMapping attribute : fields) {
-            Object value = resultSet[i++];
-            map.put(attribute.fieldName(), value);
-        }
-        try {
-            return ProjectionUtil.getRecordResult(resultType, map);
-        } catch (ReflectiveOperationException e) {
-            throw new BeanReflectiveException(e);
-        }
-    }
-
-
-    private <R> R getInterfaceResult(Object[] resultSet, List<? extends FieldMapping> fields, Class<?> resultType) {
-        Map<Method, Object> map = new HashMap<>();
-        int i = 0;
-        for (FieldMapping attribute : fields) {
-            Object value = resultSet[i++];
-            map.put(attribute.getter(), value);
-        }
-
-        Object result = newProxyInstance(fields, resultType, map);
-        // noinspection unchecked
-        return (R) (result);
+    private static BiFunction<Integer, Class<?>, Object> getResultSet(Object[] resultSet) {
+        return (index, resultType1) -> resultSet[index];
     }
 
 
@@ -137,7 +104,7 @@ public class JpaQueryExecutor implements QueryExecutor {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<?> query = cb.createQuery(Object[].class);
         Root<?> root = query.from(queryMetadata.from());
-        return new ObjectArrayBuilder(root, cb, query, queryMetadata, columns).getObjectsList();
+        return new ObjectArrayBuilder(root, cb, query, queryMetadata, columns).getResultList();
     }
 
     private static <T> List<T> castList(List<?> result) {
@@ -149,26 +116,17 @@ public class JpaQueryExecutor implements QueryExecutor {
 
         private final List<? extends Meta> selects;
 
-        public ObjectArrayBuilder(Root<?> root, CriteriaBuilder cb, CriteriaQuery<?> query, QueryMetadata metadata, List<? extends Meta> selects) {
+        public ObjectArrayBuilder(Root<?> root,
+                                  CriteriaBuilder cb,
+                                  CriteriaQuery<?> query,
+                                  QueryMetadata metadata,
+                                  List<? extends Meta> selects) {
             super(root, cb, query, metadata);
             this.selects = selects;
         }
 
-        private List<Object[]> getObjectsList() {
-            TypedQuery<?> objectsQuery = getObjectsQuery();
-            Integer offset = metadata.offset();
-            if (offset != null && offset > 0) {
-                objectsQuery = objectsQuery.setFirstResult(offset);
-            }
-            Integer maxResult = metadata.limit();
-            if (maxResult != null && maxResult > 0) {
-                objectsQuery = objectsQuery.setMaxResults(maxResult);
-            }
-            LockModeType lockModeType = LockModeTypeAdapter.of(metadata.lockType());
-            if (lockModeType != null) {
-                objectsQuery.setLockMode(lockModeType);
-            }
-            return objectsQuery.getResultList()
+        public List<Object[]> getResultList() {
+            return super.getResultList()
                     .stream()
                     .map(it -> {
                         if (it instanceof Object[]) {
@@ -179,14 +137,8 @@ public class JpaQueryExecutor implements QueryExecutor {
                     .collect(Collectors.toList());
         }
 
-        private TypedQuery<?> getObjectsQuery() {
-            setWhere(metadata.where());
-            List<? extends Meta> groupBy = metadata.groupBy();
-            if (groupBy != null && !groupBy.isEmpty()) {
-                List<Expression<?>> grouping = groupBy.stream().map(this::toExpression).collect(Collectors.toList());
-                query.groupBy(grouping);
-            }
-            setOrderBy(metadata.orderBy());
+        @Override
+        protected TypedQuery<?> getTypedQuery() {
             CriteriaQuery<?> select = query.multiselect(
                     selects.stream()
                             .map(this::toExpression)
@@ -195,6 +147,8 @@ public class JpaQueryExecutor implements QueryExecutor {
 
             return entityManager.createQuery(select);
         }
+
+
     }
 
     class EntityBuilder extends Builder {
@@ -202,52 +156,15 @@ public class JpaQueryExecutor implements QueryExecutor {
             super(root, cb, query, metadata);
         }
 
-        protected List<?> getResultList() {
-            Integer offset = metadata.offset();
-            Integer maxResult = metadata.limit();
-            LockModeType lockModeType = LockModeTypeAdapter.of(metadata.lockType());
-
-            setFetch(metadata.fetch());
-            setWhere(metadata.where());
-            setOrderBy(metadata.orderBy());
-
-            TypedQuery<?> entityQuery = entityManager.createQuery(query);
-            if (offset != null && offset > 0) {
-                entityQuery = entityQuery.setFirstResult(offset);
-            }
-            if (maxResult != null && maxResult > 0) {
-                entityQuery = entityQuery.setMaxResults(maxResult);
-            }
-            if (lockModeType != null) {
-                entityQuery.setLockMode(lockModeType);
-            }
-            return entityQuery.getResultList();
-        }
-
-        private void setFetch(List<? extends Paths> fetchPaths) {
-            if (fetchPaths != null) {
-                for (Paths path : fetchPaths) {
-                    List<String> paths = path.paths();
-                    Fetch<?, ?> fetch = null;
-                    for (int i = 0; i < paths.size(); i++) {
-                        Fetch<?, ?> cur = fetch;
-                        String stringPath = paths.get(i);
-                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(subPaths(paths, i + 1), k -> {
-                            if (cur == null) {
-                                return root.fetch(stringPath, JoinType.LEFT);
-                            } else {
-                                return cur.fetch(stringPath, JoinType.LEFT);
-                            }
-                        });
-                    }
-                }
-            }
+        @Override
+        protected TypedQuery<?> getTypedQuery() {
+            return entityManager.createQuery(query);
         }
 
     }
 
 
-    protected static class Builder extends PredicateBuilder {
+    protected static abstract class Builder extends PredicateBuilder {
         protected final QueryMetadata metadata;
         protected final CriteriaQuery<?> query;
 
@@ -274,6 +191,56 @@ public class JpaQueryExecutor implements QueryExecutor {
                 query.where(toPredicate(where));
             }
         }
+
+        protected void setGroupBy(List<? extends Meta> groupBy) {
+            if (groupBy != null && !groupBy.isEmpty()) {
+                List<Expression<?>> grouping = groupBy.stream().map(this::toExpression).collect(Collectors.toList());
+                query.groupBy(grouping);
+            }
+        }
+
+        protected void setFetch(List<? extends Paths> fetchPaths) {
+            if (fetchPaths != null) {
+                for (Paths path : fetchPaths) {
+                    List<String> paths = path.paths();
+                    Fetch<?, ?> fetch = null;
+                    for (int i = 0; i < paths.size(); i++) {
+                        Fetch<?, ?> cur = fetch;
+                        String stringPath = paths.get(i);
+                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(subPaths(paths, i + 1), k -> {
+                            if (cur == null) {
+                                return root.fetch(stringPath, JoinType.LEFT);
+                            } else {
+                                return cur.fetch(stringPath, JoinType.LEFT);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        protected List<?> getResultList() {
+            setWhere(metadata.where());
+            setGroupBy(metadata.groupBy());
+            setOrderBy(metadata.orderBy());
+            setFetch(metadata.fetch());
+            TypedQuery<?> objectsQuery = getTypedQuery();
+            Integer offset = metadata.offset();
+            if (offset != null && offset > 0) {
+                objectsQuery = objectsQuery.setFirstResult(offset);
+            }
+            Integer maxResult = metadata.limit();
+            if (maxResult != null && maxResult > 0) {
+                objectsQuery = objectsQuery.setMaxResults(maxResult);
+            }
+            LockModeType lockModeType = LockModeTypeAdapter.of(metadata.lockType());
+            if (lockModeType != null) {
+                objectsQuery.setLockMode(lockModeType);
+            }
+            return objectsQuery.getResultList();
+        }
+
+        protected abstract TypedQuery<?> getTypedQuery();
 
     }
 

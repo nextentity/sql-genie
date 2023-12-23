@@ -30,12 +30,6 @@ public class ExpressionBuilder {
 
 
     public Expression<?> toExpression(Meta expression) {
-        Expression<?> r = getExpression(expression);
-        System.out.println(expression + "->" + r);
-        return r;
-    }
-
-    private Expression<?> getExpression(Meta expression) {
         if (expression instanceof Constant cv) {
             return cb.literal(cv.value());
         }

@@ -1,23 +1,18 @@
 package io.github.genie.sql.core.executor.jdbc;
 
 import io.github.genie.sql.core.SelectClause;
-import io.github.genie.sql.core.exception.BeanReflectiveException;
 import io.github.genie.sql.core.executor.ProjectionUtil;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
 
 import static io.github.genie.sql.core.SelectClause.MultiColumn;
 import static io.github.genie.sql.core.SelectClause.SingleColumn;
-import static io.github.genie.sql.core.executor.ProjectionUtil.newProxyInstance;
 
 public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
 
@@ -48,60 +43,27 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             if (fields.size() != columnsCount) {
                 throw new IllegalStateException();
             }
-            try {
-                Class<?> resultType = selectClause.resultType();
-                if (resultType.isInterface()) {
-                    return getInterfaceResult(resultSet, fields, resultType);
-                } else if (resultType.isRecord()) {
-                    return getRecordResult(resultSet, fields, resultType);
-                } else {
-                    return getBeanResult(resultSet, fields, resultType);
-                }
-            } catch (ReflectiveOperationException e) {
-                throw new BeanReflectiveException(e);
+            Class<?> resultType = selectClause.resultType();
+            if (resultType.isInterface()) {
+                return ProjectionUtil.getInterfaceResult(getJdbcResultFunction(resultSet), fields, resultType);
+            } else if (resultType.isRecord()) {
+                return ProjectionUtil.getRecordResult(getJdbcResultFunction(resultSet), fields, resultType);
+            } else {
+                return ProjectionUtil.getBeanResult(getJdbcResultFunction(resultSet), fields, resultType);
             }
         }
     }
 
     @NotNull
-    private <R> R getRecordResult(@NotNull ResultSet resultSet,
-                                  @NotNull List<? extends FieldMapping> fields,
-                                  Class<?> resultType)
-            throws SQLException, ReflectiveOperationException {
-        Map<String, Object> map = new HashMap<>();
-        int i = 0;
-        for (FieldMapping attribute : fields) {
-            Object value = JdbcUtil.getValue(resultSet, ++i, attribute.javaType());
-            map.put(attribute.fieldName(), value);
-        }
-        return ProjectionUtil.getRecordResult(resultType, map);
-    }
-
-    private <R> R getInterfaceResult(ResultSet resultSet, List<? extends FieldMapping> fields, Class<?> resultType) throws SQLException {
-        Map<Method, Object> map = new HashMap<>();
-        int i = 0;
-        for (FieldMapping attribute : fields) {
-            Object value = JdbcUtil.getValue(resultSet, ++i, attribute.javaType());
-            map.put(attribute.getter(), value);
-        }
-
-        Object result = newProxyInstance(fields, resultType, map);
-        return cast(result);
-    }
-
-    @NotNull
-    private <R> R getBeanResult(@NotNull ResultSet resultSet,
-                                @NotNull List<? extends FieldMapping> fields,
-                                Class<?> resultType)
-            throws ReflectiveOperationException {
+    private static BiFunction<Integer, Class<?>, Object> getJdbcResultFunction(@NotNull ResultSet resultSet) {
         // noinspection Convert2Lambda
-        return ProjectionUtil.getBeanResult(new BiFunction<>() {
+        return new BiFunction<>() {
             @SneakyThrows
             @Override
             public Object apply(Integer index, Class<?> resultType) {
                 return JdbcUtil.getValue(resultSet, 1 + index, resultType);
             }
-        }, fields, resultType);
+        };
     }
 
     private <R> R cast(Object result) {

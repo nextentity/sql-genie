@@ -8,10 +8,13 @@
     </encoder>
   </appender>
 
-  <!--<root level="info">
+  <root level="info">
       <appender-ref ref="STDOUT"/>
-  </root>-->
+  </root>
   <logger name="github.alittlehuang.sql4j" level="trace">
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <logger name="org.hibernate.SQL" level="debug">
     <appender-ref ref="STDOUT"/>
   </logger>
 </configuration>
