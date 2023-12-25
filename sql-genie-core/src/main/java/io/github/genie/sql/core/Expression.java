@@ -1,5 +1,6 @@
 package io.github.genie.sql.core;
 
+import java.io.Serializable;
 import java.util.List;
 
 @SuppressWarnings("unused")
@@ -7,7 +8,7 @@ public interface Expression<T, U> {
 
     Meta meta();
 
-    sealed interface Meta permits Constant, Paths, Operation {
+    sealed interface Meta extends Serializable permits Constant, Paths, Operation {
     }
 
     non-sealed interface Constant extends Meta {

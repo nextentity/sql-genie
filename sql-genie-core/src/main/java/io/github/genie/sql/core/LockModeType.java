@@ -1,6 +1,8 @@
 package io.github.genie.sql.core;
 
-public enum LockModeType {
+import java.io.Serializable;
+
+public enum LockModeType implements Serializable {
 
     READ,
     WRITE,

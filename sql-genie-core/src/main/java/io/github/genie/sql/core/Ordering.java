@@ -2,7 +2,9 @@ package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
 
-public interface Ordering<T> {
+import java.io.Serializable;
+
+public interface Ordering<T> extends Serializable {
 
     Meta meta();
 

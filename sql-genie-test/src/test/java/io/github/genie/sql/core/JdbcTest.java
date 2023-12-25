@@ -17,12 +17,34 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.genie.sql.core.Q.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.github.genie.sql.core.Q.and;
+import static io.github.genie.sql.core.Q.asc;
+import static io.github.genie.sql.core.Q.avg;
+import static io.github.genie.sql.core.Q.count;
+import static io.github.genie.sql.core.Q.desc;
+import static io.github.genie.sql.core.Q.get;
+import static io.github.genie.sql.core.Q.max;
+import static io.github.genie.sql.core.Q.min;
+import static io.github.genie.sql.core.Q.not;
+import static io.github.genie.sql.core.Q.or;
+import static io.github.genie.sql.core.Q.sum;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @SuppressWarnings("RedundantMethodOverride")

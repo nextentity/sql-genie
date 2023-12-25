@@ -2,9 +2,10 @@ package io.github.genie.sql.core;
 
 import io.github.genie.sql.core.Expression.Meta;
 
+import java.io.Serializable;
 import java.util.List;
 
-public interface SelectClause {
+public interface SelectClause extends Serializable {
 
     Class<?> resultType();
 
