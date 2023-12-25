@@ -1,5 +1,6 @@
 package io.github.genie.sql.core;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.core.Expression.Meta;
 import io.github.genie.sql.core.entity.User;
@@ -24,6 +25,7 @@ import static io.github.genie.sql.core.Q.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
+@SuppressWarnings("RedundantMethodOverride")
 @Slf4j
 public class JdbcTest extends JpaTest {
 
@@ -1189,6 +1191,18 @@ public class JdbcTest extends JpaTest {
         // assertEquals(l0, l1);
         assertEquals(l0, l2);
 
+    }
+
+    @Test
+    void projection() throws JsonProcessingException {
+        List<UserInterface> list0 = userQuery.select(UserInterface.class)
+                .getList();
+        List<UserInterface> list1 = userQuery.select(UserInterface.class)
+                .getList();
+
+        System.out.println(JsonSerializablePredicateValueTest.mapper.writeValueAsString(list0.get(0)));
+
+        assertEquals(list0, list1);
     }
 
     @Test

@@ -12,6 +12,6 @@ public interface Update {
 
     <T>  List<T> update(List<T> entities, Class<T> entityType);
 
-    <T> void updateNonNullColumn(T entity, Class<T> entityType);
+    <T> T updateNonNullColumn(T entity, Class<T> entityType);
 
 }

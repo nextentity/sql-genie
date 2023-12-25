@@ -15,7 +15,6 @@ import java.lang.reflect.RecordComponent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 
 public class ProjectionUtil {
@@ -62,13 +61,11 @@ public class ProjectionUtil {
 
     @NotNull
     private static Object newInstance(Class<?> resultType) {
-        Object row;
         try {
-            row = resultType.getConstructor().newInstance();
+            return resultType.getConstructor().newInstance();
         } catch (ReflectiveOperationException e) {
             throw new BeanReflectiveException(e);
         }
-        return row;
     }
 
     @NotNull
@@ -132,7 +129,13 @@ public class ProjectionUtil {
     private record Handler(List<? extends FieldMapping> fields,
                            Class<?> resultType,
                            Map<Method, Object> data) implements InvocationHandler {
-        private static final Method EQUALS = getMethod(() -> Object.class.getMethod("equals", Object.class));
+        private static final Method EQUALS = getEqualsMethod();
+
+        @SneakyThrows
+        @NotNull
+        private static Method getEqualsMethod() {
+            return Object.class.getMethod("equals", Object.class);
+        }
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -163,10 +166,6 @@ public class ProjectionUtil {
             return equals(handler);
         }
 
-        @SneakyThrows
-        static Method getMethod(Callable<Method> method) {
-            return method.call();
-        }
 
         @Override
         public boolean equals(Object o) {

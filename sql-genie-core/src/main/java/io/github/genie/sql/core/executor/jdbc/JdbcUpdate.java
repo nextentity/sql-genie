@@ -4,11 +4,8 @@ import io.github.genie.sql.core.Update;
 import io.github.genie.sql.core.exception.OptimisticLockException;
 import io.github.genie.sql.core.exception.SqlExecuteException;
 import io.github.genie.sql.core.exception.TransactionRequiredException;
-import io.github.genie.sql.core.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.core.executor.jdbc.ConnectionProvider.ConnectionCallback;
-import io.github.genie.sql.core.executor.jdbc.JdbcUpdateSqlBuilder;
 import io.github.genie.sql.core.executor.jdbc.JdbcUpdateSqlBuilder.PreparedSql;
-import io.github.genie.sql.core.executor.jdbc.JdbcUtil;
 import io.github.genie.sql.core.mapping.ColumnMapping;
 import io.github.genie.sql.core.mapping.FieldMapping;
 import io.github.genie.sql.core.mapping.MappingFactory;
@@ -82,14 +79,14 @@ public class JdbcUpdate implements Update {
     }
 
     @Override
-    public <T> void updateNonNullColumn(T entity, Class<T> entityType) {
+    public <T> T updateNonNullColumn(T entity, Class<T> entityType) {
         TableMapping mapping = mappingFactory.getMapping(entityType);
 
         List<ColumnMapping> nonNullColumn;
         nonNullColumn = getNonNullColumn(entity, mapping);
         if (nonNullColumn.isEmpty()) {
             log.warn("no field to update");
-            return;
+            return entity;
         }
         PreparedSql preparedSql = sqlBuilder.buildUpdate(mapping, nonNullColumn);
         FieldMapping version = mapping.version();
@@ -97,7 +94,7 @@ public class JdbcUpdate implements Update {
         if (versionValue == null) {
             throw new IllegalArgumentException("version field must not be null");
         }
-        execute(connection -> {
+        return execute(connection -> {
             String sql = preparedSql.sql();
             log.debug(sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -118,7 +115,7 @@ public class JdbcUpdate implements Update {
                     setNewVersion(entity, versions);
                 }
             }
-            return true;
+            return entity;
         });
     }
 

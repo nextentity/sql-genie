@@ -11,7 +11,7 @@
       <property name="jakarta.persistence.jdbc.user" value="root"/>
       <property name="hibernate.hbm2ddl.auto" value="update"/>
       <property name="hibernate.format_sql" value="true"/>
-      <property name="hibernate.show_sql" value="true"/>
+      <!--<property name="hibernate.show_sql" value="true"/>-->
       <property name="hibernate.jdbc.batch_size" value="1000"/>
       <property name="hibernate.physical_naming_strategy"
                 value="org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy"/>
