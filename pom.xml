@@ -13,6 +13,7 @@
   <modules>
     <module>sql-genie-core</module>
     <module>sql-genie-test</module>
+    <module>sql-ginie-api</module>
   </modules>
 
 
