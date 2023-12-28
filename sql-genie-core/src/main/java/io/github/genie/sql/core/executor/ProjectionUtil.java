@@ -30,13 +30,13 @@ public class ProjectionUtil {
             Mapping cur = projection;
             while (cur != null) {
                 deep++;
-                cur = cur.parent();
+                cur = cur.owner();
             }
             FieldMapping[] mappings = new FieldMapping[deep - 1];
             cur = projection;
             for (int i = mappings.length - 1; i >= 0; i--) {
                 mappings[i] = (FieldMapping) cur;
-                cur = cur.parent();
+                cur = cur.owner();
             }
             Class<?> fieldType = projection.javaType();
             Object value = resultSet.apply(column++, fieldType);

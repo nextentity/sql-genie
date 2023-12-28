@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 
 public interface FieldMapping extends Mapping {
 
-    Mapping parent();
+    Mapping owner();
 
     String fieldName();
 

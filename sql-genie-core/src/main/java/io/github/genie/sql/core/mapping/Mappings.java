@@ -2,33 +2,52 @@ package io.github.genie.sql.core.mapping;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class Mappings {
 
     @Data
-    public static class FieldMappingImpl implements FieldMapping {
+    public static class MappingImpl implements Mapping {
 
-        protected Class<?> javaType;
-        protected Mapping parent;
-        protected String fieldName;
-        protected Method getter;
-        protected Method setter;
-        protected Field field;
-
-        @Override
-        public Mapping parent() {
-            return parent;
-        }
+        private Mapping owner;
+        private Class<?> javaType;
 
         @Override
         public Class<?> javaType() {
             return javaType;
+        }
+
+        @Override
+        public Mapping owner() {
+            return owner;
+        }
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    public static class FieldMappingImpl extends MappingImpl implements FieldMapping {
+
+        private String fieldName;
+        private Method getter;
+        private Method setter;
+        private Field field;
+
+        public FieldMappingImpl() {
+        }
+
+        public FieldMappingImpl(FieldMapping field) {
+            this.fieldName = field.fieldName();
+            this.getter = field.getter();
+            this.setter = field.setter();
+            this.field = field.field();
+            setJavaType(field.javaType());
         }
 
         @Override
@@ -58,10 +77,9 @@ public class Mappings {
     }
 
     @Data
-    public static class TableMappingImpl implements TableMapping {
+    @EqualsAndHashCode(callSuper = true)
+    public static class TableMappingImpl extends MappingImpl implements TableMapping {
 
-        private Class<?> javaType;
-        private Mapping parent;
         private FieldMapping id;
         private FieldMapping version;
         private String tableName;
@@ -70,16 +88,6 @@ public class Mappings {
         @Override
         public FieldMapping id() {
             return id;
-        }
-
-        @Override
-        public Mapping parent() {
-            return parent;
-        }
-
-        @Override
-        public Class<?> javaType() {
-            return javaType;
         }
 
         @Override
@@ -113,9 +121,16 @@ public class Mappings {
 
     @Data
     @EqualsAndHashCode(callSuper = true)
+    @NoArgsConstructor
     public static class ColumnMappingImpl extends FieldMappingImpl implements ColumnMapping {
-        private final String columnName;
-        private final boolean versionColumn;
+        private String columnName;
+        private boolean versionColumn;
+
+        public ColumnMappingImpl(FieldMapping field, String columnName, boolean versionColumn) {
+            super(field);
+            this.columnName = columnName;
+            this.versionColumn = versionColumn;
+        }
 
         @Override
         public String columnName() {
@@ -131,11 +146,16 @@ public class Mappings {
 
     @Data
     @EqualsAndHashCode(callSuper = true)
+    @NoArgsConstructor
     public static class AssociationMappingImpl extends FieldMappingImpl implements AssociationMapping {
 
         private String joinColumnName;
         private String referencedColumnName;
-        private TableMapping referenced;
+        private Supplier<TableMapping> referenced;
+
+        public AssociationMappingImpl(FieldMapping field) {
+            super(field);
+        }
 
         @Override
         public String joinColumnName() {
@@ -149,7 +169,7 @@ public class Mappings {
 
         @Override
         public TableMapping referenced() {
-            return referenced;
+            return referenced.get();
         }
 
     }
