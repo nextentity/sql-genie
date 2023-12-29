@@ -2,13 +2,18 @@ package io.github.genie.sql.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mysql.cj.jdbc.MysqlDataSource;
-import io.github.genie.sql.core.Expression.Meta;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Path;
+import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.core.entity.User;
-import io.github.genie.sql.core.executor.jdbc.ConnectionProvider;
-import io.github.genie.sql.core.executor.jdbc.JdbcQueryExecutor;
-import io.github.genie.sql.core.executor.jdbc.JdbcResultCollector;
-import io.github.genie.sql.core.executor.jdbc.MySqlSqlBuilder;
-import io.github.genie.sql.core.mapping.JpaTableMappingFactory;
+import io.github.genie.sql.executor.jdbc.ConnectionProvider;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
+import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
+import io.github.genie.sql.executor.jdbc.MySqlSqlBuilder;
+import io.github.genie.sql.core.mapping.JpaMetamodel;
 import io.github.genie.sql.core.projection.UserInterface;
 import io.github.genie.sql.core.projection.UserModel;
 import lombok.extern.slf4j.Slf4j;
@@ -29,17 +34,17 @@ import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.genie.sql.core.Q.and;
-import static io.github.genie.sql.core.Q.asc;
-import static io.github.genie.sql.core.Q.avg;
-import static io.github.genie.sql.core.Q.count;
-import static io.github.genie.sql.core.Q.desc;
-import static io.github.genie.sql.core.Q.get;
-import static io.github.genie.sql.core.Q.max;
-import static io.github.genie.sql.core.Q.min;
-import static io.github.genie.sql.core.Q.not;
-import static io.github.genie.sql.core.Q.or;
-import static io.github.genie.sql.core.Q.sum;
+import static io.github.genie.sql.builder.Q.and;
+import static io.github.genie.sql.builder.Q.asc;
+import static io.github.genie.sql.builder.Q.avg;
+import static io.github.genie.sql.builder.Q.count;
+import static io.github.genie.sql.builder.Q.desc;
+import static io.github.genie.sql.builder.Q.get;
+import static io.github.genie.sql.builder.Q.max;
+import static io.github.genie.sql.builder.Q.min;
+import static io.github.genie.sql.builder.Q.not;
+import static io.github.genie.sql.builder.Q.or;
+import static io.github.genie.sql.builder.Q.sum;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -66,12 +71,12 @@ public class JdbcTest extends JpaTest {
                 }
             }
         };
-        query = Query.createQuery(new JdbcQueryExecutor(
-                new JpaTableMappingFactory(),
+        query = new JdbcQueryExecutor(new JpaMetamodel(),
                 new MySqlSqlBuilder(),
                 sqlExecutor,
                 new JdbcResultCollector()
-        ));
+        ).createQuery();
+
         userQuery = query.from(User.class);
     }
 
@@ -268,7 +273,7 @@ public class JdbcTest extends JpaTest {
 
     @Test
     void testGroupBy() {
-        QueryMetadata metadata = userQuery
+        QueryStructure metadata = userQuery
                 .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
@@ -277,7 +282,7 @@ public class JdbcTest extends JpaTest {
                 .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
         System.out.println(metadata);
         MySqlSqlBuilder builder = new MySqlSqlBuilder();
-        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, new JpaTableMappingFactory());
+        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, new JpaMetamodel());
         System.out.println(sql.sql());
 
         String actual = "select" +
@@ -294,7 +299,7 @@ public class JdbcTest extends JpaTest {
     @Test
     public void testAggregateFunction() {
 
-        List<Expression<User, ?>> selected = Arrays.asList(
+        List<ExpressionBuilder<User, ?>> selected = Arrays.asList(
                 min(User::getRandomNumber),
                 max(User::getRandomNumber),
                 count(User::getRandomNumber),
@@ -595,7 +600,7 @@ public class JdbcTest extends JpaTest {
     @Test
     public void testOperator() {
 
-        ExpressionOps.Root.Predicate<User> isValid = get(User::isValid);
+        Predicate<User> isValid = get(User::isValid);
         List<User> qList = userQuery.where(isValid).getList();
         List<User> validUsers = allUsers.stream().filter(User::isValid)
                 .collect(Collectors.toList());
@@ -962,10 +967,10 @@ public class JdbcTest extends JpaTest {
 
     @Test
     void e() {
-        Expression<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
+        ExpressionBuilder<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
                 .and(User::getUsername).eq(username))
                 .not();
-        Meta basic = ne.meta();
+        Expression basic = ne.build();
         System.out.println(basic);
     }
 

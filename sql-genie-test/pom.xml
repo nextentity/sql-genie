@@ -14,15 +14,26 @@
   <artifactId>sql-genie-test</artifactId>
 
   <properties>
-    <maven.compiler.source>8</maven.compiler.source>
-    <maven.compiler.target>8</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>io.github.genie</groupId>
-      <artifactId>sql-genie-core</artifactId>
+      <artifactId>sql-genie-jpa-metamodel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.genie</groupId>
+      <artifactId>sql-genie-jdbc</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.genie</groupId>
+      <artifactId>sql-genie-jpa</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

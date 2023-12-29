@@ -1,12 +1,18 @@
 package io.github.genie.sql.core;
 
-import io.github.genie.sql.core.Expression.Meta;
-import io.github.genie.sql.core.Query.Select0;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Path;
+import io.github.genie.sql.api.Query;
+import io.github.genie.sql.api.Query.Select0;
+import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.core.entity.User;
-import io.github.genie.sql.core.executor.jdbc.JdbcQueryExecutor;
-import io.github.genie.sql.core.executor.jdbc.MySqlSqlBuilder;
-import io.github.genie.sql.core.executor.jpa.JpaQueryExecutor;
-import io.github.genie.sql.core.mapping.JpaTableMappingFactory;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
+import io.github.genie.sql.executor.jdbc.MySqlSqlBuilder;
+import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
+import io.github.genie.sql.core.mapping.JpaMetamodel;
 import io.github.genie.sql.core.projection.UserInterface;
 import io.github.genie.sql.core.projection.UserModel;
 import jakarta.persistence.EntityManager;
@@ -23,8 +29,8 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.genie.sql.core.Q.*;
-import static io.github.genie.sql.core.Q.get;
+import static io.github.genie.sql.builder.Q.*;
+import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -56,7 +62,7 @@ public class JpaTest {
                 .getResultList();
 
         manager.clear();
-        userQuery = Query.createQuery(new JpaQueryExecutor(manager, new JpaTableMappingFactory())).from(User.class);
+        userQuery = new JpaQueryExecutor(manager, new JpaMetamodel()).createQuery().from(User.class);
     }
 
     public static void doInTransaction(Runnable action) {
@@ -287,7 +293,7 @@ public class JpaTest {
 
     @Test
     void testGroupBy() {
-        QueryMetadata metadata = userQuery
+        QueryStructure metadata = userQuery
                 .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
@@ -296,7 +302,7 @@ public class JpaTest {
                 .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
         System.out.println(metadata);
         MySqlSqlBuilder builder = new MySqlSqlBuilder();
-        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, new JpaTableMappingFactory());
+        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, new JpaMetamodel());
         System.out.println(sql.sql());
 
         String actual = "select" +
@@ -313,7 +319,7 @@ public class JpaTest {
     @Test
     public void testAggregateFunction() {
 
-        List<Expression<User, ?>> selected = Arrays.asList(
+        List<ExpressionBuilder<User, ?>> selected = Arrays.asList(
                 min(User::getRandomNumber),
                 max(User::getRandomNumber),
                 count(User::getRandomNumber),
@@ -614,7 +620,7 @@ public class JpaTest {
     @Test
     public void testOperator() {
 
-        ExpressionOps.Root.Predicate<User> isValid = get(User::isValid);
+        Predicate<User> isValid = get(User::isValid);
         List<User> qList = userQuery.where(isValid).getList();
         List<User> validUsers = allUsers.stream().filter(User::isValid)
                 .collect(Collectors.toList());
@@ -991,10 +997,10 @@ public class JpaTest {
 
     @Test
     void e() {
-        Expression<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
+        ExpressionBuilder<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
                 .and(User::getUsername).eq(username))
                 .not();
-        Meta basic = ne.meta();
+        Expression basic = ne.build();
         System.out.println(basic);
     }
 
