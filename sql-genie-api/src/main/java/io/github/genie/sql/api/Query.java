@@ -275,7 +275,7 @@ public interface Query {
 
         default T getFirst(int offset) {
             List<T> list = getList(offset, 1);
-            return list.isEmpty() ? null : list.getFirst();
+            return list.isEmpty() ? null : list.get(0);
         }
 
         default T requireSingle() {
@@ -299,7 +299,7 @@ public interface Query {
             if (list.size() > 1) {
                 throw new IllegalStateException("found more than one");
             }
-            return list.isEmpty() ? null : list.getFirst();
+            return list.isEmpty() ? null : list.get(0);
         }
 
         default List<T> getList(int offset) {
@@ -328,7 +328,7 @@ public interface Query {
 
         default T getFirst(int offset, LockModeType lockModeType) {
             List<T> list = getList(offset, 1, lockModeType);
-            return list.isEmpty() ? null : list.getFirst();
+            return list.isEmpty() ? null : list.get(0);
         }
 
         default T requireSingle(LockModeType lockModeType) {
@@ -352,7 +352,7 @@ public interface Query {
             if (list.size() > 1) {
                 throw new IllegalStateException("found more than one");
             }
-            return list.isEmpty() ? null : list.getFirst();
+            return list.isEmpty() ? null : list.get(0);
         }
 
         default List<T> getList(int offset, LockModeType lockModeType) {
