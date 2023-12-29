@@ -69,7 +69,7 @@ public interface Query {
 
         <R> Where0<T, R> select(Class<R> projectionType);
 
-        AggWhere0<T, Object[]> select(List<? extends ExpressionBuilder<T, ?>> paths);
+        AggWhere0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
 
         <R> AggWhere0<T, R> select(Path<T, ? extends R> expression);
 
@@ -122,7 +122,7 @@ public interface Query {
 
     interface AggWhere<T, U> extends Where<T, U> {
 
-        AggGroupBy0<T, U> where(ExpressionBuilder<T, Boolean> predicate);
+        AggGroupBy0<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
         @Override
         <N> PathOperator<T, N, AggAndBuilder<T, U>> where(Path<T, N> path);
@@ -143,7 +143,7 @@ public interface Query {
 
     interface Where<T, U> {
 
-        OrderBy0<T, U> where(ExpressionBuilder<T, Boolean> predicate);
+        OrderBy0<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
         <N> PathOperator<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
 
@@ -174,7 +174,7 @@ public interface Query {
         StringOperator<T, AggAndBuilder<T, U>> and(StringPath<T> path);
 
         @Override
-        AggAndBuilder<T, U> and(ExpressionBuilder<T, Boolean> predicate);
+        AggAndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
 
 
     }
@@ -191,12 +191,12 @@ public interface Query {
 
         AndBuilder<T, U> and(BooleanPath<T> path);
 
-        AndBuilder<T, U> and(ExpressionBuilder<T, Boolean> predicate);
+        AndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
 
     }
 
     interface GroupBy<T, U> {
-        Having0<T, U> groupBy(List<? extends ExpressionBuilder<T, ?>> expressions);
+        Having0<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions);
 
         Having0<T, U> groupBy(Path<T, ?> path);
 
@@ -226,7 +226,7 @@ public interface Query {
 
     interface Having<T, U> {
 
-        OrderBy0<T, U> having(ExpressionBuilder<T, Boolean> predicate);
+        OrderBy0<T, U> having(ExpressionHolder<T, Boolean> predicate);
 
     }
 

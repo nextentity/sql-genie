@@ -31,8 +31,8 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
     @Override
     @NotNull
-    public <R> List<R> getList(@NotNull QueryStructure queryMetadata) {
-        PreparedSql sql = sqlBuilder.build(queryMetadata, mappings);
+    public <R> List<R> getList(@NotNull QueryStructure queryStructure) {
+        PreparedSql sql = sqlBuilder.build(queryStructure, mappings);
         try {
             return connectionProvider.execute(connection -> {
                 // noinspection SqlSourceToSinkFlow
@@ -43,7 +43,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
                         log.debug("ARGS: {}", sql.args());
                     }
                     try (ResultSet resultSet = statement.executeQuery()) {
-                        return resolveResult(queryMetadata, sql, resultSet);
+                        return resolveResult(queryStructure, sql, resultSet);
                     }
                 }
             });
@@ -53,7 +53,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
     }
 
     @NotNull
-    private <T> List<T> resolveResult(QueryStructure queryMetadata,
+    private <T> List<T> resolveResult(QueryStructure queryStructure,
                                       PreparedSql sql,
                                       ResultSet resultSet) throws SQLException {
         int type = resultSet.getType();
@@ -68,8 +68,8 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
         }
         while (resultSet.next()) {
             T row = collector.collect(resultSet,
-                    queryMetadata.select(),
-                    queryMetadata.from(),
+                    queryStructure.select(),
+                    queryStructure.from(),
                     sql.selected());
             result.add(row);
         }
@@ -78,7 +78,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
 
     public interface QuerySqlBuilder {
-        PreparedSql build(QueryStructure metadata, Metamodel mappings);
+        PreparedSql build(QueryStructure structure, Metamodel mappings);
 
     }
 

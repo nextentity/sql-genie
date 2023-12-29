@@ -1,7 +1,7 @@
 package io.github.genie.sql.core;
 
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
@@ -293,16 +293,16 @@ public class JpaTest {
 
     @Test
     void testGroupBy() {
-        QueryStructure metadata = userQuery
+        QueryStructure structure = userQuery
                 .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
                 .having(get(User::getRandomNumber).eq(10))
                 .buildMetadata()
                 .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
-        System.out.println(metadata);
+        System.out.println(structure);
         MySqlSqlBuilder builder = new MySqlSqlBuilder();
-        JdbcQueryExecutor.PreparedSql sql = builder.build(metadata, new JpaMetamodel());
+        JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
         System.out.println(sql.sql());
 
         String actual = "select" +
@@ -319,7 +319,7 @@ public class JpaTest {
     @Test
     public void testAggregateFunction() {
 
-        List<ExpressionBuilder<User, ?>> selected = Arrays.asList(
+        List<ExpressionHolder<User, ?>> selected = Arrays.asList(
                 min(User::getRandomNumber),
                 max(User::getRandomNumber),
                 count(User::getRandomNumber),
@@ -997,10 +997,10 @@ public class JpaTest {
 
     @Test
     void e() {
-        ExpressionBuilder<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
+        ExpressionHolder<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
                 .and(User::getUsername).eq(username))
                 .not();
-        Expression basic = ne.build();
+        Expression basic = ne.expression();
         System.out.println(basic);
     }
 

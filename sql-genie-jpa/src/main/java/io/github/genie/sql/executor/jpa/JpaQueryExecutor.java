@@ -41,23 +41,23 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
     }
 
     @Override
-    public <T> List<T> getList(@NotNull QueryStructure queryMetadata) {
-        Selection selected = queryMetadata.select();
+    public <T> List<T> getList(@NotNull QueryStructure queryStructure) {
+        Selection selected = queryStructure.select();
         if (selected instanceof SingleColumn singleColumn) {
-            List<Object[]> objectsList = getObjectsList(queryMetadata, List.of(singleColumn.column()));
+            List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
             List<Object> result = objectsList.stream().map(objects -> objects[0]).toList();
             return castList(result);
         } else if (selected instanceof MultiColumn multiColumn) {
-            List<Object[]> objectsList = getObjectsList(queryMetadata, multiColumn.columns());
+            List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
             return castList(objectsList);
         } else {
-            Class<?> resultType = queryMetadata.select().resultType();
-            if (resultType == queryMetadata.from()) {
-                List<?> resultList = getEntityResultList(queryMetadata);
+            Class<?> resultType = queryStructure.select().resultType();
+            if (resultType == queryStructure.from()) {
+                List<?> resultList = getEntityResultList(queryStructure);
                 return castList(resultList);
             } else {
                 Projection projectionMapping = mappers
-                        .getProjection(queryMetadata.from(), resultType);
+                        .getProjection(queryStructure.from(), resultType);
                 List<ProjectionAttribute> fields = projectionMapping.attributes();
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
@@ -65,7 +65,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                             return ExpressionBuilders.fromPath(fieldName);
                         })
                         .toList();
-                List<Object[]> objectsList = getObjectsList(queryMetadata, columns);
+                List<Object[]> objectsList = getObjectsList(queryStructure, columns);
                 List<Attribute> list = fields.stream().map(ProjectionAttribute::field).toList();
                 if (resultType.isInterface()) {
                     return objectsList.stream()
@@ -91,18 +91,18 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
     }
 
 
-    private List<?> getEntityResultList(@NotNull QueryStructure queryMetadata) {
+    private List<?> getEntityResultList(@NotNull QueryStructure structure) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<?> query = cb.createQuery(queryMetadata.from());
-        Root<?> root = query.from(queryMetadata.from());
-        return new EntityBuilder(root, cb, query, queryMetadata).getResultList();
+        CriteriaQuery<?> query = cb.createQuery(structure.from());
+        Root<?> root = query.from(structure.from());
+        return new EntityBuilder(root, cb, query, structure).getResultList();
     }
 
-    private List<Object[]> getObjectsList(@NotNull QueryStructure queryMetadata, List<? extends Expression> columns) {
+    private List<Object[]> getObjectsList(@NotNull QueryStructure structure, List<? extends Expression> columns) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<?> query = cb.createQuery(Object[].class);
-        Root<?> root = query.from(queryMetadata.from());
-        return new ObjectArrayBuilder(root, cb, query, queryMetadata, columns).getResultList();
+        Root<?> root = query.from(structure.from());
+        return new ObjectArrayBuilder(root, cb, query, structure, columns).getResultList();
     }
 
     private static <T> List<T> castList(List<?> result) {
@@ -117,9 +117,9 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         public ObjectArrayBuilder(Root<?> root,
                                   CriteriaBuilder cb,
                                   CriteriaQuery<?> query,
-                                  QueryStructure metadata,
+                                  QueryStructure structure,
                                   List<? extends Expression> selects) {
-            super(root, cb, query, metadata);
+            super(root, cb, query, structure);
             this.selects = selects;
         }
 
@@ -150,8 +150,8 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
     }
 
     class EntityBuilder extends Builder {
-        public EntityBuilder(Root<?> root, CriteriaBuilder cb, CriteriaQuery<?> query, QueryStructure metadata) {
-            super(root, cb, query, metadata);
+        public EntityBuilder(Root<?> root, CriteriaBuilder cb, CriteriaQuery<?> query, QueryStructure structure) {
+            super(root, cb, query, structure);
         }
 
         @Override
@@ -163,12 +163,12 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
 
     protected static abstract class Builder extends PredicateBuilder {
-        protected final QueryStructure metadata;
+        protected final QueryStructure structure;
         protected final CriteriaQuery<?> query;
 
-        public Builder(Root<?> root, CriteriaBuilder cb, CriteriaQuery<?> query, QueryStructure metadata) {
+        public Builder(Root<?> root, CriteriaBuilder cb, CriteriaQuery<?> query, QueryStructure structure) {
             super(root, cb);
-            this.metadata = metadata;
+            this.structure = structure;
             this.query = query;
         }
 
@@ -218,20 +218,20 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected List<?> getResultList() {
-            setWhere(metadata.where());
-            setGroupBy(metadata.groupBy());
-            setOrderBy(metadata.orderBy());
-            setFetch(metadata.fetch());
+            setWhere(structure.where());
+            setGroupBy(structure.groupBy());
+            setOrderBy(structure.orderBy());
+            setFetch(structure.fetch());
             TypedQuery<?> objectsQuery = getTypedQuery();
-            Integer offset = metadata.offset();
+            Integer offset = structure.offset();
             if (offset != null && offset > 0) {
                 objectsQuery = objectsQuery.setFirstResult(offset);
             }
-            Integer maxResult = metadata.limit();
+            Integer maxResult = structure.limit();
             if (maxResult != null && maxResult > 0) {
                 objectsQuery = objectsQuery.setMaxResults(maxResult);
             }
-            LockModeType lockModeType = LockModeTypeAdapter.of(metadata.lockType());
+            LockModeType lockModeType = LockModeTypeAdapter.of(structure.lockType());
             if (lockModeType != null) {
                 objectsQuery.setLockMode(lockModeType);
             }

@@ -3,7 +3,7 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
@@ -132,8 +132,8 @@ final class QueryStructures {
     }
 
     record OrderImpl<T>(Expression expression, SortOrder order) implements Order<T> {
-        public static <T> OrderImpl<T> of(ExpressionBuilder<T, ?> meta, SortOrder order) {
-            return new OrderImpl<>(meta.build(), order);
+        public static <T> OrderImpl<T> of(ExpressionHolder<T, ?> holder, SortOrder order) {
+            return new OrderImpl<>(holder.expression(), order);
         }
 
         @Override

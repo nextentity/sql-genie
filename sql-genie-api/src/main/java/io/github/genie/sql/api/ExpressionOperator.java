@@ -9,25 +9,25 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface ExpressionOperator<T, U, B> extends ExpressionBuilder<T, U> {
+public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
     B eq(U value);
 
-    B eq(ExpressionBuilder<T, U> value);
+    B eq(ExpressionHolder<T, U> value);
 
     B ne(U value);
 
-    B ne(ExpressionBuilder<T, U> value);
+    B ne(ExpressionHolder<T, U> value);
 
     @SuppressWarnings({"unchecked"})
     B in(U... values);
 
-    B in(@NotNull List<? extends ExpressionBuilder<T, U>> values);
+    B in(@NotNull List<? extends ExpressionHolder<T, U>> values);
 
     @SuppressWarnings({"unchecked"})
     B notIn(U... values);
 
-    B notIn(@NotNull List<? extends ExpressionBuilder<T, U>> values);
+    B notIn(@NotNull List<? extends ExpressionHolder<T, U>> values);
 
     B isNull();
 
@@ -130,15 +130,15 @@ public interface ExpressionOperator<T, U, B> extends ExpressionBuilder<T, U> {
 
         NumberOperator<T, U, B> mod(U value);
 
-        NumberOperator<T, U, B> add(ExpressionBuilder<T, U> value);
+        NumberOperator<T, U, B> add(ExpressionHolder<T, U> value);
 
-        NumberOperator<T, U, B> subtract(ExpressionBuilder<T, U> value);
+        NumberOperator<T, U, B> subtract(ExpressionHolder<T, U> value);
 
-        NumberOperator<T, U, B> multiply(ExpressionBuilder<T, U> value);
+        NumberOperator<T, U, B> multiply(ExpressionHolder<T, U> value);
 
-        NumberOperator<T, U, B> divide(ExpressionBuilder<T, U> value);
+        NumberOperator<T, U, B> divide(ExpressionHolder<T, U> value);
 
-        NumberOperator<T, U, B> mod(ExpressionBuilder<T, U> value);
+        NumberOperator<T, U, B> mod(ExpressionHolder<T, U> value);
 
         <V extends Number & Comparable<V>> NumberOperator<T, V, B> sum();
 
@@ -164,25 +164,25 @@ public interface ExpressionOperator<T, U, B> extends ExpressionBuilder<T, U> {
 
         B notBetween(U l, U r);
 
-        B ge(ExpressionBuilder<T, U> value);
+        B ge(ExpressionHolder<T, U> value);
 
-        B gt(ExpressionBuilder<T, U> value);
+        B gt(ExpressionHolder<T, U> value);
 
-        B le(ExpressionBuilder<T, U> value);
+        B le(ExpressionHolder<T, U> value);
 
-        B lt(ExpressionBuilder<T, U> value);
+        B lt(ExpressionHolder<T, U> value);
 
-        B between(ExpressionBuilder<T, U> l, ExpressionBuilder<T, U> r);
+        B between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r);
 
-        B between(ExpressionBuilder<T, U> l, U r);
+        B between(ExpressionHolder<T, U> l, U r);
 
-        B between(U l, ExpressionBuilder<T, U> r);
+        B between(U l, ExpressionHolder<T, U> r);
 
-        B notBetween(ExpressionBuilder<T, U> l, ExpressionBuilder<T, U> r);
+        B notBetween(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r);
 
-        B notBetween(ExpressionBuilder<T, U> l, U r);
+        B notBetween(ExpressionHolder<T, U> l, U r);
 
-        B notBetween(U l, ExpressionBuilder<T, U> r);
+        B notBetween(U l, ExpressionHolder<T, U> r);
 
         Order<T> asc();
 
@@ -205,9 +205,9 @@ public interface ExpressionOperator<T, U, B> extends ExpressionBuilder<T, U> {
 
         StringOperator<T, OrConnector<T>> or(StringPath<T> path);
 
-        OrConnector<T> or(ExpressionBuilder<T, Boolean> value);
+        OrConnector<T> or(ExpressionHolder<T, Boolean> value);
 
-        OrConnector<T> or(List<ExpressionBuilder<T, Boolean>> values);
+        OrConnector<T> or(List<ExpressionHolder<T, Boolean>> values);
 
     }
 
@@ -226,9 +226,9 @@ public interface ExpressionOperator<T, U, B> extends ExpressionBuilder<T, U> {
 
         AndConnector<T> and(BooleanPath<T> path);
 
-        AndConnector<T> and(ExpressionBuilder<T, Boolean> value);
+        AndConnector<T> and(ExpressionHolder<T, Boolean> value);
 
-        AndConnector<T> and(List<ExpressionBuilder<T, Boolean>> values);
+        AndConnector<T> and(List<ExpressionHolder<T, Boolean>> values);
     }
 
     interface BooleanOperator<T, B> extends ComparableOperator<T, Boolean, B> {

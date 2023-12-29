@@ -2,7 +2,7 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
@@ -57,25 +57,25 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     private final QueryExecutor queryExecutor;
-    private final QueryStructureImpl queryMetadata;
+    private final QueryStructureImpl queryStructure;
 
 
     public QueryBuilder(QueryExecutor queryExecutor, Class<T> type) {
         this(queryExecutor, new QueryStructureImpl(type));
     }
 
-    QueryBuilder(QueryExecutor queryExecutor, QueryStructureImpl queryMetadata) {
+    QueryBuilder(QueryExecutor queryExecutor, QueryStructureImpl queryStructure) {
         this.queryExecutor = queryExecutor;
-        this.queryMetadata = queryMetadata;
+        this.queryStructure = queryStructure;
     }
 
-    <X, Y> QueryBuilder<X, Y> update(QueryStructureImpl queryMetadata) {
-        return new QueryBuilder<>(queryExecutor, queryMetadata);
+    <X, Y> QueryBuilder<X, Y> update(QueryStructureImpl queryStructure) {
+        return new QueryBuilder<>(queryExecutor, queryStructure);
     }
 
     @Override
     public <R> Where0<T, R> select(Class<R> projectionType) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.select = new SelectClauseImpl(projectionType);
         return update(metadata);
     }
@@ -83,7 +83,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public <R> AggWhere0<T, R> select(Path<T, ? extends R> expression) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         Expression paths = ExpressionBuilders.of(expression);
         Class<?> type = getType(expression);
         metadata.select = new SingleColumnSelect(type, paths);
@@ -96,14 +96,14 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public AggWhere0<T, Object[]> select(List<? extends ExpressionBuilder<T, ?>> expressions) {
-        QueryStructureImpl metadata = queryMetadata.copy();
-        metadata.select = new MultiColumnSelect(expressions.stream().map(ExpressionBuilder::build).toList());
+    public AggWhere0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
+        QueryStructureImpl metadata = queryStructure.copy();
+        metadata.select = new MultiColumnSelect(expressions.stream().map(ExpressionHolder::expression).toList());
         return update(metadata);
     }
 
     private Class<?> getType(Path<?, ?> path) {
-        Class<?> fromClause = queryMetadata.from;
+        Class<?> fromClause = queryStructure.from;
         String name = Util.getReferenceMethodName(path);
         Method method;
         try {
@@ -115,15 +115,15 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public AggGroupBy0<T, U> where(ExpressionBuilder<T, Boolean> predicate) {
-        QueryStructureImpl metadata = queryMetadata.copy();
-        metadata.where = predicate.build();
+    public AggGroupBy0<T, U> where(ExpressionHolder<T, Boolean> predicate) {
+        QueryStructureImpl metadata = queryStructure.copy();
+        metadata.where = predicate.expression();
         return update(metadata);
     }
 
     @Override
     public Collector<U> orderBy(List<? extends Order<T>> builder) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.orderBy = builder;
         return update(metadata);
     }
@@ -131,12 +131,12 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public int count() {
         QueryStructureImpl metadata = buildCountData();
-        return queryExecutor.<Number>getList(metadata).getFirst().intValue();
+        return queryExecutor.<Number>getList(metadata).get(0).intValue();
     }
 
     @NotNull
     private QueryStructures.QueryStructureImpl buildCountData() {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.select = COUNT_ANY;
         metadata.lockType = LockModeType.NONE;
         return metadata;
@@ -150,7 +150,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @NotNull
     private QueryStructures.QueryStructureImpl buildListData(int offset, int maxResult, LockModeType lockModeType) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.offset = offset;
         metadata.limit = maxResult;
         metadata.lockType = lockModeType;
@@ -165,7 +165,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @NotNull
     private QueryStructures.QueryStructureImpl buildExistData(int offset) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.select = SELECT_ANY;
         metadata.offset = offset;
         metadata.limit = 1;
@@ -200,15 +200,15 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
 
     @Override
-    public Having0<T, U> groupBy(List<? extends ExpressionBuilder<T, ?>> expressions) {
-        QueryStructureImpl metadata = queryMetadata.copy();
-        metadata.groupBy = expressions.stream().map(ExpressionBuilder::build).toList();
+    public Having0<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
+        QueryStructureImpl metadata = queryStructure.copy();
+        metadata.groupBy = expressions.stream().map(ExpressionHolder::expression).toList();
         return update(metadata);
     }
 
     @Override
     public Having0<T, U> groupBy(Path<T, ?> path) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         metadata.groupBy = List.of(ExpressionBuilders.of(path));
         return update(metadata);
     }
@@ -220,11 +220,11 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public GroupBy0<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions) {
-        QueryStructureImpl metadata = queryMetadata.copy();
+        QueryStructureImpl metadata = queryStructure.copy();
         List<Column> list = new ArrayList<>(expressions.size());
         for (PathOperator<T, ?, Predicate<T>> expression : expressions) {
-            Expression meta = expression.build();
-            if (meta instanceof Column column) {
+            Expression expr = expression.expression();
+            if (expr instanceof Column column) {
                 list.add(column);
             }
         }
@@ -238,9 +238,9 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     }
 
     @Override
-    public OrderBy0<T, U> having(ExpressionBuilder<T, Boolean> predicate) {
-        QueryStructureImpl metadata = queryMetadata.copy();
-        metadata.having = predicate.build();
+    public OrderBy0<T, U> having(ExpressionHolder<T, Boolean> predicate) {
+        QueryStructureImpl metadata = queryStructure.copy();
+        metadata.having = predicate.expression();
         return update(metadata);
     }
 
@@ -276,7 +276,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         return new DefaultExpressionOperator<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
-    QueryStructureImpl queryMetadata() {
-        return queryMetadata;
+    QueryStructureImpl queryStructure() {
+        return queryStructure;
     }
 }

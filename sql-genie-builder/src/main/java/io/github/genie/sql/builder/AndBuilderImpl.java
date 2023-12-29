@@ -1,7 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
@@ -80,7 +80,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     }
 
     @Override
-    public AggAndBuilder<T, U> and(ExpressionBuilder<T, Boolean> predicate) {
+    public AggAndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = ExpressionBuilders.of(predicate);
@@ -99,9 +99,9 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
 
 
     private QueryBuilder<T, U> getQueryBuilder() {
-        QueryStructureImpl queryMetadata = queryBuilder.queryMetadata().copy();
-        queryMetadata.where = expressionBuilder.build();
-        return queryBuilder.update(queryMetadata);
+        QueryStructureImpl structure = queryBuilder.queryStructure().copy();
+        structure.where = expressionBuilder.expression();
+        return queryBuilder.update(structure);
     }
 
     @Override
@@ -130,7 +130,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     }
 
     @Override
-    public Query.Having0<T, U> groupBy(List<? extends ExpressionBuilder<T, ?>> expressions) {
+    public Query.Having0<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
         return getQueryBuilder().groupBy(expressions);
     }
 

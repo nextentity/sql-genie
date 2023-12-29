@@ -31,8 +31,8 @@ import java.util.Map;
 
 public class MySqlSqlBuilder implements QuerySqlBuilder {
     @Override
-    public PreparedSql build(QueryStructure metadata, Metamodel mappings) {
-        return new Builder(metadata, metadata.from(), mappings).build();
+    public PreparedSql build(QueryStructure structure, Metamodel mappings) {
+        return new Builder(structure, structure.from(), mappings).build();
     }
 
 
@@ -56,15 +56,15 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         protected final StringBuilder sql = new StringBuilder();
         protected final List<Object> args = new ArrayList<>();
         protected final Map<Column, Integer> joins = new LinkedHashMap<>();
-        protected final QueryStructure queryMetadata;
+        protected final QueryStructure queryStructure;
         protected final EntityType entityType;
         protected final Metamodel mappers;
-        protected final List<Expression> selectMetas = new ArrayList<>();
-        protected final List<Attribute> selectFields = new ArrayList<>();
+        protected final List<Expression> selectedExpressions = new ArrayList<>();
+        protected final List<Attribute> selectedAttributes = new ArrayList<>();
 
 
-        public Builder(QueryStructure queryMetadata, Class<?> type, Metamodel mappers) {
-            this.queryMetadata = queryMetadata;
+        public Builder(QueryStructure queryStructure, Class<?> type, Metamodel mappers) {
+            this.queryStructure = queryStructure;
             this.mappers = mappers;
             this.entityType = mappers.getEntity(type);
         }
@@ -82,38 +82,38 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
             appendHaving();
             appendOffsetAndLimit();
             insertJoin(sqlIndex);
-            appendLockModeType(queryMetadata.lockType());
-            return new PreparedSqlImpl(sql.toString(), args, selectFields);
+            appendLockModeType(queryStructure.lockType());
+            return new PreparedSqlImpl(sql.toString(), args, selectedAttributes);
         }
 
         private void buildProjectionPaths() {
-            Selection selected = queryMetadata.select();
+            Selection selected = queryStructure.select();
             if (selected instanceof SingleColumn singleColumn) {
-                selectMetas.add(singleColumn.column());
+                selectedExpressions.add(singleColumn.column());
             } else if (selected instanceof MultiColumn multiColumn) {
-                selectMetas.addAll(multiColumn.columns());
-            } else if (queryMetadata.select().resultType() == queryMetadata.from()) {
+                selectedExpressions.addAll(multiColumn.columns());
+            } else if (queryStructure.select().resultType() == queryStructure.from()) {
                 EntityType table = mappers
-                        .getEntity(queryMetadata.select().resultType());
+                        .getEntity(queryStructure.select().resultType());
                 for (Attribute mapping : table.fields()) {
                     if (!(mapping instanceof BasicAttribute column)) {
                         continue;
                     }
                     Column columns = Expressions.ofPath(column.name());
-                    selectMetas.add(columns);
-                    selectFields.add(mapping);
+                    selectedExpressions.add(columns);
+                    selectedAttributes.add(mapping);
                 }
             } else {
                 Projection projectionMapping = mappers
-                        .getProjection(queryMetadata.from(), queryMetadata.select().resultType());
+                        .getProjection(queryStructure.from(), queryStructure.select().resultType());
                 for (ProjectionAttribute mapping : projectionMapping.attributes()) {
                     if (!(mapping.baseField() instanceof BasicAttribute column)) {
                         continue;
                     }
 
                     Column columns = Expressions.ofPath(column.name());
-                    selectMetas.add(columns);
-                    selectFields.add(mapping.field());
+                    selectedExpressions.add(columns);
+                    selectedAttributes.add(mapping.field());
                 }
             }
         }
@@ -124,15 +124,15 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
 
         private void appendSelects() {
             String join = NONE_DELIMITER;
-            for (Expression meta : selectMetas) {
+            for (Expression expression : selectedExpressions) {
                 sql.append(join);
-                appendExpression(meta);
+                appendExpression(expression);
                 join = DELIMITER;
             }
         }
 
         protected void appendFetchPath() {
-            List<? extends Column> fetchClause = queryMetadata.fetch();
+            List<? extends Column> fetchClause = queryStructure.fetch();
             if (fetchClause != null) {
                 for (Column fetch : fetchClause) {
                     Attribute attribute = getAttribute(fetch);
@@ -147,8 +147,8 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
                         sql.append(",");
                         Column column = Expressions.concat(fetch, mapping.name());
                         appendPaths(column);
-                        selectMetas.add(column);
-                        selectFields.add(field);
+                        selectedExpressions.add(column);
+                        selectedAttributes.add(field);
                     }
                 }
             }
@@ -196,7 +196,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
 
 
         protected void appendWhere() {
-            Expression where = queryMetadata.where();
+            Expression where = queryStructure.where();
             if (where == null || Expressions.isTrue(where)) {
                 return;
             }
@@ -205,7 +205,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         }
 
         protected void appendHaving() {
-            Expression having = queryMetadata.having();
+            Expression having = queryStructure.having();
             if (having == null || Expressions.isTrue(having)) {
                 return;
             }
@@ -218,15 +218,15 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         }
 
 
-        protected void appendExpression(List<Object> args, Expression meta) {
-            if (meta instanceof Constant constant) {
+        protected void appendExpression(List<Object> args, Expression expression) {
+            if (expression instanceof Constant constant) {
                 appendConstant(args, constant);
-            } else if (meta instanceof Column column) {
+            } else if (expression instanceof Column column) {
                 appendPaths(column);
-            } else if (meta instanceof Operation operation) {
+            } else if (expression instanceof Operation operation) {
                 appendOperation(args, operation);
             } else {
-                throw new UnsupportedOperationException("unknown type " + meta.getClass());
+                throw new UnsupportedOperationException("unknown type " + expression.getClass());
             }
         }
 
@@ -449,8 +449,8 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         }
 
         protected void appendOffsetAndLimit() {
-            int offset = unwrap(queryMetadata.offset());
-            int limit = unwrap(queryMetadata.limit());
+            int offset = unwrap(queryStructure.offset());
+            int limit = unwrap(queryStructure.limit());
             if (offset >= 0 || limit >= 0) {
                 sql.append(" limit ")
                         .append(Math.max(offset, 0))
@@ -460,7 +460,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         }
 
         private void appendGroupBy() {
-            List<? extends Expression> groupBy = queryMetadata.groupBy();
+            List<? extends Expression> groupBy = queryStructure.groupBy();
             if (groupBy != null && !groupBy.isEmpty()) {
                 sql.append(" group by ");
                 boolean first = true;
@@ -476,7 +476,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
         }
 
         protected void appendOrderBy() {
-            List<? extends Order<?>> orders = queryMetadata.orderBy();
+            List<? extends Order<?>> orders = queryStructure.orderBy();
             if (orders != null && !orders.isEmpty()) {
                 sql.append(ORDER_BY);
                 boolean first = true;

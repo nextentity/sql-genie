@@ -1,7 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
@@ -81,19 +81,19 @@ public final class Q {
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> and(ExpressionBuilder<T, Boolean> predicate,
-                                       ExpressionBuilder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionBuilder::build).toList();
-        Expression meta = ExpressionBuilders.operate(predicate.build(), AND, metas);
-        return DefaultExpressionOperator.ofBoolOps(meta);
+    public static <T> Predicate<T> and(ExpressionHolder<T, Boolean> predicate,
+                                       ExpressionHolder<T, Boolean>... predicates) {
+        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
+        Expression expression = ExpressionBuilders.operate(predicate.expression(), AND, metas);
+        return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> or(ExpressionBuilder<T, Boolean> predicate,
-                                      ExpressionBuilder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionBuilder::build).toList();
-        Expression meta = ExpressionBuilders.operate(predicate.build(), OR, metas);
-        return DefaultExpressionOperator.ofBoolOps(meta);
+    public static <T> Predicate<T> or(ExpressionHolder<T, Boolean> predicate,
+                                      ExpressionHolder<T, Boolean>... predicates) {
+        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
+        Expression expression = ExpressionBuilders.operate(predicate.expression(), OR, metas);
+        return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     public static <T> Order<T> desc(Path<T, ? extends Comparable<?>> path) {
@@ -115,9 +115,9 @@ public final class Q {
     }
 
 
-    public static <T> Predicate<T> not(ExpressionBuilder<T, Boolean> lt) {
-        Expression meta = ExpressionBuilders.operate(lt.build(), NOT);
-        return DefaultExpressionOperator.ofBoolOps(meta);
+    public static <T> Predicate<T> not(ExpressionHolder<T, Boolean> lt) {
+        Expression expression = ExpressionBuilders.operate(lt.expression(), NOT);
+        return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     private Q() {

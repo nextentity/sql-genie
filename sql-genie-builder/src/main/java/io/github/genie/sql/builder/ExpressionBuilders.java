@@ -3,7 +3,7 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.Operation;
@@ -22,13 +22,13 @@ public interface ExpressionBuilders {
 
     Expression TRUE = ExpressionBuilders.of(true);
 
-    static boolean isTrue(Expression meta) {
-        return meta instanceof Constant constant
+    static boolean isTrue(Expression expression) {
+        return expression instanceof Constant constant
                && Boolean.TRUE.equals(constant.value());
     }
 
-    static Expression of(ExpressionBuilder<?, ?> expression) {
-        return expression.build();
+    static Expression of(ExpressionHolder<?, ?> expression) {
+        return expression.expression();
     }
 
     static Expression of(Object value) {
