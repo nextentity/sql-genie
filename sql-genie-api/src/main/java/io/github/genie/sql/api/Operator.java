@@ -38,28 +38,34 @@ public enum Operator {
 
 
     // aggregate function
-    MIN("min", 0),
-
-    MAX("max", 0),
-    COUNT("count", 0),
-    AVG("avg", 0),
-    SUM("sum", 0);
+    MIN("min", 0, false, true),
+    MAX("max", 0, false, true),
+    COUNT("count", 0, false, true),
+    AVG("avg", 0, false, true),
+    SUM("sum", 0, false, true),
+    ;
 
     private final String sign;
     private final int priority;
     @Getter
     private final boolean multivalued;
+    @Getter
+    private final boolean agg;
 
-    Operator(String sign, int priority, boolean multivalued) {
+    Operator(String sign, int priority, boolean multivalued, boolean agg) {
         this.sign = sign;
         this.priority = priority;
         this.multivalued = multivalued;
+        this.agg = agg;
+    }
+
+    Operator(String sign, int priority, boolean multivalued) {
+        this(sign, priority, multivalued, false);
     }
 
     Operator(String sign, int priority) {
-        this.sign = sign;
-        this.priority = priority;
-        multivalued = false;
+        this(sign, priority, false);
+
     }
 
     public String sign() {

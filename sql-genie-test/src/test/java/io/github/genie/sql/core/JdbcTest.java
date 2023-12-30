@@ -2,12 +2,8 @@ package io.github.genie.sql.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mysql.cj.jdbc.MysqlDataSource;
-import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
-import io.github.genie.sql.api.LockModeType;
-import io.github.genie.sql.api.Path;
-import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.core.entity.User;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
@@ -966,6 +962,20 @@ public class JdbcTest extends JpaTest {
     }
 
     @Test
+    void testSubQuery() {
+        Date time = allUsers.get(20).getTime();
+
+        userQuery
+                .fetch(User::getParentUser)
+                .where(get(User::isValid).eq(true)
+                        .or(get(User::getParentUser)
+                                .get(User::getUsername).eq(username)
+                                .and(User::getTime).ge(time)
+                        ))
+                .count();
+    }
+
+    @Test
     void e() {
         ExpressionHolder<User, Boolean> ne = not(get(User::getRandomNumber).ge(10)
                 .and(User::getUsername).eq(username))
@@ -1218,6 +1228,15 @@ public class JdbcTest extends JpaTest {
         // assertEquals(l0, l1);
         assertEquals(l0, l2);
 
+    }
+
+    @Test
+    public void testSlice() {
+        Slice<String> slice = userQuery.select(User::getUsername)
+                .where(User::getParentUser).get(User::getRandomNumber).eq(10)
+                .groupBy(User::getUsername)
+                .slice(2, 10);
+        System.out.println(slice);
     }
 
     @Test

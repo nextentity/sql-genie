@@ -46,6 +46,10 @@ final class QueryStructures {
 
         LockModeType lockType = LockModeType.NONE;
 
+        public QueryStructureImpl(Selection select, From from) {
+            this.select = select;
+            this.from = from;
+        }
 
         public QueryStructureImpl(Class<?> from) {
             this.from = (From.Entity) () -> from;

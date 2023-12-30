@@ -1,89 +1,110 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.api.Constant;
-import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.Operation;
-import io.github.genie.sql.api.Column;
-import io.github.genie.sql.builder.Expressions;
-import io.github.genie.sql.api.LockModeType;
-import io.github.genie.sql.api.Operator;
-import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.From.Entity;
+import io.github.genie.sql.api.From.SubQuery;
 import io.github.genie.sql.api.Order.SortOrder;
-import io.github.genie.sql.api.QueryStructure;
-import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.meta.*;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
-import io.github.genie.sql.builder.meta.AnyToOneAttribute;
-import io.github.genie.sql.builder.meta.Attribute;
-import io.github.genie.sql.builder.meta.BasicAttribute;
-import io.github.genie.sql.builder.meta.EntityType;
-import io.github.genie.sql.builder.meta.Metamodel;
-import io.github.genie.sql.builder.meta.Projection;
-import io.github.genie.sql.builder.meta.ProjectionAttribute;
-import io.github.genie.sql.builder.meta.Type;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
+
+
+    public static final String NONE_DELIMITER = "";
+    public static final String DELIMITER = ",";
+    public static final String FOR_SHARE = " for share";
+    public static final String FOR_UPDATE = " for update";
+    public static final String FOR_UPDATE_NOWAIT = " for update nowait";
+    public static final String SELECT = "select ";
+    public static final String FROM = "from ";
+    public static final String WHERE = " where ";
+    public static final String HAVING = " having ";
+    public static final String ORDER_BY = " order by ";
+    public static final String DESC = "desc";
+    public static final String ASC = "asc";
+    public static final String ON = " on ";
+
     @Override
     public PreparedSql build(QueryStructure structure, Metamodel mappings) {
-        return new Builder(structure, structure.from().type(), mappings).build();
+        return new Builder(structure, mappings).build();
     }
 
 
     static class Builder {
 
-
-        public static final String NONE_DELIMITER = "";
-        public static final String DELIMITER = ",";
-        public static final String FOR_SHARE = " for share";
-        public static final String FOR_UPDATE = " for update";
-        public static final String FOR_UPDATE_NOWAIT = " for update nowait";
-        public static final String SELECT = "select ";
-        public static final String FROM = "from ";
-        public static final String WHERE = " where ";
-        public static final String HAVING = " having ";
-        public static final String ORDER_BY = " order by ";
-        public static final String DESC = "desc";
-        public static final String ASC = "asc";
-        public static final String ON = " on ";
-
-        protected final StringBuilder sql = new StringBuilder();
-        protected final List<Object> args = new ArrayList<>();
+        protected final StringBuilder sql;
+        protected final List<Object> args;
         protected final Map<Column, Integer> joins = new LinkedHashMap<>();
         protected final QueryStructure queryStructure;
-        protected final EntityType entityType;
+
+        protected final EntityType entity;
         protected final Metamodel mappers;
         protected final List<Expression> selectedExpressions = new ArrayList<>();
         protected final List<Attribute> selectedAttributes = new ArrayList<>();
 
+        protected final String fromAlias;
+        protected final int subIndex;
+        protected final AtomicInteger selectIndex;
 
-        public Builder(QueryStructure queryStructure, Class<?> type, Metamodel mappers) {
+        public Builder(StringBuilder sql,
+                       List<Object> args,
+                       QueryStructure queryStructure,
+                       Metamodel mappers,
+                       AtomicInteger selectIndex,
+                       int subIndex) {
+            this.sql = sql;
+            this.args = args;
             this.queryStructure = queryStructure;
             this.mappers = mappers;
-            this.entityType = mappers.getEntity(type);
+            this.subIndex = subIndex;
+            this.selectIndex = selectIndex;
+            if (queryStructure.from() instanceof Entity) {
+                Class<?> type = queryStructure.from().type();
+                this.entity = mappers.getEntity(type);
+                if (subIndex == 0) {
+                    fromAlias = type.getSimpleName().toLowerCase().charAt(0) + "";
+                } else {
+                    fromAlias = type.getSimpleName().toLowerCase().charAt(0) + "" + subIndex;
+                }
+            } else {
+                this.entity = null;
+                fromAlias = "t" + subIndex + "_";
+            }
+        }
+
+        public Builder(QueryStructure queryStructure, Metamodel mappers) {
+            this(new StringBuilder(), new ArrayList<>(), queryStructure, mappers, new AtomicInteger(), 0);
         }
 
         protected PreparedSql build() {
+            doBuilder();
+            return new PreparedSqlImpl(sql.toString(), args, selectedAttributes);
+        }
+
+        private void doBuilder() {
             buildProjectionPaths();
             sql.append(SELECT);
             appendSelects();
             appendFetchPath();
-            appendTableName();
-            int sqlIndex = sql.length();
+            appendFrom();
+            int joinIndex = sql.length();
             appendWhere();
             appendGroupBy();
             appendOrderBy();
             appendHaving();
             appendOffsetAndLimit();
-            insertJoin(sqlIndex);
+            insertJoin(joinIndex);
             appendLockModeType(queryStructure.lockType());
-            return new PreparedSqlImpl(sql.toString(), args, selectedAttributes);
         }
 
         private void buildProjectionPaths() {
@@ -127,7 +148,14 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             for (Expression expression : selectedExpressions) {
                 sql.append(join);
                 appendExpression(expression);
+                appendSelectAlias();
                 join = DELIMITER;
+            }
+        }
+
+        private void appendSelectAlias() {
+            if (subIndex > 0) {
+                sql.append(" as _").append(selectIndex.getAndIncrement());
             }
         }
 
@@ -147,6 +175,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         sql.append(",");
                         Column column = Expressions.concat(fetch, mapping.name());
                         appendPaths(column);
+                        appendSelectAlias();
                         selectedExpressions.add(column);
                         selectedAttributes.add(field);
                     }
@@ -165,25 +194,43 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
         }
 
-        private void appendTableName() {
-            appendBlank()
-                    .append(FROM + "`")
-                    .append(entityType.tableName())
+        private void appendFrom() {
+            appendBlank().append(FROM);
+            From from = queryStructure.from();
+            if (from instanceof Entity) {
+                appendFromTable();
+            } else if (from instanceof SubQuery subQuery) {
+                appendSubQuery(subQuery.queryStructure());
+            }
+            appendFromAlias();
+        }
+
+        private void appendSubQuery(QueryStructure queryStructure) {
+            sql.append('(');
+            new Builder(sql, args, queryStructure, mappers, selectIndex, subIndex + 1).doBuilder();
+            sql.append(") ");
+        }
+
+        private void appendFromTable() {
+            sql.append("`")
+                    .append(entity.tableName())
                     .append("` ");
-            appendRootTableAlias();
         }
 
-        protected StringBuilder appendRootTableAlias() {
-            return appendRootTableAlias(sql);
+        protected StringBuilder appendFromAlias() {
+            return appendFromAlias(sql);
         }
 
-        protected StringBuilder appendRootTableAlias(StringBuilder sql) {
-            String table = entityType.tableName();
-            return sql.append(table, 0, 1);
+        protected StringBuilder appendFromAlias(StringBuilder sql) {
+            return sql.append(fromAlias);
         }
 
         protected StringBuilder appendTableAlias(String table, Object index, StringBuilder sql) {
-            return appendBlank(sql).append(table, 0, 1).append(index);
+            StringBuilder append = appendBlank(sql).append(table);
+            if (subIndex > 0) {
+                sql.append(subIndex).append("_");
+            }
+            return append.append(index);
         }
 
         protected StringBuilder appendBlank() {
@@ -350,9 +397,9 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 return;
             int i = 0;
             if (expression.size() == 1) {
-                appendRootTableAlias().append(".");
+                appendFromAlias().append(".");
             }
-            Class<?> type = entityType.javaType();
+            Class<?> type = queryStructure.from().type();
 
             Column join = Expressions.ofPaths(List.of(expression.get(0)));
 
@@ -392,7 +439,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 sql.append(ON);
                 Column parent = getParent(k);
                 if (parent == null) {
-                    appendRootTableAlias(sql);
+                    appendFromAlias(sql);
                 } else {
                     Integer parentIndex = joins.get(parent);
                     Attribute parentAttribute = getAttribute(parent);
@@ -429,12 +476,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         protected StringBuilder appendTableAttribute(StringBuilder sb, Attribute attribute, Integer index) {
             EntityType information = mappers.getEntity(attribute.javaType());
-            String tableName = information.tableName();
+            String tableName = (information.javaType().getSimpleName().charAt(0) + "").toLowerCase();
             return appendTableAlias(tableName, index, sb);
         }
 
         protected Attribute getAttribute(Column path) {
-            Type schema = entityType;
+            Type schema = entity;
             for (String s : path.paths()) {
                 if (schema instanceof AnyToOneAttribute associationProperty) {
                     schema = associationProperty.referenced();
