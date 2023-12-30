@@ -32,7 +32,7 @@ import java.util.Map;
 public class MySqlSqlBuilder implements QuerySqlBuilder {
     @Override
     public PreparedSql build(QueryStructure structure, Metamodel mappings) {
-        return new Builder(structure, structure.from(), mappings).build();
+        return new Builder(structure, structure.from().type(), mappings).build();
     }
 
 
@@ -92,7 +92,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
                 selectedExpressions.add(singleColumn.column());
             } else if (selected instanceof MultiColumn multiColumn) {
                 selectedExpressions.addAll(multiColumn.columns());
-            } else if (queryStructure.select().resultType() == queryStructure.from()) {
+            } else if (queryStructure.select().resultType() == queryStructure.from().type()) {
                 EntityType table = mappers
                         .getEntity(queryStructure.select().resultType());
                 for (Attribute mapping : table.fields()) {
@@ -105,7 +105,7 @@ public class MySqlSqlBuilder implements QuerySqlBuilder {
                 }
             } else {
                 Projection projectionMapping = mappers
-                        .getProjection(queryStructure.from(), queryStructure.select().resultType());
+                        .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
                 for (ProjectionAttribute mapping : projectionMapping.attributes()) {
                     if (!(mapping.baseField() instanceof BasicAttribute column)) {
                         continue;

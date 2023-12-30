@@ -1,15 +1,15 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.builder.AbstractQueryExecutor;
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.builder.ExpressionBuilders;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.builder.AbstractQueryExecutor;
+import io.github.genie.sql.builder.ExpressionBuilders;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
@@ -52,12 +52,12 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return castList(objectsList);
         } else {
             Class<?> resultType = queryStructure.select().resultType();
-            if (resultType == queryStructure.from()) {
+            if (resultType == queryStructure.from().type()) {
                 List<?> resultList = getEntityResultList(queryStructure);
                 return castList(resultList);
             } else {
                 Projection projectionMapping = mappers
-                        .getProjection(queryStructure.from(), resultType);
+                        .getProjection(queryStructure.from().type(), resultType);
                 List<ProjectionAttribute> fields = projectionMapping.attributes();
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
@@ -93,15 +93,15 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     private List<?> getEntityResultList(@NotNull QueryStructure structure) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<?> query = cb.createQuery(structure.from());
-        Root<?> root = query.from(structure.from());
+        CriteriaQuery<?> query = cb.createQuery(structure.from().type());
+        Root<?> root = query.from(structure.from().type());
         return new EntityBuilder(root, cb, query, structure).getResultList();
     }
 
     private List<Object[]> getObjectsList(@NotNull QueryStructure structure, List<? extends Expression> columns) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<?> query = cb.createQuery(Object[].class);
-        Root<?> root = query.from(structure.from());
+        Root<?> root = query.from(structure.from().type());
         return new ObjectArrayBuilder(root, cb, query, structure, columns).getResultList();
     }
 

@@ -8,7 +8,7 @@ public interface QueryStructure extends Serializable {
 
     Selection select();
 
-    Class<?> from();
+    From from();
 
     Expression where();
 

@@ -69,7 +69,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
         while (resultSet.next()) {
             T row = collector.collect(resultSet,
                     queryStructure.select(),
-                    queryStructure.from(),
+                    queryStructure.from().type(),
                     sql.selected());
             result.add(row);
         }

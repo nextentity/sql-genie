@@ -4,6 +4,7 @@ import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
@@ -27,7 +28,7 @@ final class QueryStructures {
 
         Selection select;
 
-        Class<?> from;
+        From from;
 
         Expression where = ExpressionBuilders.TRUE;
 
@@ -47,7 +48,7 @@ final class QueryStructures {
 
 
         public QueryStructureImpl(Class<?> from) {
-            this.from = from;
+            this.from = (From.Entity) () -> from;
             this.select = new SelectClauseImpl(from);
         }
 
@@ -66,7 +67,7 @@ final class QueryStructures {
         }
 
         @Override
-        public Class<?> from() {
+        public From from() {
             return from;
         }
 
@@ -115,7 +116,7 @@ final class QueryStructures {
 
             return "select " + select
                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
-                   + " from " + from.getName()
+                    + " from " + from.type().getName()
                    + (where == null || ExpressionBuilders.isTrue(where) ? "" : " where " + where)
                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
                    + (having == null || ExpressionBuilders.isTrue(having) ? "" : " having " + having)
