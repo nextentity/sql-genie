@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static io.github.genie.sql.builder.Q.get;
-
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U>, AbstractCollector<U> {
 
     static final SingleColumnSelect SELECT_ANY =
@@ -185,11 +183,6 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public List<U> getList(int offset, int maxResult, LockModeType lockModeType) {
-        int count = count();
-        List<U> list = queryList(-1, -1, LockModeType.NONE);
-        if (list.size() != count) {
-            throw new IllegalStateException();
-        }
         return queryList(offset, maxResult, lockModeType);
     }
 
