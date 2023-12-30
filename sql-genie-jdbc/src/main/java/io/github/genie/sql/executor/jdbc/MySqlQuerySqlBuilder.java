@@ -29,7 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MySqlSqlBuilder implements QuerySqlBuilder {
+public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     @Override
     public PreparedSql build(QueryStructure structure, Metamodel mappings) {
         return new Builder(structure, structure.from().type(), mappings).build();

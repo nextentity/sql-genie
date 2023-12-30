@@ -10,7 +10,7 @@ import io.github.genie.sql.api.Query.Select0;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.core.entity.User;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
-import io.github.genie.sql.executor.jdbc.MySqlSqlBuilder;
+import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.core.mapping.JpaMetamodel;
 import io.github.genie.sql.core.projection.UserInterface;
@@ -301,7 +301,7 @@ public class JpaTest {
                 .buildMetadata()
                 .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
         System.out.println(structure);
-        MySqlSqlBuilder builder = new MySqlSqlBuilder();
+        MySqlQuerySqlBuilder builder = new MySqlQuerySqlBuilder();
         JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
         System.out.println(sql.sql());
 
