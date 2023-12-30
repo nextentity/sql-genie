@@ -102,6 +102,15 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         return update(metadata);
     }
 
+    @Override
+    public <R> AggWhere0<T, R> select(ExpressionHolder<T, R> paths) {
+        QueryStructureImpl metadata = queryStructure.copy();
+        Expression expression = paths.expression();
+        Class<?> type = Object.class;
+        metadata.select = new SingleColumnSelect(type, expression);
+        return update(metadata);
+    }
+
     private Class<?> getType(Path<?, ?> path) {
         Class<?> fromClause = queryStructure.from;
         String name = Util.getReferenceMethodName(path);

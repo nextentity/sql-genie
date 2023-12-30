@@ -71,6 +71,8 @@ public interface Query {
 
         AggWhere0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
 
+        <R> AggWhere0<T, R> select(ExpressionHolder<T, R> expression);
+
         <R> AggWhere0<T, R> select(Path<T, ? extends R> expression);
 
         AggWhere0<T, Object[]> select(Collection<Path<T, ?>> paths);
