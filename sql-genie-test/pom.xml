@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.github.genie</groupId>
+    <groupId>io.github.genie-cloud</groupId>
     <artifactId>sql-genie</artifactId>
     <version>0.0.1</version>
   </parent>
@@ -22,17 +22,17 @@
   <dependencies>
 
     <dependency>
-      <groupId>io.github.genie</groupId>
+      <groupId>io.github.genie-cloud</groupId>
       <artifactId>sql-genie-jpa-metamodel</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.github.genie</groupId>
+      <groupId>io.github.genie-cloud</groupId>
       <artifactId>sql-genie-jdbc</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.github.genie</groupId>
+      <groupId>io.github.genie-cloud</groupId>
       <artifactId>sql-genie-jpa</artifactId>
       <version>${project.version}</version>
     </dependency>
