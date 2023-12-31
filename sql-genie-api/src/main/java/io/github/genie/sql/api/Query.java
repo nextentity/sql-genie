@@ -1,10 +1,6 @@
 package io.github.genie.sql.api;
 
-import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
-import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
-import io.github.genie.sql.api.ExpressionOperator.StringOperator;
+import io.github.genie.sql.api.ExpressionOperator.*;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
@@ -221,7 +217,7 @@ public interface Query {
         }
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                       Path<T, ?> p5) {
+                                      Path<T, ?> p5) {
             return groupBy(List.of(p0, p1, p2, p3, p4, p5));
         }
     }
@@ -369,9 +365,9 @@ public interface Query {
             return function.apply(this);
         }
 
-        Slice<T> slice(int offset, int limit);
+        <R> R slice(Sliceable<T, R> sliceable);
 
-        Slice<T> slice(Sliceable sliceable);
+        Slice<T> slice(int offset, int limit);
 
         QueryStructureBuilder buildMetadata();
 
@@ -384,12 +380,6 @@ public interface Query {
         QueryStructure getList(int offset, int maxResult, LockModeType lockModeType);
 
         QueryStructure exist(int offset);
-
-        default SliceQueryStructure slice(Sliceable sliceable) {
-            QueryStructure count = count();
-            QueryStructure list = getList(sliceable.offset(), sliceable.limit(), LockModeType.NONE);
-            return new SliceQueryStructure(count, list);
-        }
 
         SliceQueryStructure slice(int offset, int limit);
 

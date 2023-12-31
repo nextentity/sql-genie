@@ -1,20 +1,8 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.Constant;
-import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.From;
-import io.github.genie.sql.api.LockModeType;
-import io.github.genie.sql.api.Operation;
-import io.github.genie.sql.api.Operator;
-import io.github.genie.sql.api.Order;
-import io.github.genie.sql.api.QueryStructure;
-import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
-import io.github.genie.sql.api.Slice;
-import io.github.genie.sql.api.Sliceable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -120,7 +108,7 @@ final class QueryStructures {
 
             return "select " + select
                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
-                    + " from " + from.type().getName()
+                   + " from " + from.type().getName()
                    + (where == null || ExpressionBuilders.isTrue(where) ? "" : " where " + where)
                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
                    + (having == null || ExpressionBuilders.isTrue(having) ? "" : " having " + having)
@@ -170,19 +158,7 @@ final class QueryStructures {
         }
     }
 
-    record SliceImpl<T>(List<T> data, long total, Sliceable sliceable) implements Slice<T> {
-        @Override
-        public int offset() {
-            return sliceable.offset();
-        }
-
-        @Override
-        public int limit() {
-            return sliceable.limit();
-        }
-    }
-
-    record SliceableImpl(int offset, int limit) implements Sliceable {
+    record SliceImpl<T>(List<T> data, long total, int offset, int limit) implements Slice<T> {
     }
 
     record ConstantMeta(Object value) implements Constant {

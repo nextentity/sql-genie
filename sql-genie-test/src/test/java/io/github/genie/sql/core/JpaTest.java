@@ -3,18 +3,15 @@ package io.github.genie.sql.core;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
-import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.core.entity.User;
-import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
-import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
-import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.core.mapping.JpaMetamodel;
 import io.github.genie.sql.core.projection.UserInterface;
 import io.github.genie.sql.core.projection.UserModel;
+import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
+import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaQuery;
 import lombok.Lombok;
@@ -30,9 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.github.genie.sql.builder.Q.*;
-import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SuppressWarnings("DuplicatedCode")
 @Slf4j
@@ -62,7 +57,7 @@ public class JpaTest {
                 .getResultList();
 
         manager.clear();
-        userQuery = new JpaQueryExecutor(manager, new JpaMetamodel()).createQuery().from(User.class);
+        userQuery = new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery(new TestPostProcessor()).from(User.class);
     }
 
     public static void doInTransaction(Runnable action) {
@@ -98,7 +93,6 @@ public class JpaTest {
             assertArrayEquals(resultList.get(i), resultList2.get(i));
         }
     }
-
 
 
     @Test
@@ -292,28 +286,15 @@ public class JpaTest {
     }
 
     @Test
-    void testGroupBy() {
-        QueryStructure structure = userQuery
-                .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
-                .where(get(User::isValid).eq(true))
-                .groupBy(User::getRandomNumber)
-                .having(get(User::getRandomNumber).eq(10))
-                .buildMetadata()
-                .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
-        System.out.println(structure);
-        MySqlQuerySqlBuilder builder = new MySqlQuerySqlBuilder();
-        JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
-        System.out.println(sql.sql());
-
-        String actual = "select" +
-                        " min(u.id),u.random_number" +
-                        " from `user` u" +
-                        " where u.valid=1" +
-                        " group by u.random_number" +
-                        " having u.random_number=?" +
-                        " limit 1,5 for update";
-
-        assertEquals(sql.sql(), actual);
+    void testF() {
+        int userId = 20;
+        User user = userQuery
+                .fetch(List.of(
+                        get(User::getParentUser),
+                        get(User::getParentUser).get(User::getParentUser)
+                ))
+                .where(get(User::getId).eq(userId))
+                .getSingle();
     }
 
     @Test

@@ -38,22 +38,22 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     }
 
     @Override
-    public StringOperator<T, B> get(StringPath<T> path) {
+    public StringOperator<T, B> get(StringPath<U> path) {
         return new StringOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public <V extends Number & Comparable<V>> NumberOperator<T, V, B> get(NumberPath<T, V> path) {
+    public <V extends Number & Comparable<V>> NumberOperator<T, V, B> get(NumberPath<U, V> path) {
         return new NumberOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public <V extends Comparable<V>> ComparableOperator<T, V, B> get(ComparablePath<T, V> path) {
+    public <V extends Comparable<V>> ComparableOperator<T, V, B> get(ComparablePath<U, V> path) {
         return new ComparableOpsImpl<>(toPaths(path));
     }
 
     @Override
-    public B get(BooleanPath<T> path) {
+    public B get(BooleanPath<U> path) {
         return build(toPaths(path));
     }
 

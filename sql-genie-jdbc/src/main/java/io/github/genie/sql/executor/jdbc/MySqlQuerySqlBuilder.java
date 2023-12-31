@@ -10,6 +10,7 @@ import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.meta.*;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -68,18 +69,16 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             this.mappers = mappers;
             this.subIndex = subIndex;
             this.selectIndex = selectIndex;
+            Class<?> type = queryStructure.from().type();
+            String prefix;
             if (queryStructure.from() instanceof Entity) {
-                Class<?> type = queryStructure.from().type();
+                prefix = fixSymbol(type.getSimpleName());
                 this.entity = mappers.getEntity(type);
-                if (subIndex == 0) {
-                    fromAlias = type.getSimpleName().toLowerCase().charAt(0) + "";
-                } else {
-                    fromAlias = type.getSimpleName().toLowerCase().charAt(0) + "" + subIndex;
-                }
             } else {
+                prefix = "t";
                 this.entity = null;
-                fromAlias = "t" + subIndex + "_";
             }
+            fromAlias = subIndex == 0 ? prefix + "_" : prefix + subIndex + "_";
         }
 
         public Builder(QueryStructure queryStructure, Metamodel mappers) {
@@ -226,11 +225,16 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         protected StringBuilder appendTableAlias(String table, Object index, StringBuilder sql) {
-            StringBuilder append = appendBlank(sql).append(table);
+            StringBuilder append = appendBlank(sql).append(fixSymbol(table));
             if (subIndex > 0) {
                 sql.append(subIndex).append("_");
             }
-            return append.append(index);
+            return append.append(index).append("_");
+        }
+
+        @NotNull
+        private static String fixSymbol(String symbol) {
+            return symbol.toLowerCase().substring(0, Math.min(4, symbol.length()));
         }
 
         protected StringBuilder appendBlank() {
@@ -476,7 +480,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         protected StringBuilder appendTableAttribute(StringBuilder sb, Attribute attribute, Integer index) {
             EntityType information = mappers.getEntity(attribute.javaType());
-            String tableName = (information.javaType().getSimpleName().charAt(0) + "").toLowerCase();
+            String tableName = information.javaType().getSimpleName();
             return appendTableAlias(tableName, index, sb);
         }
 
@@ -498,11 +502,18 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         protected void appendOffsetAndLimit() {
             int offset = unwrap(queryStructure.offset());
             int limit = unwrap(queryStructure.limit());
-            if (offset >= 0 || limit >= 0) {
-                sql.append(" limit ")
-                        .append(Math.max(offset, 0))
-                        .append(',')
-                        .append(limit < 0 ? Long.MAX_VALUE : limit);
+            if (offset > 0) {
+                sql.append(" limit ?,?");
+                args.add(offset);
+                args.add(limit < 0 ? Long.MAX_VALUE : limit);
+            } else if (limit >= 0) {
+                sql.append(" limit ");
+                if (limit <= 1) {
+                    sql.append(limit);
+                } else {
+                    sql.append("?");
+                    args.add(limit);
+                }
             }
         }
 

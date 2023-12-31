@@ -62,13 +62,13 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
         <V> PathOperator<T, V, B> get(Path<U, V> path);
 
-        StringOperator<T, B> get(StringPath<T> path);
+        StringOperator<T, B> get(StringPath<U> path);
 
-        <V extends Number & Comparable<V>> NumberOperator<T, V, B> get(NumberPath<T, V> path);
+        <V extends Number & Comparable<V>> NumberOperator<T, V, B> get(NumberPath<U, V> path);
 
-        <V extends Comparable<V>> ComparableOperator<T, V, B> get(ComparablePath<T, V> path);
+        <V extends Comparable<V>> ComparableOperator<T, V, B> get(ComparablePath<U, V> path);
 
-        B get(BooleanPath<T> path);
+        B get(BooleanPath<U> path);
 
     }
 

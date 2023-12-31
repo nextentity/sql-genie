@@ -11,7 +11,7 @@ public enum Operator {
     OR("or", 13, true),
     GT(">", 8),
     EQ("=", 8),
-    NE("<>", 8),
+    NE("!=", 8),
     GE(">=", 8),
     LT("<", 8),
     LE("<=", 8),

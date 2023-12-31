@@ -71,7 +71,7 @@ public class JdbcTest extends JpaTest {
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,
                 new JdbcResultCollector()
-        ).createQuery();
+        ).createQuery(new TestPostProcessor());
 
         userQuery = query.from(User.class);
     }
@@ -282,12 +282,12 @@ public class JdbcTest extends JpaTest {
         System.out.println(sql.sql());
 
         String actual = "select" +
-                        " min(u.id),u.random_number" +
-                        " from `user` u" +
-                        " where u.valid=1" +
-                        " group by u.random_number" +
-                        " having u.random_number=?" +
-                        " limit 1,5 for update";
+                        " min(user_.id),user_.random_number" +
+                        " from `user` user_" +
+                        " where user_.valid=1" +
+                        " group by user_.random_number" +
+                        " having user_.random_number=?" +
+                        " limit ?,? for update";
 
         assertEquals(sql.sql(), actual);
     }

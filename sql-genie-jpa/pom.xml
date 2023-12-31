@@ -39,6 +39,12 @@
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
+      <dependency>
+        <groupId>io.github.genie</groupId>
+        <artifactId>sql-genie-jdbc</artifactId>
+        <version>0.0.1</version>
+        <scope>compile</scope>
+      </dependency>
 
     </dependencies>
 </project>

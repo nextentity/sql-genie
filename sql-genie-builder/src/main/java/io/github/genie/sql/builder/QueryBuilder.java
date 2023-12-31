@@ -13,7 +13,10 @@ import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
-import io.github.genie.sql.builder.QueryStructures.*;
+import io.github.genie.sql.builder.QueryStructures.MultiColumnSelect;
+import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
+import io.github.genie.sql.builder.QueryStructures.SelectClauseImpl;
+import io.github.genie.sql.builder.QueryStructures.SingleColumnSelect;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,18 +37,25 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     private final QueryExecutor queryExecutor;
     private final QueryStructureImpl queryStructure;
 
+    private final QueryStructurePostProcessor structurePostProcessor;
 
     public QueryBuilder(QueryExecutor queryExecutor, Class<T> type) {
-        this(queryExecutor, new QueryStructureImpl(type));
+        this(queryExecutor, type, null);
     }
 
-    QueryBuilder(QueryExecutor queryExecutor, QueryStructureImpl queryStructure) {
+    public QueryBuilder(QueryExecutor queryExecutor, Class<T> type, QueryStructurePostProcessor structurePostProcessor) {
+        this(queryExecutor, new QueryStructureImpl(type), structurePostProcessor);
+    }
+
+
+    QueryBuilder(QueryExecutor queryExecutor, QueryStructureImpl queryStructure, QueryStructurePostProcessor structurePostProcessor) {
         this.queryExecutor = queryExecutor;
         this.queryStructure = queryStructure;
+        this.structurePostProcessor = structurePostProcessor == null ? QueryStructurePostProcessor.NONE : structurePostProcessor;
     }
 
     <X, Y> QueryBuilder<X, Y> update(QueryStructureImpl queryStructure) {
-        return new QueryBuilder<>(queryExecutor, queryStructure);
+        return new QueryBuilder<>(queryExecutor, queryStructure, structurePostProcessor);
     }
 
     @Override
@@ -114,7 +124,8 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public int count() {
-        QueryStructureImpl metadata = buildCountData();
+        QueryStructure metadata = buildCountData();
+        metadata = structurePostProcessor.preCountQuery(this, metadata);
         return queryExecutor.<Number>getList(metadata).get(0).intValue();
     }
 
@@ -183,11 +194,12 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public List<U> getList(int offset, int maxResult, LockModeType lockModeType) {
-        return queryList(offset, maxResult, lockModeType);
+        QueryStructure metadata = buildListData(offset, maxResult, lockModeType);
+        metadata = structurePostProcessor.preListQuery(this, metadata);
+        return queryList(metadata);
     }
 
-    private List<U> queryList(int offset, int maxResult, LockModeType lockModeType) {
-        QueryStructureImpl metadata = buildListData(offset, maxResult, lockModeType);
+    public <X> List<X> queryList(QueryStructure metadata) {
         return queryExecutor.getList(metadata);
     }
 
@@ -202,8 +214,9 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public boolean exist(int offset) {
-        QueryStructureImpl metadata = buildExistData(offset);
-        return !queryExecutor.getList(metadata).isEmpty();
+        QueryStructure metadata = buildExistData(offset);
+        metadata = structurePostProcessor.preExistQuery(this, metadata);
+        return !queryList(metadata).isEmpty();
     }
 
     @NotNull
@@ -212,6 +225,8 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         metadata.select = SELECT_ANY;
         metadata.offset = offset;
         metadata.limit = 1;
+        metadata.fetch = List.of();
+        metadata.orderBy = List.of();
         return metadata;
     }
 
@@ -235,7 +250,10 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
             @Override
             public SliceQueryStructure slice(int offset, int limit) {
-                return slice(new SliceableImpl(offset, limit));
+                return new SliceQueryStructure(
+                        buildCountData(),
+                        buildListData(offset, limit, LockModeType.NONE)
+                );
             }
 
         };

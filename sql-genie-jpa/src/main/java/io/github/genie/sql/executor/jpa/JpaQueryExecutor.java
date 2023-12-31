@@ -1,11 +1,11 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.Order;
-import io.github.genie.sql.api.Order.SortOrder;
-import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.From.SubQuery;
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
@@ -15,14 +15,12 @@ import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Fetch;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -32,16 +30,21 @@ import java.util.stream.Collectors;
 public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     private final EntityManager entityManager;
-    private final Metamodel mappers;
+    private final Metamodel metamodel;
+    private final QuerySqlBuilder querySqlBuilder;
 
 
-    public JpaQueryExecutor(EntityManager entityManager, Metamodel mappers) {
+    public JpaQueryExecutor(EntityManager entityManager, Metamodel metamodel, QuerySqlBuilder querySqlBuilder) {
         this.entityManager = entityManager;
-        this.mappers = mappers;
+        this.metamodel = metamodel;
+        this.querySqlBuilder = querySqlBuilder;
     }
 
     @Override
     public <T> List<T> getList(@NotNull QueryStructure queryStructure) {
+        if (queryStructure.from() instanceof SubQuery) {
+            return queryByNativeSql(queryStructure);
+        }
         Selection selected = queryStructure.select();
         if (selected instanceof SingleColumn singleColumn) {
             List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
@@ -56,7 +59,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 List<?> resultList = getEntityResultList(queryStructure);
                 return castList(resultList);
             } else {
-                Projection projectionMapping = mappers
+                Projection projectionMapping = metamodel
                         .getProjection(queryStructure.from().type(), resultType);
                 List<ProjectionAttribute> fields = projectionMapping.attributes();
                 List<Column> columns = fields.stream()
@@ -82,6 +85,17 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 }
             }
         }
+    }
+
+    private <T> List<T> queryByNativeSql(@NotNull QueryStructure queryStructure) {
+        PreparedSql preparedSql = querySqlBuilder.build(queryStructure, metamodel);
+        jakarta.persistence.Query query = entityManager.createNativeQuery(preparedSql.sql());
+        int position = 0;
+        for (Object arg : preparedSql.args()) {
+            query.setParameter(++position, arg);
+        }
+        // noinspection unchecked
+        return query.getResultList();
     }
 
 
