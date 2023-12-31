@@ -1,97 +1,79 @@
-package io.github.genie.sql.core;
+package io.github.genie.sql.test;
 
-import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionHolder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
-import io.github.genie.sql.api.Path;
-import io.github.genie.sql.api.Query;
-import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.core.entity.User;
-import io.github.genie.sql.core.mapping.JpaMetamodel;
-import io.github.genie.sql.core.projection.UserInterface;
-import io.github.genie.sql.core.projection.UserModel;
+import io.github.genie.sql.test.entity.User;
+import io.github.genie.sql.executor.jdbc.ConnectionProvider;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
+import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
-import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaQuery;
-import lombok.Lombok;
+import io.github.genie.sql.core.mapping.JpaMetamodel;
+import io.github.genie.sql.test.projection.UserInterface;
+import io.github.genie.sql.test.projection.UserModel;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.Callable;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.github.genie.sql.builder.Q.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.github.genie.sql.builder.Q.and;
+import static io.github.genie.sql.builder.Q.asc;
+import static io.github.genie.sql.builder.Q.avg;
+import static io.github.genie.sql.builder.Q.count;
+import static io.github.genie.sql.builder.Q.desc;
+import static io.github.genie.sql.builder.Q.get;
+import static io.github.genie.sql.builder.Q.max;
+import static io.github.genie.sql.builder.Q.min;
+import static io.github.genie.sql.builder.Q.not;
+import static io.github.genie.sql.builder.Q.or;
+import static io.github.genie.sql.builder.Q.sum;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SuppressWarnings("DuplicatedCode")
+
+@SuppressWarnings("RedundantMethodOverride")
 @Slf4j
-public class JpaTest {
-    protected static final String username = "Jeremy Keynes";
-    static Select0<User, User> userQuery;
-    protected static Query query;
-    protected static List<User> allUsers;
+public class JdbcTest extends JpaTest {
 
-    @SuppressWarnings("JpaQlInspection")
     @BeforeAll
     public static void init() {
-        EntityManager manager = EntityManagers.getEntityManager();
-        // QueryBuilder queryBuilder = new JpaQueryBuilder(manager);
-        allUsers = Users.getUsers();
-
-        doInTransaction(() -> {
-            manager.createQuery("update User set pid = null").executeUpdate();
-            manager.createQuery("delete from User").executeUpdate();
-            for (User user : allUsers) {
-                manager.persist(user);
+        JpaTest.init();
+        MysqlDataSource source = new MysqlDataSource();
+        source.setUrl("jdbc:mysql:///sql-dsl");
+        source.setUser("root");
+        source.setPassword("root");
+        ConnectionProvider sqlExecutor = new ConnectionProvider() {
+            @Override
+            public <T> T execute(ConnectionCallback<T> action) throws SQLException {
+                try (Connection connection = source.getConnection()) {
+                    return action.doInConnection(connection);
+                }
             }
-        });
-        CriteriaQuery<User> query = manager.getCriteriaBuilder().createQuery(User.class);
-        query.from(User.class);
-        allUsers = manager.createQuery(query)
-                .getResultList();
+        };
+        query = new JdbcQueryExecutor(new JpaMetamodel(),
+                new MySqlQuerySqlBuilder(),
+                sqlExecutor,
+                new JdbcResultCollector()
+        ).createQuery(new TestPostProcessor());
 
-        manager.clear();
-        userQuery = new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery(new TestPostProcessor()).from(User.class);
-    }
-
-    public static void doInTransaction(Runnable action) {
-        Object o = doInTransaction(() -> {
-            action.run();
-            return null;
-        });
-        log.trace("{}", o);
-    }
-
-    public static <T> T doInTransaction(Callable<T> action) {
-        EntityManager manager = EntityManagers.getEntityManager();
-
-        Session session = manager.unwrap(Session.class);
-        Transaction transaction = session.getTransaction();
-        T result;
-        try {
-            transaction.begin();
-            result = action.call();
-            transaction.commit();
-        } catch (Exception e) {
-            transaction.rollback();
-            throw Lombok.sneakyThrow(e);
-        }
-
-        return result;
-    }
-
-
-    static void assertEqualsArrayList(List<Object[]> resultList, List<Object[]> resultList2) {
-        assertEquals(resultList.size(), resultList2.size());
-        for (int i = 0; i < resultList.size(); i++) {
-            assertArrayEquals(resultList.get(i), resultList2.get(i));
-        }
+        userQuery = query.from(User.class);
     }
 
 
@@ -286,15 +268,28 @@ public class JpaTest {
     }
 
     @Test
-    void testF() {
-        int userId = 20;
-        User user = userQuery
-                .fetch(List.of(
-                        get(User::getParentUser),
-                        get(User::getParentUser).get(User::getParentUser)
-                ))
-                .where(get(User::getId).eq(userId))
-                .getSingle();
+    void testGroupBy() {
+        QueryStructure structure = userQuery
+                .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
+                .where(get(User::isValid).eq(true))
+                .groupBy(User::getRandomNumber)
+                .having(get(User::getRandomNumber).eq(10))
+                .buildMetadata()
+                .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
+        System.out.println(structure);
+        MySqlQuerySqlBuilder builder = new MySqlQuerySqlBuilder();
+        JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
+        System.out.println(sql.sql());
+
+        String actual = "select" +
+                        " min(user_.id),user_.random_number" +
+                        " from `user` user_" +
+                        " where user_.valid=1" +
+                        " group by user_.random_number" +
+                        " having user_.random_number=?" +
+                        " limit ?,? for update";
+
+        assertEquals(sql.sql(), actual);
     }
 
     @Test
@@ -967,13 +962,17 @@ public class JpaTest {
     }
 
     @Test
-    void test0() {
-        List<User> qList = userQuery.where(not(get(User::getRandomNumber).ge(10).and(User::getUsername).eq(username)).not())
-                .getList();
-        List<User> fList = allUsers.stream()
-                .filter(it -> (it.getRandomNumber() >= 10 && it.getUsername().equals(username)))
-                .collect(Collectors.toList());
-        assertEquals(qList, fList);
+    void testSubQuery() {
+        Date time = allUsers.get(20).getTime();
+
+        userQuery
+                .fetch(User::getParentUser)
+                .where(get(User::isValid).eq(true)
+                        .or(get(User::getParentUser)
+                                .get(User::getUsername).eq(username)
+                                .and(User::getTime).ge(time)
+                        ))
+                .count();
     }
 
     @Test
@@ -1232,6 +1231,27 @@ public class JpaTest {
     }
 
     @Test
+    public void testSlice() {
+        Slice<String> slice = userQuery.select(User::getUsername)
+                .where(User::getParentUser).get(User::getRandomNumber).eq(10)
+                .groupBy(User::getUsername)
+                .slice(2, 10);
+        System.out.println(slice);
+    }
+
+    @Test
+    void projection() throws JsonProcessingException {
+        List<UserInterface> list0 = userQuery.select(UserInterface.class)
+                .getList();
+        List<UserInterface> list1 = userQuery.select(UserInterface.class)
+                .getList();
+
+        System.out.println(JsonSerializablePredicateValueTest.mapper.writeValueAsString(list0.get(0)));
+
+        assertEquals(list0, list1);
+    }
+
+    @Test
     void testInterfaceSelect() {
         UserInterface list = userQuery.select(UserInterface.class)
                 .getFirst();
@@ -1386,6 +1406,4 @@ public class JpaTest {
     private IntStream getUserIdStream() {
         return allUsers.stream().mapToInt(User::getRandomNumber);
     }
-
-
 }

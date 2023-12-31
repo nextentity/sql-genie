@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.example;
+package io.github.genie.sql.test.example;
 
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;

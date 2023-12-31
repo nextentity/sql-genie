@@ -1,4 +1,4 @@
-package io.github.genie.sql.core;
+package io.github.genie.sql.test;
 
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;

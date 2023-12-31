@@ -1,6 +1,6 @@
-package io.github.genie.sql.core.projection;
+package io.github.genie.sql.test.projection;
 
-import io.github.genie.sql.core.entity.User;
+import io.github.genie.sql.test.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.example;
+package io.github.genie.sql.test.example;
 
 import lombok.Data;
 

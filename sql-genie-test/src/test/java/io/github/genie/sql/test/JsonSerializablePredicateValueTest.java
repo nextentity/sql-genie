@@ -1,4 +1,4 @@
-package io.github.genie.sql.core;
+package io.github.genie.sql.test;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;

@@ -1,6 +1,6 @@
-package io.github.genie.sql.core;
+package io.github.genie.sql.test;
 
-import io.github.genie.sql.core.entity.User;
+import io.github.genie.sql.test.entity.User;
 
 import java.sql.Timestamp;
 import java.time.Duration;
