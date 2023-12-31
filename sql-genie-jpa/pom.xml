@@ -42,7 +42,7 @@
       <dependency>
         <groupId>io.github.genie</groupId>
         <artifactId>sql-genie-jdbc</artifactId>
-        <version>0.0.1</version>
+        <version>${project.version}</version>
         <scope>compile</scope>
       </dependency>
 
