@@ -24,7 +24,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             throws SQLException {
         int columnsCount = resultSet.getMetaData().getColumnCount();
         int column = 0;
-        if (selectClause instanceof MultiColumn multiColumn) {
+        if (selectClause instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selectClause;
             if (multiColumn.columns().size() != columnsCount) {
                 throw new IllegalStateException();
             }
@@ -33,7 +34,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
                 row[column++] = resultSet.getObject(column);
             }
             return cast(row);
-        } else if (selectClause instanceof SingleColumn singleColumn) {
+        } else if (selectClause instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selectClause;
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }
@@ -46,8 +48,6 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             Class<?> resultType = selectClause.resultType();
             if (resultType.isInterface()) {
                 return ProjectionUtil.getInterfaceResult(getJdbcResultFunction(resultSet), attributes, resultType);
-            } else if (resultType.isRecord()) {
-                return ProjectionUtil.getRecordResult(getJdbcResultFunction(resultSet), attributes, resultType);
             } else {
                 return ProjectionUtil.getBeanResult(getJdbcResultFunction(resultSet), attributes, resultType);
             }
@@ -57,7 +57,7 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
     @NotNull
     private static BiFunction<Integer, Class<?>, Object> getJdbcResultFunction(@NotNull ResultSet resultSet) {
         // noinspection Convert2Lambda
-        return new BiFunction<>() {
+        return new BiFunction<Integer, Class<?>, Object>() {
             @SneakyThrows
             @Override
             public Object apply(Integer index, Class<?> resultType) {

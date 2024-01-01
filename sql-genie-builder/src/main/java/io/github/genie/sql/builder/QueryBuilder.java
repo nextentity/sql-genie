@@ -21,9 +21,8 @@ import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U>, AbstractCollector<U> {
 
@@ -83,7 +82,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public AggWhere0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.select = new MultiColumnSelect(expressions.stream().map(ExpressionHolder::expression).toList());
+        metadata.select = new MultiColumnSelect(expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
         return update(metadata);
     }
 
@@ -133,17 +132,17 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     private QueryStructures.QueryStructureImpl buildCountData() {
         QueryStructureImpl structure = queryStructure.copy();
         structure.lockType = LockModeType.NONE;
-        structure.orderBy = List.of();
+        structure.orderBy = Collections.emptyList();
         if (requiredCountSubQuery(queryStructure)) {
             structure.select = COUNT_ANY;
             return new QueryStructureImpl(COUNT_ANY, (SubQuery) () -> structure);
         } else if (queryStructure.groupBy() != null && !queryStructure.groupBy().isEmpty()) {
             structure.select = SELECT_ANY;
-            structure.fetch = List.of();
+            structure.fetch = Collections.emptyList();
             return new QueryStructureImpl(COUNT_ANY, (SubQuery) () -> structure);
         } else {
             structure.select = COUNT_ANY;
-            structure.fetch = List.of();
+            structure.fetch = Collections.emptyList();
             return structure;
         }
     }
@@ -174,7 +173,8 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     private boolean requiredCountSubQuery(Expression column) {
         if (column instanceof Column) {
             return false;
-        } else if (column instanceof Operation operation) {
+        } else if (column instanceof Operation) {
+            Operation operation = (Operation) column;
             Expression expression = operation.operand();
             if (requiredCountSubQuery(expression)) {
                 return true;
@@ -225,8 +225,8 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         metadata.select = SELECT_ANY;
         metadata.offset = offset;
         metadata.limit = 1;
-        metadata.fetch = List.of();
-        metadata.orderBy = List.of();
+        metadata.fetch = Collections.emptyList();
+        metadata.orderBy = Collections.emptyList();
         return metadata;
     }
 
@@ -263,14 +263,14 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public Having0<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = expressions.stream().map(ExpressionHolder::expression).toList();
+        metadata.groupBy = expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList());
         return update(metadata);
     }
 
     @Override
     public Having0<T, U> groupBy(Path<T, ?> path) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = List.of(ExpressionBuilders.of(path));
+        metadata.groupBy = Collections.singletonList(ExpressionBuilders.of(path));
         return update(metadata);
     }
 
@@ -285,7 +285,8 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         List<Column> list = new ArrayList<>(expressions.size());
         for (PathOperator<T, ?, Predicate<T>> expression : expressions) {
             Expression expr = expression.expression();
-            if (expr instanceof Column column) {
+            if (expr instanceof Column) {
+                Column column = (Column) expr;
                 list.add(column);
             }
         }
@@ -308,7 +309,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AggAndBuilder<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new NumberOpsImpl<>(new Metadata<>(Collections.emptyList(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
     @NotNull
@@ -318,23 +319,23 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AggAndBuilder<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new ComparableOpsImpl<>(new Metadata<>(Collections.emptyList(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public StringOperator<T, AggAndBuilder<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new StringOpsImpl<>(new Metadata<>(Collections.emptyList(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public AggAndBuilder<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return newChanAndBuilder(new Metadata<>(Collections.emptyList(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
 
     @Override
     public <N> PathOperator<T, N, AggAndBuilder<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new DefaultExpressionOperator<>(new Metadata<>(Collections.emptyList(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
     }
 
     QueryStructureImpl queryStructure() {

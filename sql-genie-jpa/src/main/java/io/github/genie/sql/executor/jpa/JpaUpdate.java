@@ -8,10 +8,10 @@ import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Update;
 import io.github.genie.sql.builder.meta.ReflectUtil;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.TransactionRequiredException;
-import jakarta.persistence.metamodel.EntityType;
-import jakarta.persistence.metamodel.SingularAttribute;
+import javax.persistence.EntityManager;
+import javax.persistence.TransactionRequiredException;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

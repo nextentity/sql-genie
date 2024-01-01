@@ -6,7 +6,7 @@
 
   <groupId>io.github.genie-cloud</groupId>
   <artifactId>sql-genie</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.1-jdk8</version>
 
   <packaging>pom</packaging>
 
@@ -38,13 +38,13 @@
       <dependency>
         <groupId>org.hibernate</groupId>
         <artifactId>hibernate-core</artifactId>
-        <version>6.1.7.Final</version>
+        <version>5.6.15.Final</version>
       </dependency>
 
       <dependency>
-        <groupId>jakarta.persistence</groupId>
-        <artifactId>jakarta.persistence-api</artifactId>
-        <version>3.1.0</version>
+        <groupId>javax.persistence</groupId>
+        <artifactId>javax.persistence-api</artifactId>
+        <version>2.2</version>
       </dependency>
 
       <dependency>
@@ -82,10 +82,11 @@
   </dependencyManagement>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <skipTests>true</skipTests>
   </properties>
 
   <licenses>

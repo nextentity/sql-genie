@@ -18,15 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -239,7 +231,7 @@ public class JdbcTest extends JpaTest {
     public void testPredicateTesterEq() {
         int userId = 20;
         User user = userQuery
-                .fetch(List.of(
+                .fetch(Arrays.asList(
                         get(User::getParentUser),
                         get(User::getParentUser).get(User::getParentUser)
                 ))
@@ -258,19 +250,13 @@ public class JdbcTest extends JpaTest {
             assertEquals(single, parentUser);
         }
 
-        User user1 = userQuery
-                .fetch(
-                        User::getParentUser, User::getParentUser
-                )
-                .where(get(User::getId).eq(userId))
-                .getSingle();
 
     }
 
     @Test
     void testGroupBy() {
         QueryStructure structure = userQuery
-                .select(List.of(get(User::getId).min(), get(User::getRandomNumber)))
+                .select(Arrays.asList(get(User::getId).min(), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
                 .having(get(User::getRandomNumber).eq(10))
@@ -315,7 +301,7 @@ public class JdbcTest extends JpaTest {
         assertEquals((long) getUserIdStream().sum(), ((Number) aggregated[4]).intValue());
 
         List<Object[]> resultList = userQuery
-                .select(List.of(min(User::getId), get(User::getRandomNumber)))
+                .select(Arrays.asList(min(User::getId), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
                 .getList();
@@ -335,7 +321,7 @@ public class JdbcTest extends JpaTest {
         assertEqualsArrayList(resultList, fObjects);
 
         Object[] one = userQuery
-                .select(List.of(sum(User::getId)))
+                .select(Collections.singletonList(sum(User::getId)))
                 .where(get(User::isValid).eq(true))
                 .requireSingle();
 
@@ -369,7 +355,7 @@ public class JdbcTest extends JpaTest {
     @Test
     public void testOrderBy() {
         List<User> list = userQuery
-                .orderBy(List.of(
+                .orderBy(Arrays.asList(
                         get(User::getRandomNumber).desc(),
                         get(User::getId).asc()
                 ))
@@ -380,7 +366,7 @@ public class JdbcTest extends JpaTest {
         assertEquals(list, sorted);
 
         list = userQuery
-                .orderBy(List.of(get(User::getUsername).asc(),
+                .orderBy(Arrays.asList(get(User::getUsername).asc(),
                         get(User::getRandomNumber).desc(),
                         get(User::getId).asc()))
                 .getList();
@@ -1217,9 +1203,6 @@ public class JdbcTest extends JpaTest {
         // List<Map<String, Object>> l1 = userInterfaces.stream()
         //         .map(UserInterface::asMap)
         //         .collect(Collectors.toList());
-
-        List<UserInterface> list = userQuery.select(UserInterface.class)
-                .getList();
 
         List<Map<String, Object>> l2 = userModels.stream()
                 .map(UserInterface::asMap)

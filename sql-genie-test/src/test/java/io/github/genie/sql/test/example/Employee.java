@@ -1,6 +1,6 @@
 package io.github.genie.sql.test.example;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.Data;
 
 @Data

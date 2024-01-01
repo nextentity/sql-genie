@@ -1,6 +1,7 @@
 package io.github.genie.sql.builder.meta;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
 import java.lang.reflect.Field;
@@ -110,9 +111,9 @@ public class Metamodels {
         @Override
         public String toString() {
             return "TableMapping{" +
-                    ", tableName='" + tableName + '\'' +
-                    ", javaType=" + getJavaType().getName() +
-                    '}';
+                   ", tableName='" + tableName + '\'' +
+                   ", javaType=" + getJavaType().getName() +
+                   '}';
         }
     }
 
@@ -181,11 +182,26 @@ public class Metamodels {
         }
     }
 
-    record ProjectionAttributeImpl(Attribute baseField, Attribute field) implements ProjectionAttribute {
 
+    @Data
+    @Accessors(fluent = true)
+    static class ProjectionAttributeImpl implements ProjectionAttribute {
+        private final Attribute field;
+        private final Attribute baseField;
+
+        public ProjectionAttributeImpl(Attribute baseField, Attribute field) {
+            this.baseField = baseField;
+            this.field = field;
+        }
     }
 
-    record ProjectionImpl(List<ProjectionAttribute> attributes) implements Projection {
+    @Data
+    @Accessors(fluent = true)
+    static class ProjectionImpl implements Projection {
+        private final List<ProjectionAttribute> attributes;
 
+        public ProjectionImpl(List<ProjectionAttribute> attributes) {
+            this.attributes = attributes;
+        }
     }
 }

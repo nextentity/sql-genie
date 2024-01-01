@@ -17,12 +17,13 @@ import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.*;
 import org.jetbrains.annotations.NotNull;
 
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -46,11 +47,13 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return queryByNativeSql(queryStructure);
         }
         Selection selected = queryStructure.select();
-        if (selected instanceof SingleColumn singleColumn) {
-            List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
-            List<Object> result = objectsList.stream().map(objects -> objects[0]).toList();
+        if (selected instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, Collections.singletonList(singleColumn.column()));
+            List<Object> result = objectsList.stream().map(objects -> objects[0]).collect(Collectors.toList());
             return castList(result);
-        } else if (selected instanceof MultiColumn multiColumn) {
+        } else if (selected instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selected;
             List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
             return castList(objectsList);
         } else {
@@ -67,21 +70,17 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                             String fieldName = projectionField.baseField().name();
                             return ExpressionBuilders.fromPath(fieldName);
                         })
-                        .toList();
+                        .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).toList();
+                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
                 if (resultType.isInterface()) {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getInterfaceResult(getResultSet(it), list, resultType))
-                            .toList();
-                } else if (resultType.isRecord()) {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getRecordResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .collect(Collectors.toList());
                 } else {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getBeanResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .collect(Collectors.toList());
                 }
             }
         }
@@ -89,7 +88,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     private <T> List<T> queryByNativeSql(@NotNull QueryStructure queryStructure) {
         PreparedSql preparedSql = querySqlBuilder.build(queryStructure, metamodel);
-        jakarta.persistence.Query query = entityManager.createNativeQuery(preparedSql.sql());
+        javax.persistence.Query query = entityManager.createNativeQuery(preparedSql.sql());
         int position = 0;
         for (Object arg : preparedSql.args()) {
             query.setParameter(++position, arg);
@@ -189,7 +188,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
         protected void setOrderBy(List<? extends Order<?>> orderBy) {
             if (orderBy != null && !orderBy.isEmpty()) {
-                List<jakarta.persistence.criteria.Order> orders = orderBy.stream()
+                List<javax.persistence.criteria.Order> orders = orderBy.stream()
                         .map(o -> o.order() == SortOrder.DESC
                                 ? cb.desc(toExpression(o.expression()))
                                 : cb.asc(toExpression(o.expression())))
@@ -206,7 +205,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
         protected void setGroupBy(List<? extends Expression> groupBy) {
             if (groupBy != null && !groupBy.isEmpty()) {
-                List<jakarta.persistence.criteria.Expression<?>> grouping = groupBy.stream().map(this::toExpression).collect(Collectors.toList());
+                List<javax.persistence.criteria.Expression<?>> grouping = groupBy.stream().map(this::toExpression).collect(Collectors.toList());
                 query.groupBy(grouping);
             }
         }

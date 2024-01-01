@@ -6,22 +6,20 @@ import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.test.entity.User;
 import io.github.genie.sql.core.mapping.JpaMetamodel;
-import io.github.genie.sql.test.projection.UserInterface;
-import io.github.genie.sql.test.projection.UserModel;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.criteria.CriteriaQuery;
+import io.github.genie.sql.test.entity.User;
+import io.github.genie.sql.test.projection.UserInterface;
+import io.github.genie.sql.test.projection.UserModel;
 import lombok.Lombok;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -256,7 +254,7 @@ public class JpaTest {
     public void testPredicateTesterEq() {
         int userId = 20;
         User user = userQuery
-                .fetch(List.of(
+                .fetch(Arrays.asList(
                         get(User::getParentUser),
                         get(User::getParentUser).get(User::getParentUser)
                 ))
@@ -275,25 +273,6 @@ public class JpaTest {
             assertEquals(single, parentUser);
         }
 
-        User user1 = userQuery
-                .fetch(
-                        User::getParentUser, User::getParentUser
-                )
-                .where(get(User::getId).eq(userId))
-                .getSingle();
-
-    }
-
-    @Test
-    void testF() {
-        int userId = 20;
-        User user = userQuery
-                .fetch(List.of(
-                        get(User::getParentUser),
-                        get(User::getParentUser).get(User::getParentUser)
-                ))
-                .where(get(User::getId).eq(userId))
-                .getSingle();
     }
 
     @Test
@@ -319,7 +298,7 @@ public class JpaTest {
         assertEquals((long) getUserIdStream().sum(), ((Number) aggregated[4]).intValue());
 
         List<Object[]> resultList = userQuery
-                .select(List.of(min(User::getId), get(User::getRandomNumber)))
+                .select(Arrays.asList(min(User::getId), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
                 .getList();
@@ -339,7 +318,7 @@ public class JpaTest {
         assertEqualsArrayList(resultList, fObjects);
 
         Object[] one = userQuery
-                .select(List.of(sum(User::getId)))
+                .select(Collections.singletonList(sum(User::getId)))
                 .where(get(User::isValid).eq(true))
                 .requireSingle();
 
@@ -373,7 +352,7 @@ public class JpaTest {
     @Test
     public void testOrderBy() {
         List<User> list = userQuery
-                .orderBy(List.of(
+                .orderBy(Arrays.asList(
                         get(User::getRandomNumber).desc(),
                         get(User::getId).asc()
                 ))
@@ -384,7 +363,7 @@ public class JpaTest {
         assertEquals(list, sorted);
 
         list = userQuery
-                .orderBy(List.of(get(User::getUsername).asc(),
+                .orderBy(Arrays.asList(get(User::getUsername).asc(),
                         get(User::getRandomNumber).desc(),
                         get(User::getId).asc()))
                 .getList();
@@ -1214,13 +1193,6 @@ public class JpaTest {
                 .map(UserInterface::asMap)
                 .collect(Collectors.toList());
 
-        // List<Map<String, Object>> l1 = userInterfaces.stream()
-        //         .map(UserInterface::asMap)
-        //         .collect(Collectors.toList());
-
-        List<UserInterface> list = userQuery.select(UserInterface.class)
-                .getList();
-
         List<Map<String, Object>> l2 = userModels.stream()
                 .map(UserInterface::asMap)
                 .collect(Collectors.toList());
@@ -1386,5 +1358,8 @@ public class JpaTest {
         return allUsers.stream().mapToInt(User::getRandomNumber);
     }
 
-
+    @Test
+    void test() {
+        userQuery.where(get(User::getId).notIn()).getList();
+    }
 }

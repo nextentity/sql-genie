@@ -19,9 +19,10 @@ public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
                 .append(tableName).append("` (");
         String delimiter = "";
         for (Attribute field : mapping.fields()) {
-            if (!(field instanceof BasicAttribute column)) {
+            if (!(field instanceof BasicAttribute)) {
                 continue;
             }
+            BasicAttribute column = (BasicAttribute) field;
             sql.append(delimiter).append("`").append(column.columnName()).append("`");
             columns.add(column);
             delimiter = ",";

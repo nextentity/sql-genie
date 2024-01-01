@@ -6,20 +6,21 @@ import io.github.genie.sql.builder.Q;
 import io.github.genie.sql.core.mapping.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 public class Example {
 
     public static void main(String[] args) {
 
-        try (EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa")) {
-            EntityManager em = factory.createEntityManager();
-            Query builder = new JpaQueryExecutor(em, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery();
-            Select0<Employee, Employee> select0 = builder.from(Employee.class);
-            runExample(select0);
-        }
+        EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa");
+        EntityManager em = factory.createEntityManager();
+        Query builder = new JpaQueryExecutor(em, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery();
+        Select0<Employee, Employee> select0 = builder.from(Employee.class);
+        runExample(select0);
+
     }
 
     private static void runExample(Select0<Employee, Employee> query) {

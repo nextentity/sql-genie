@@ -3,9 +3,12 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,13 +23,13 @@ final class QueryStructures {
 
         Expression where = ExpressionBuilders.TRUE;
 
-        List<? extends Expression> groupBy = List.of();
+        List<? extends Expression> groupBy = Collections.emptyList();
 
-        List<? extends Order<?>> orderBy = List.of();
+        List<? extends Order<?>> orderBy = Collections.emptyList();
 
         Expression having = ExpressionBuilders.TRUE;
 
-        List<? extends Column> fetch = List.of();
+        List<? extends Column> fetch = Collections.emptyList();
 
         Integer offset;
 
@@ -124,7 +127,18 @@ final class QueryStructures {
 
     }
 
-    record OrderImpl<T>(Expression expression, SortOrder order) implements Order<T> {
+    @Data
+    @Accessors(fluent = true)
+    static class OrderImpl<T> implements Order<T> {
+
+        private final Expression expression;
+        private final SortOrder order;
+
+        public OrderImpl(Expression expression, SortOrder order) {
+            this.expression = expression;
+            this.order = order;
+        }
+
         public static <T> OrderImpl<T> of(ExpressionHolder<T, ?> holder, SortOrder order) {
             return new OrderImpl<>(holder.expression(), order);
         }
@@ -135,7 +149,15 @@ final class QueryStructures {
         }
     }
 
-    record SelectClauseImpl(Class<?> resultType) implements Selection {
+    @Data
+    @Accessors(fluent = true)
+    static class SelectClauseImpl implements Selection {
+        private final Class<?> resultType;
+
+        public SelectClauseImpl(Class<?> resultType) {
+            this.resultType = resultType;
+        }
+
         @Override
         public String toString() {
             return resultType.getName();
@@ -143,7 +165,15 @@ final class QueryStructures {
 
     }
 
-    record MultiColumnSelect(List<? extends Expression> columns) implements MultiColumn {
+    @Data
+    @Accessors(fluent = true)
+    static class MultiColumnSelect implements MultiColumn {
+        private final List<? extends Expression> columns;
+
+        public MultiColumnSelect(List<? extends Expression> columns) {
+            this.columns = columns;
+        }
+
         @Override
         public String toString() {
             return String.valueOf(columns);
@@ -151,27 +181,68 @@ final class QueryStructures {
 
     }
 
-    record SingleColumnSelect(Class<?> resultType, Expression column) implements SingleColumn {
+    @Data
+    @Accessors(fluent = true)
+    static class SingleColumnSelect implements SingleColumn {
+        private final Class<?> resultType;
+        private final Expression column;
+
+        public SingleColumnSelect(Class<?> resultType, Expression column) {
+            this.resultType = resultType;
+            this.column = column;
+        }
+
         @Override
         public String toString() {
             return String.valueOf(column);
         }
     }
 
-    record SliceImpl<T>(List<T> data, long total, int offset, int limit) implements Slice<T> {
+    @Data
+    @Accessors(fluent = true)
+    static class SliceImpl<T> implements Slice<T> {
+        private final List<T> data;
+        private final long total;
+        private final int offset;
+        private final int limit;
+
+        public SliceImpl(List<T> data, long total, int offset, int limit) {
+            this.data = data;
+            this.total = total;
+            this.offset = offset;
+            this.limit = limit;
+        }
     }
 
-    record ConstantMeta(Object value) implements Constant {
+    @Data
+    @Accessors(fluent = true)
+    static class ConstantMeta implements Constant {
+        private final Object value;
+
+        public ConstantMeta(Object value) {
+            this.value = value;
+        }
+
         @Override
         public String toString() {
             return String.valueOf(value);
         }
     }
 
-    record OperationMeta(Expression operand,
-                         Operator operator,
-                         List<? extends Expression> args)
-            implements Operation {
+    @Data
+    @Accessors(fluent = true)
+    static class OperationMeta implements Operation {
+        private final Expression operand;
+        private final Operator operator;
+        private final List<? extends Expression> args;
+
+        public OperationMeta(Expression operand,
+                             Operator operator,
+                             List<? extends Expression> args) {
+            this.operand = operand;
+            this.operator = operator;
+            this.args = args;
+        }
 
         @Override
         public String toString() {
@@ -180,7 +251,15 @@ final class QueryStructures {
 
     }
 
-    record ColumnMeta(List<String> paths) implements Column {
+    @Data
+    @Accessors(fluent = true)
+    static class ColumnMeta implements Column {
+        private final List<String> paths;
+
+        public ColumnMeta(List<String> paths) {
+            this.paths = paths;
+        }
+
         @Override
         public String toString() {
             return String.join(".", paths);
@@ -193,7 +272,7 @@ final class QueryStructures {
         if (o.args() != null) {
             r = o.args();
         } else {
-            r = List.of();
+            r = Collections.emptyList();
         }
         if (o.operator().isMultivalued()) {
             return Stream.concat(Stream.of(l), r.stream())
@@ -216,7 +295,8 @@ final class QueryStructures {
     }
 
     private static String toString(Operation parent, Expression subMeta) {
-        if (subMeta instanceof Operation o) {
+        if (subMeta instanceof Operation) {
+            Operation o = (Operation) subMeta;
             if (o.operator().priority() > parent.operator().priority()) {
                 return "(" + subMeta + ')';
             }

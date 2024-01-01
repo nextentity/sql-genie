@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Util {
@@ -53,11 +54,11 @@ public final class Util {
     }
 
     static <T> List<T> concat(Collection<? extends T> collection, T value) {
-        return Stream.concat(collection.stream(), Stream.of(value)).toList();
+        return Stream.concat(collection.stream(), Stream.of(value)).collect(Collectors.toList());
     }
 
     static <T> List<T> concat(Collection<? extends T> collection, Collection<? extends T> value) {
-        return Stream.concat(collection.stream(), value.stream()).toList();
+        return Stream.concat(collection.stream(), value.stream()).collect(Collectors.toList());
     }
 
     private Util() {

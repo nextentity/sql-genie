@@ -4,6 +4,7 @@ import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operator;
 
+import java.util.Collections;
 import java.util.List;
 
 public class Expressions {
@@ -13,7 +14,7 @@ public class Expressions {
     }
 
     public static Column ofPath(String fieldName) {
-        return ExpressionBuilders.fromPaths(List.of(fieldName));
+        return ExpressionBuilders.fromPaths(Collections.singletonList(fieldName));
     }
 
     public static Column concat(Column join, String path) {

@@ -7,15 +7,14 @@
   <parent>
     <groupId>io.github.genie-cloud</groupId>
     <artifactId>sql-genie</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.1-jdk8</version>
   </parent>
 
-  <groupId>io.github.huanghaha</groupId>
   <artifactId>sql-genie-test</artifactId>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -37,8 +36,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>jakarta.persistence</groupId>
-      <artifactId>jakarta.persistence-api</artifactId>
+      <groupId>javax.persistence</groupId>
+      <artifactId>javax.persistence-api</artifactId>
       <scope>provided</scope>
     </dependency>
 

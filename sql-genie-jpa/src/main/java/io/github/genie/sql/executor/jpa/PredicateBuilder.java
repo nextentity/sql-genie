@@ -2,9 +2,9 @@ package io.github.genie.sql.executor.jpa;
 
 
 import io.github.genie.sql.api.Expression;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 
 public class PredicateBuilder extends ExpressionBuilder {
 
@@ -13,7 +13,7 @@ public class PredicateBuilder extends ExpressionBuilder {
     }
 
     public Predicate toPredicate(Expression expression) {
-        jakarta.persistence.criteria.Expression<?> result = toExpression(expression);
+        javax.persistence.criteria.Expression<?> result = toExpression(expression);
         if (result instanceof Predicate) {
             return (Predicate) result;
         }

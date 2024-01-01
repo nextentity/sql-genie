@@ -1,8 +1,8 @@
 package io.github.genie.sql.test;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 public class EntityManagers {
     private static final EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa");

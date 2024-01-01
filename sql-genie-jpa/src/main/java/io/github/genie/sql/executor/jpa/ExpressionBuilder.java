@@ -1,21 +1,14 @@
 package io.github.genie.sql.executor.jpa;
 
 
-import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.Operation;
-import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.builder.ExpressionBuilders;
-import io.github.genie.sql.api.Operator;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.FetchParent;
-import jakarta.persistence.criteria.From;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
+import javax.persistence.criteria.From;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,39 +28,42 @@ public class ExpressionBuilder {
     }
 
 
-    public jakarta.persistence.criteria.Expression<?> toExpression(Expression expression) {
-        if (expression instanceof Constant cv) {
+    public javax.persistence.criteria.Expression<?> toExpression(Expression expression) {
+        if (expression instanceof Constant) {
+            Constant cv = (Constant) expression;
             return cb.literal(cv.value());
         }
-        if (expression instanceof Column pv) {
+        if (expression instanceof Column) {
+            Column pv = (Column) expression;
             return getPath(pv);
         }
-        if (expression instanceof Operation ov) {
+        if (expression instanceof Operation) {
+            Operation ov = (Operation) expression;
             List<? extends Expression> args = ov.args();
             Operator operator = ov.operator();
-            jakarta.persistence.criteria.Expression<?> e0 = toExpression(ov.operand());
+            javax.persistence.criteria.Expression<?> e0 = toExpression(ov.operand());
             Expression e1 = ov.firstArg();
             Expression e2 = ov.secondArg();
-            // noinspection EnhancedSwitchMigration
             switch (operator) {
                 case NOT:
                     return cb.not(cast(e0));
                 case AND: {
-                    jakarta.persistence.criteria.Expression<Boolean> res = cast(e0);
+                    javax.persistence.criteria.Expression<Boolean> res = cast(e0);
                     for (Expression arg : args) {
                         res = cb.and(res, cast(toExpression(arg)));
                     }
                     return res;
                 }
                 case OR: {
-                    jakarta.persistence.criteria.Expression<Boolean> res = cast(e0);
+                    javax.persistence.criteria.Expression<Boolean> res = cast(e0);
                     for (Expression arg : args) {
                         res = cb.or(res, cast(toExpression(arg)));
                     }
                     return res;
                 }
                 case GT: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         if (cv.value() instanceof Number) {
                             return cb.gt(cast(e0), (Number) cv.value());
                         } else if (cv.value() instanceof Comparable) {
@@ -78,19 +74,22 @@ public class ExpressionBuilder {
                     return cb.gt(cast(e0), cast(toExpression(e1)));
                 }
                 case EQ: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         return cb.equal(cast(e0), cv.value());
                     }
                     return cb.equal(e0, toExpression(e1));
                 }
                 case NE: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         return cb.notEqual(e0, cv.value());
                     }
                     return cb.notEqual(e0, toExpression(e1));
                 }
                 case GE: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         if (cv.value() instanceof Number) {
                             return cb.ge(cast(e0), (Number) cv.value());
                         } else if (cv.value() instanceof Comparable) {
@@ -101,7 +100,8 @@ public class ExpressionBuilder {
                     return cb.ge(cast(e0), cast(toExpression(e1)));
                 }
                 case LT: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         Object ve1 = cv.value();
                         if (ve1 instanceof Number) {
                             return cb.lt(cast(e0), (Number) ve1);
@@ -113,7 +113,8 @@ public class ExpressionBuilder {
                     return cb.lt(cast(e0), cast(toExpression(e1)));
                 }
                 case LE: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         Object ve1 = cv.value();
                         if (ve1 instanceof Number) {
                             return cb.le(cast(e0), (Number) ve1);
@@ -125,7 +126,8 @@ public class ExpressionBuilder {
                     return cb.le(cast(e0), cast(toExpression(e1)));
                 }
                 case LIKE: {
-                    if (e1 instanceof Constant cv && cv.value() instanceof String scv) {
+                    if (e1 instanceof Constant && ((Constant) e1).value() instanceof String) {
+                        String scv = (String) ((Constant) e1).value();
                         return cb.like(cast(e0), scv);
                     }
                     return cb.like(cast(e0), cast(toExpression(e1)));
@@ -138,7 +140,8 @@ public class ExpressionBuilder {
                     if (args.size() > 1) {
                         CriteriaBuilder.In<Object> in = cb.in(e0);
                         for (Expression arg : args) {
-                            if (arg instanceof Constant cv) {
+                            if (arg instanceof Constant) {
+                                Constant cv = (Constant) arg;
                                 in = in.value(cv.value());
                             } else {
                                 in = in.value(toExpression(arg));
@@ -146,14 +149,16 @@ public class ExpressionBuilder {
                         }
                         return in;
                     } else {
-                        return cb.literal(false);
+                        return cb.notEqual(cb.literal(1), 1);
                     }
                 }
                 case BETWEEN: {
-                    if (e1 instanceof Constant cv1
-                            && e2 instanceof Constant cv2
-                            && cv1.value() instanceof Comparable
-                            && cv2.value() instanceof Comparable) {
+                    if (e1 instanceof Constant
+                        && e2 instanceof Constant
+                        && ((Constant) e1).value() instanceof Comparable
+                        && ((Constant) e2).value() instanceof Comparable) {
+                        Constant cv2 = (Constant) e2;
+                        Constant cv1 = (Constant) e1;
                         Comparable<Object> v1 = unsafeCast(cv1.value());
                         Comparable<Object> v2 = unsafeCast(cv2.value());
                         return cb.between(cast(e0), v1, v2);
@@ -170,16 +175,19 @@ public class ExpressionBuilder {
                     return cb.upper(cast(e0));
                 case SUBSTRING: {
                     if (args.size() == 1) {
-                        if (e1 instanceof Constant cv1
-                                && cv1.value() instanceof Number number) {
+                        if (e1 instanceof Constant
+                            && ((Constant) e1).value() instanceof Number) {
+                            Number number = (Number) ((Constant) e1).value();
                             return cb.substring(cast(e0), number.intValue());
                         }
                         return cb.substring(cast(e0), cast(toExpression(e1)));
                     } else if (args.size() == 2) {
-                        if (e1 instanceof Constant cv1
-                                && cv1.value() instanceof Number n1
-                                && e2 instanceof Constant cv2
-                                && cv2.value() instanceof Number n2) {
+                        if (e1 instanceof Constant
+                            && ((Constant) e1).value() instanceof Number
+                            && e2 instanceof Constant
+                            && ((Constant) e2).value() instanceof Number) {
+                            Number n2 = (Number) ((Constant) e2).value();
+                            Number n1 = (Number) ((Constant) e1).value();
                             return cb.substring(cast(e0), n1.intValue(), n2.intValue());
                         }
                         return cb.substring(
@@ -196,44 +204,51 @@ public class ExpressionBuilder {
                 case LENGTH:
                     return cb.length(cast(e0));
                 case ADD: {
-                    if (e1 instanceof Constant cv1 && cv1.value() instanceof Number number) {
+                    if (e1 instanceof Constant && ((Constant) e1).value() instanceof Number) {
+                        Number number = (Number) ((Constant) e1).value();
                         return cb.sum(cast(e0), number);
                     }
                     return cb.sum(cast(e0), cast(toExpression(e1)));
                 }
                 case SUBTRACT: {
-                    if (e1 instanceof Constant cv1 && cv1.value() instanceof Number number) {
+                    if (e1 instanceof Constant && ((Constant) e1).value() instanceof Number) {
+                        Number number = (Number) ((Constant) e1).value();
                         return cb.diff(cast(e0), number);
                     }
                     return cb.diff(cast(e0), cast(toExpression(e1)));
                 }
                 case MULTIPLY: {
-                    if (e1 instanceof Constant cv1 && cv1.value() instanceof Number) {
+                    if (e1 instanceof Constant && ((Constant) e1).value() instanceof Number) {
+                        Constant cv1 = (Constant) e1;
                         return cb.prod(cast(e0), (Number) cv1.value());
                     }
                     return cb.prod(cast(e0), cast(toExpression(e1)));
                 }
                 case DIVIDE: {
-                    if (e1 instanceof Constant cv1 && cv1.value() instanceof Number number) {
+                    if (e1 instanceof Constant && ((Constant) e1).value() instanceof Number) {
+                        Number number = (Number) ((Constant) e1).value();
                         return cb.quot(cast(e0), number);
                     }
                     return cb.quot(cast(e0), cast(toExpression(e1)));
                 }
                 case MOD: {
-                    if (e1 instanceof Constant cv1
-                            && cv1.value() instanceof Integer) {
+                    if (e1 instanceof Constant
+                        && ((Constant) e1).value() instanceof Integer) {
+                        Constant cv1 = (Constant) e1;
                         return cb.mod(cast(e0), ((Integer) cv1.value()));
                     }
                     return cb.mod(cast(e0), cast(toExpression(e1)));
                 }
                 case NULLIF: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         return cb.nullif(cast(e0), ((Integer) cv.value()));
                     }
                     return cb.nullif(e0, toExpression(e1));
                 }
                 case IF_NULL: {
-                    if (e1 instanceof Constant cv) {
+                    if (e1 instanceof Constant) {
+                        Constant cv = (Constant) e1;
                         return cb.coalesce(cast(e0), ((Integer) cv.value()));
                     }
                     return cb.coalesce(e0, toExpression(e1));
@@ -261,7 +276,7 @@ public class ExpressionBuilder {
         return (T) (o);
     }
 
-    public static <T> jakarta.persistence.criteria.Expression<T> cast(jakarta.persistence.criteria.Expression<?> expression) {
+    public static <T> javax.persistence.criteria.Expression<T> cast(javax.persistence.criteria.Expression<?> expression) {
         return unsafeCast(expression);
     }
 

@@ -5,12 +5,11 @@ import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 @SuppressWarnings("unused")
@@ -47,16 +46,16 @@ public interface Query {
         GroupBy0<T, T> fetch(Collection<Path<T, ?>> paths);
 
         default GroupBy0<T, T> fetch(Path<T, ?> path) {
-            return fetch(List.of(path));
+            return fetch(Collections.singletonList(path));
         }
 
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
-            return fetch(List.of(p0, p1));
+            return fetch(Arrays.asList(p0, p1));
         }
 
         default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
-            return fetch(List.of(p0, p1, p3));
+            return fetch(Arrays.asList(p0, p1, p3));
         }
 
     }
@@ -74,44 +73,44 @@ public interface Query {
         AggWhere0<T, Object[]> select(Collection<Path<T, ?>> paths);
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
-            return select(List.of(p0, p1));
+            return select(Arrays.asList(p0, p1));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return select(List.of(p0, p1, p2));
+            return select(Arrays.asList(p0, p1, p2));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return select(List.of(p0, p1, p2, p3));
+            return select(Arrays.asList(p0, p1, p2, p3));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return select(List.of(p0, p1, p2, p3, p4));
+            return select(Arrays.asList(p0, p1, p2, p3, p4));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                               Path<T, ?> p5) {
-            return select(List.of(p0, p1, p2, p3, p4, p5));
+            return select(Arrays.asList(p0, p1, p2, p3, p4, p5));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                               Path<T, ?> p5, Path<T, ?> p6) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6));
+            return select(Arrays.asList(p0, p1, p2, p3, p4, p5, p6));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                               Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7));
+            return select(Arrays.asList(p0, p1, p2, p3, p4, p5, p6, p7));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                               Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
+            return select(Arrays.asList(p0, p1, p2, p3, p4, p5, p6, p7, p8));
         }
 
         default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                               Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+            return select(Arrays.asList(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
         }
 
 
@@ -201,24 +200,24 @@ public interface Query {
         Having0<T, U> groupBy(Collection<Path<T, ?>> paths);
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1) {
-            return groupBy(List.of(p0, p1));
+            return groupBy(Arrays.asList(p0, p1));
         }
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return groupBy(List.of(p0, p1, p2));
+            return groupBy(Arrays.asList(p0, p1, p2));
         }
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return groupBy(List.of(p0, p1, p2, p3));
+            return groupBy(Arrays.asList(p0, p1, p2, p3));
         }
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return groupBy(List.of(p0, p1, p2, p3, p4));
+            return groupBy(Arrays.asList(p0, p1, p2, p3, p4));
         }
 
         default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                       Path<T, ?> p5) {
-            return groupBy(List.of(p0, p1, p2, p3, p4, p5));
+            return groupBy(Arrays.asList(p0, p1, p2, p3, p4, p5));
         }
     }
 
@@ -233,15 +232,15 @@ public interface Query {
         Collector<U> orderBy(List<? extends Order<T>> path);
 
         default Collector<U> orderBy(Order<T> path) {
-            return orderBy(List.of(path));
+            return orderBy(Collections.singletonList(path));
         }
 
         default Collector<U> orderBy(Order<T> p0, Order<T> p1) {
-            return orderBy(List.of(p0, p1));
+            return orderBy(Arrays.asList(p0, p1));
         }
 
         default Collector<U> orderBy(Order<T> p0, Order<T> p1, Order<T> p2) {
-            return orderBy(List.of(p0, p1, p2));
+            return orderBy(Arrays.asList(p0, p1, p2));
         }
 
     }
@@ -385,7 +384,17 @@ public interface Query {
 
     }
 
-    record SliceQueryStructure(QueryStructure count, QueryStructure list) {
+    @Data
+    @Accessors(fluent = true)
+    class SliceQueryStructure {
+        private final QueryStructure count;
+        private final QueryStructure list;
+
+        public SliceQueryStructure(QueryStructure count, QueryStructure list) {
+            this.count = count;
+            this.list = list;
+        }
+
     }
 
 }

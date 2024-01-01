@@ -1,17 +1,17 @@
 package io.github.genie.sql.builder.executor;
 
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.ReflectUtil;
+import io.github.genie.sql.builder.meta.Type;
+import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.lang.reflect.RecordComponent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,41 +68,6 @@ public class ProjectionUtil {
         }
     }
 
-    @NotNull
-    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
-                                        @NotNull List<? extends Attribute> fields,
-                                        Class<?> resultType) {
-        Map<String, Object> map = new HashMap<>();
-        int i = 0;
-        for (Attribute attribute : fields) {
-            Object value = resultSet.apply(i++, attribute.javaType());
-            map.put(attribute.name(), value);
-        }
-        try {
-            return ProjectionUtil.getRecordResult(resultType, map);
-        } catch (ReflectiveOperationException e) {
-            throw new BeanReflectiveException(e);
-        }
-    }
-
-    @NotNull
-    public static <R> R getRecordResult(Class<?> resultType, Map<String, Object> map)
-            throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        int i;
-        RecordComponent[] components = resultType.getRecordComponents();
-        Object[] args = new Object[components.length];
-        Class<?>[] parameterTypes = new Class[components.length];
-        for (i = 0; i < components.length; i++) {
-            RecordComponent component = components[i];
-            args[i] = map.get(component.getName());
-            parameterTypes[i] = component.getType();
-        }
-        Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
-        Object row = constructor.newInstance(args);
-        // noinspection unchecked
-        return (R) row;
-    }
-
     public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
                                            List<? extends Attribute> fields,
                                            Class<?> resultType) {
@@ -114,7 +79,7 @@ public class ProjectionUtil {
         }
 
         Object result = ProjectionUtil.newProxyInstance(fields, resultType, map);
-        //noinspection unchecked
+        // noinspection unchecked
         return (R) (result);
     }
 
@@ -126,10 +91,21 @@ public class ProjectionUtil {
     }
 
 
-    private record Handler(List<? extends Attribute> fields,
-                           Class<?> resultType,
-                           Map<Method, Object> data) implements InvocationHandler {
+    @Data
+    @Accessors(fluent = true)
+    private static class Handler implements InvocationHandler {
         private static final Method EQUALS = getEqualsMethod();
+        private final List<? extends Attribute> fields;
+        private final Class<?> resultType;
+        private final Map<Method, Object> data;
+
+        public Handler(List<? extends Attribute> fields,
+                       Class<?> resultType,
+                       Map<Method, Object> data) {
+            this.fields = fields;
+            this.resultType = resultType;
+            this.data = data;
+        }
 
         @SneakyThrows
         @NotNull
@@ -149,7 +125,7 @@ public class ProjectionUtil {
                 return method.invoke(this, args);
             }
             if (method.isDefault()) {
-                return InvocationHandler.invokeDefault(proxy, method, args);
+                return ReflectUtil.invokeDefaultMethod(proxy, method, args);
             }
             throw new AbstractMethodError(method.toString());
         }

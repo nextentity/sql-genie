@@ -17,9 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class JdbcUpdate implements Update {
@@ -98,7 +96,7 @@ public class JdbcUpdate implements Update {
             String sql = preparedSql.sql();
             log.debug(sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                setArgs(List.of(entity), preparedSql.columns(), statement);
+                setArgs(Collections.singletonList(entity), preparedSql.columns(), statement);
                 int i = statement.executeUpdate();
                 List<BasicAttribute> versions = preparedSql.versionColumns();
                 boolean hasVersion = isNotEmpty(versions);
@@ -136,7 +134,8 @@ public class JdbcUpdate implements Update {
     private static <T> List<BasicAttribute> getNonNullColumn(T entity, EntityType mapping) {
         List<BasicAttribute> columns = new ArrayList<>();
         for (Attribute it : mapping.fields()) {
-            if (it instanceof BasicAttribute column) {
+            if (it instanceof BasicAttribute) {
+                BasicAttribute column = (BasicAttribute) it;
                 Object invoke = column.get(entity);
                 if (invoke != null) {
                     columns.add(column);
