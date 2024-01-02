@@ -7,17 +7,18 @@ import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
-import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -89,6 +90,12 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         return build(operateRight(Operator.IN, values));
     }
 
+    @Override
+    public B in(@NotNull Collection<? extends T> values) {
+        Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
+        return build(metadata);
+    }
+
     @SafeVarargs
     @Override
     public final B notIn(U... values) {
@@ -99,6 +106,12 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     @Override
     public B notIn(@NotNull List<? extends ExpressionHolder<T, U>> values) {
         return build(operateRight(Operator.IN, values).not());
+    }
+
+    @Override
+    public B notIn(@NotNull Collection<? extends T> values) {
+        Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
+        return build(metadata.not());
     }
 
     @Override

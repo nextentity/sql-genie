@@ -6,6 +6,7 @@ import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 
 @SuppressWarnings("unused")
@@ -24,10 +25,14 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
     B in(@NotNull List<? extends ExpressionHolder<T, U>> values);
 
+    B in(@NotNull Collection<? extends T> values);
+
     @SuppressWarnings({"unchecked"})
     B notIn(U... values);
 
     B notIn(@NotNull List<? extends ExpressionHolder<T, U>> values);
+
+    B notIn(@NotNull Collection<? extends T> values);
 
     B isNull();
 
