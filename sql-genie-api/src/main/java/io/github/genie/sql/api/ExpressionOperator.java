@@ -25,14 +25,14 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
     B in(@NotNull List<? extends ExpressionHolder<T, U>> values);
 
-    B in(@NotNull Collection<? extends T> values);
+    B in(@NotNull Collection<? extends U> values);
 
     @SuppressWarnings({"unchecked"})
     B notIn(U... values);
 
     B notIn(@NotNull List<? extends ExpressionHolder<T, U>> values);
 
-    B notIn(@NotNull Collection<? extends T> values);
+    B notIn(@NotNull Collection<? extends U> values);
 
     B isNull();
 

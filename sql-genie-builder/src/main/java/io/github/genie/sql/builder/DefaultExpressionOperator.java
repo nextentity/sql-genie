@@ -91,7 +91,7 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     }
 
     @Override
-    public B in(@NotNull Collection<? extends T> values) {
+    public B in(@NotNull Collection<? extends U> values) {
         Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
         return build(metadata);
     }
@@ -109,7 +109,7 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     }
 
     @Override
-    public B notIn(@NotNull Collection<? extends T> values) {
+    public B notIn(@NotNull Collection<? extends U> values) {
         Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
         return build(metadata.not());
     }
