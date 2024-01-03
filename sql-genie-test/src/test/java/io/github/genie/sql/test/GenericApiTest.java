@@ -1,27 +1,33 @@
 package io.github.genie.sql.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
+import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Slice;
 import io.github.genie.sql.core.mapping.JpaMetamodel;
+import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
+import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
+import io.github.genie.sql.executor.jdbc.JdbcUpdate;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
+import io.github.genie.sql.executor.jdbc.MysqlUpdateSqlBuilder;
 import io.github.genie.sql.test.entity.User;
 import io.github.genie.sql.test.projection.UserInterface;
 import io.github.genie.sql.test.projection.UserModel;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.criteria.CriteriaQuery;
 import lombok.Lombok;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +38,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -59,48 +66,84 @@ public abstract class GenericApiTest {
 
     protected static final String username = "Jeremy Keynes";
 
-    private static final List<User> allUsers;
+    private static List<User> allUsers;
 
     private final Select0<User, User> userQuery;
 
+    private static final MysqlDataSource dataSource = new DataSourceConfig().getMysqlDataSource();
 
     static {
-        EntityManager manager = EntityManagers.getEntityManager();
 
-        doInTransaction(() -> {
-            manager.createQuery("update User set pid = null").executeUpdate();
-            manager.createQuery("delete from User").executeUpdate();
-            for (User user : Users.getUsers()) {
-                manager.persist(user);
+        doInTransaction(connection -> {
+            try {
+                //noinspection SqlDialectInspection,SqlNoDataSourceInspection
+                connection.createStatement().executeUpdate("update user set pid = null");
+                ConnectionProvider connectionProvider = new ConnectionProvider() {
+                    @Override
+                    public <T> T execute(ConnectionCallback<T> action) throws SQLException {
+                        return action.doInConnection(connection);
+                    }
+                };
+                JpaMetamodel metamodel = new JpaMetamodel();
+                Query query = new JdbcQueryExecutor(
+                        metamodel,
+                        new MySqlQuerySqlBuilder(),
+                        connectionProvider,
+                        new JdbcResultCollector()
+                )
+                        .createQuery();
+                JdbcUpdate jdbcUpdate = new JdbcUpdate(
+                        new MysqlUpdateSqlBuilder(),
+                        connectionProvider,
+                        metamodel);
+                jdbcUpdate.delete(queryAllUsers(query), User.class);
+                jdbcUpdate.insert(Users.getUsers(), User.class);
+                allUsers = queryAllUsers(query);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         });
-        CriteriaQuery<User> query = manager.getCriteriaBuilder().createQuery(User.class);
-        query.from(User.class);
-        allUsers = manager.createQuery(query)
-                .getResultList();
-
-        manager.clear();
     }
 
-    private static void doInTransaction(Runnable action) {
-        Object o = doInTransaction(() -> {
-            action.run();
+    private static List<User> queryAllUsers(Query query) {
+        List<User> list = query.from(User.class).getList();
+        Map<Integer, User> map = list.stream().collect(Collectors.toMap(User::getId, Function.identity()));
+        for (User user : list) {
+            Integer pid = user.getPid();
+            if (pid != null) {
+                User p = map.get(pid);
+                user.setParentUser(p);
+            }
+        }
+        return list;
+    }
+
+    private static void doInTransaction(Consumer<Connection> action) {
+        Object o = doInTransaction(connection -> {
+            action.accept(connection);
             return null;
         });
         log.trace("{}", o);
     }
 
-    private static <T> T doInTransaction(Callable<T> action) {
-        EntityManager manager = EntityManagers.getEntityManager();
-        EntityTransaction transaction = manager.getTransaction();
+    @SneakyThrows
+    private static <T> T doInTransaction(Function<Connection, T> action) {
+        Connection connection = dataSource.getConnection();
         T result;
+        boolean autoCommit = connection.getAutoCommit();
         try {
-            transaction.begin();
-            result = action.call();
-            transaction.commit();
+            if (autoCommit) {
+                connection.setAutoCommit(false);
+            }
+            result = action.apply(connection);
+            connection.commit();
         } catch (Exception e) {
-            transaction.rollback();
+            connection.rollback();
             throw Lombok.sneakyThrow(e);
+        } finally {
+            if (autoCommit) {
+                connection.setAutoCommit(true);
+            }
         }
 
         return result;

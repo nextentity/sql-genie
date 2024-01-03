@@ -13,9 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 
 @Slf4j
 public class JdbcTest {
@@ -25,18 +22,8 @@ public class JdbcTest {
     @BeforeAll
     static void init() {
         DataSourceConfig config = new DataSourceConfig();
-        MysqlDataSource source = new MysqlDataSource();
-        source.setUrl(config.getUrl());
-        source.setUser(config.getUser());
-        source.setPassword(config.getPassword());
-        ConnectionProvider sqlExecutor = new ConnectionProvider() {
-            @Override
-            public <T> T execute(ConnectionCallback<T> action) throws SQLException {
-                try (Connection connection = source.getConnection()) {
-                    return action.doInConnection(connection);
-                }
-            }
-        };
+        MysqlDataSource source = config.getMysqlDataSource();
+        ConnectionProvider sqlExecutor = new SimpleConnectionProvider(source);
         Query query = new JdbcQueryExecutor(new JpaMetamodel(),
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,

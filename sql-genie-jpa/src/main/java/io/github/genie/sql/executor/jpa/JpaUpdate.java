@@ -1,12 +1,12 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.builder.Expressions;
-import io.github.genie.sql.builder.ExpressionBuilders;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Update;
+import io.github.genie.sql.builder.ExpressionBuilders;
+import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.meta.ReflectUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
@@ -78,6 +78,14 @@ public class JpaUpdate implements Update {
             list.add(merge);
         }
         return list;
+    }
+
+    @Override
+    public <T> void delete(List<T> entities, Class<T> entityType) {
+        requiredTransaction();
+        for (T entity : entities) {
+            entityManager.remove(entity);
+        }
     }
 
     @Override
