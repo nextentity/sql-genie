@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 public class JpaTest {
     private final GenericApiTest apiTest = getGenericApiTest();
 
-    @SuppressWarnings("JpaQlInspection")
     static GenericApiTest getGenericApiTest() {
         EntityManager manager = EntityManagers.getEntityManager();
         Select0<User, User> userQuery = new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder())
