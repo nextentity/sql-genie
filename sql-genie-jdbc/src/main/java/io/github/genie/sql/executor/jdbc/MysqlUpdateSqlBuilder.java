@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
@@ -66,6 +67,18 @@ public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
             }
         }
         return new PreparedSqlImpl(sql.toString(), cms, versions);
+    }
+
+    @Override
+    public PreparedSql buildDelete(EntityType entity) {
+        StringBuilder sql = new StringBuilder("delete from `").append(entity.tableName()).append("` ");
+        BasicAttribute id = (BasicAttribute) entity.id();
+        sql.append(" where `").append(id.columnName()).append("`=?");
+        return new PreparedSqlImpl(
+                sql.toString(),
+                Collections.singletonList(id),
+                Collections.emptyList()
+        );
     }
 
     @AllArgsConstructor
