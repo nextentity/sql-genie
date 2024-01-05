@@ -72,6 +72,20 @@ public class JdbcUpdate implements Update {
         return entities;
     }
 
+    @Override
+    public <T> void delete(List<T> entities, Class<T> entityType) {
+        PreparedSql preparedSql = sqlBuilder.buildDelete(metamodel.getEntity(entityType));
+        execute(connection -> {
+            String sql = preparedSql.sql();
+            log.debug(sql);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                setArgs(entities, preparedSql.columns(), statement);
+                statement.executeBatch();
+                return null;
+            }
+        });
+    }
+
     private static boolean isNotEmpty(List<?> columnMappings) {
         return columnMappings != null && !columnMappings.isEmpty();
     }

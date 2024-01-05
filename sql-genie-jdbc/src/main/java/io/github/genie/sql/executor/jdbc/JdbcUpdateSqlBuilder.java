@@ -23,6 +23,8 @@ public interface JdbcUpdateSqlBuilder {
 
     PreparedSql buildUpdate(@NotNull EntityType entityType, @NotNull List<BasicAttribute> columns);
 
+    PreparedSql buildDelete(EntityType entity);
+
     interface PreparedSql {
         String sql();
 
