@@ -7,7 +7,7 @@
   <parent>
     <groupId>io.github.genie-cloud</groupId>
     <artifactId>sql-genie</artifactId>
-    <version>0.0.1-jdk8</version>
+    <version>0.0.2-jdk8</version>
   </parent>
 
   <artifactId>sql-genie-test</artifactId>
