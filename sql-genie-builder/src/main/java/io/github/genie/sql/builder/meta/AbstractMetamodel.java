@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -96,11 +97,11 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected abstract String getColumnName(Attribute field);
 
     protected EntityTypeImpl createEntityType(Class<?> entityType) {
-        EntityTypeImpl entity = new EntityTypeImpl();
-        entity.javaType(entityType);
+        EntityTypeImpl result = new EntityTypeImpl();
+        result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
-        entity.attributeMap(map);
-        entity.tableName(getTableName(entityType));
+        result.attributeMap(map);
+        result.tableName(getTableName(entityType));
         List<Attribute> allFields = getAllFields(entityType);
         boolean hasVersion = false;
         for (Attribute field : allFields) {
@@ -120,12 +121,12 @@ public abstract class AbstractMetamodel implements Metamodel {
                 }
                 attribute = new BasicAttributeImpl(field, getColumnName(field), versionColumn);
                 if (versionColumn) {
-                    entity.version(attribute);
+                    result.version(attribute);
                 }
 
             } else if (isAnyToOne(field)) {
                 AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(field);
-                ato.joinColumnName(getJoinColumnName(field));
+                ato.joinName(getJoinColumnName(field));
                 ato.referencedColumnName(getReferencedColumnName(field));
                 ato.referencedSupplier(() -> {
                     EntityTypeImpl res = createEntityType(field.javaType());
@@ -141,14 +142,33 @@ public abstract class AbstractMetamodel implements Metamodel {
             }
 
             boolean isMarkedId = isMarkedId(attribute);
-            if (isMarkedId || entity.id() == null && "id".equals(field.name())) {
-                entity.id(attribute);
+            if (isMarkedId || result.id() == null && "id".equals(field.name())) {
+                result.id(attribute);
             }
 
             map.put(attribute.name(), attribute);
-            setOwner(attribute, entity);
+            setOwner(attribute, result);
         }
-        return entity;
+        setAnyToOneAttributeColumnName(map);
+        return result;
+    }
+
+    protected void setAnyToOneAttributeColumnName(Map<String, Attribute> map) {
+        for (Entry<String, Attribute> entry : map.entrySet()) {
+            Attribute value = entry.getValue();
+            if (value instanceof AnyToOneAttributeImpl attr) {
+                String joinColumnName = getJoinColumnName(map, attr);
+                attr.joinColumnName(joinColumnName);
+            }
+        }
+    }
+
+    protected String getJoinColumnName(Map<String, Attribute> map, AnyToOneAttributeImpl attr) {
+        String joinName = attr.joinName();
+        Attribute join = map.get(joinName);
+        return join instanceof BasicAttribute basic
+                ? basic.columnName()
+                : joinName;
     }
 
 

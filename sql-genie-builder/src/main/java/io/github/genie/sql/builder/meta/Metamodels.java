@@ -100,6 +100,7 @@ public class Metamodels {
     public static class AnyToOneAttributeImpl implements AnyToOneAttribute, AbstractType {
         @Delegate
         private Attribute attribute;
+        private String joinName;
         private String joinColumnName;
         private String referencedColumnName;
         private Supplier<EntityType> referencedSupplier;
