@@ -3,7 +3,7 @@ package io.github.genie.sql.test;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.core.mapping.JpaMetamodel;
+import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
 import io.github.genie.sql.executor.jdbc.JdbcResultCollector;

@@ -38,9 +38,9 @@ public class JdbcUpdate implements Update {
 
     @Override
     public <T> List<T> insert(List<T> entities, Class<T> entityType) {
-        EntityType mapping = metamodel.getEntity(entityType);
-        PreparedSql sql = sqlBuilder.buildInsert(mapping);
-        return execute(connection -> doInsert(entities, mapping, connection, sql));
+        EntityType entity = metamodel.getEntity(entityType);
+        PreparedSql sql = sqlBuilder.buildInsert(entity);
+        return execute(connection -> doInsert(entities, entity, connection, sql));
     }
 
     @Override
@@ -88,22 +88,22 @@ public class JdbcUpdate implements Update {
         });
     }
 
-    private static boolean isNotEmpty(List<?> columnMappings) {
-        return columnMappings != null && !columnMappings.isEmpty();
+    private static boolean isNotEmpty(List<?> list) {
+        return list != null && !list.isEmpty();
     }
 
     @Override
     public <T> T updateNonNullColumn(T entity, Class<T> entityType) {
-        EntityType mapping = metamodel.getEntity(entityType);
+        EntityType meta = metamodel.getEntity(entityType);
 
         List<BasicAttribute> nonNullColumn;
-        nonNullColumn = getNonNullColumn(entity, mapping);
+        nonNullColumn = getNonNullColumn(entity, meta);
         if (nonNullColumn.isEmpty()) {
             log.warn("no field to update");
             return entity;
         }
-        PreparedSql preparedSql = sqlBuilder.buildUpdate(mapping, nonNullColumn);
-        Attribute version = mapping.version();
+        PreparedSql preparedSql = sqlBuilder.buildUpdate(meta, nonNullColumn);
+        Attribute version = meta.version();
         Object versionValue = version.get(entity);
         if (versionValue == null) {
             throw new IllegalArgumentException("version field must not be null");
@@ -147,10 +147,10 @@ public class JdbcUpdate implements Update {
         }
     }
 
-    private static <T> List<BasicAttribute> getNonNullColumn(T entity, EntityType mapping) {
+    private static <T> List<BasicAttribute> getNonNullColumn(T entity, EntityType entityType) {
         List<BasicAttribute> columns = new ArrayList<>();
-        for (Attribute it : mapping.fields()) {
-            if (it instanceof BasicAttribute column) {
+        for (Attribute attribute : entityType.attributes()) {
+            if (attribute instanceof BasicAttribute column) {
                 Object invoke = column.get(entity);
                 if (invoke != null) {
                     columns.add(column);
@@ -162,7 +162,7 @@ public class JdbcUpdate implements Update {
 
 
     private <T> List<T> doInsert(List<T> entities,
-                                 EntityType tableMapping,
+                                 EntityType entityType,
                                  Connection connection,
                                  PreparedSql preparedSql)
             throws SQLException {
@@ -176,7 +176,7 @@ public class JdbcUpdate implements Update {
                 Iterator<T> iterator = entities.iterator();
                 while (keys.next()) {
                     T entity = iterator.next();
-                    Attribute idField = tableMapping.id();
+                    Attribute idField = entityType.id();
                     Object key = JdbcUtil.getValue(keys, 1, idField.javaType());
                     idField.set(entity, key);
                 }

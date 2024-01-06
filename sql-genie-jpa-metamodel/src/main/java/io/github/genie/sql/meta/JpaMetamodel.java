@@ -1,4 +1,4 @@
-package io.github.genie.sql.core.mapping;
+package io.github.genie.sql.meta;
 
 import io.github.genie.sql.builder.meta.AbstractMetamodel;
 import io.github.genie.sql.builder.meta.Attribute;

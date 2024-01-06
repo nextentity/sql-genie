@@ -8,7 +8,7 @@ public interface EntityType extends Type {
 
     String tableName();
 
-    Collection<? extends Attribute> fields();
+    Collection<? extends Attribute> attributes();
 
     Class<?> javaType();
 

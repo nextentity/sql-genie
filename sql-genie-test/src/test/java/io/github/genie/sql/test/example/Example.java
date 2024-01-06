@@ -3,7 +3,7 @@ package io.github.genie.sql.test.example;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select0;
 import io.github.genie.sql.builder.Q;
-import io.github.genie.sql.core.mapping.JpaMetamodel;
+import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import jakarta.persistence.EntityManager;

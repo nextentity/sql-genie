@@ -59,9 +59,9 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 List<?> resultList = getEntityResultList(queryStructure);
                 return castList(resultList);
             } else {
-                Projection projectionMapping = metamodel
+                Projection projection = metamodel
                         .getProjection(queryStructure.from().type(), resultType);
-                List<ProjectionAttribute> fields = projectionMapping.attributes();
+                List<ProjectionAttribute> fields = projection.attributes();
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
                             String fieldName = projectionField.baseField().name();

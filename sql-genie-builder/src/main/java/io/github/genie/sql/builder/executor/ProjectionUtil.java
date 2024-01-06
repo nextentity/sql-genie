@@ -32,24 +32,24 @@ public class ProjectionUtil {
                 deep++;
                 cur = cur.owner();
             }
-            Attribute[] mappings = new Attribute[deep - 1];
+            Attribute[] attrs = new Attribute[deep - 1];
             cur = attribute;
-            for (int i = mappings.length - 1; i >= 0; i--) {
-                mappings[i] = (Attribute) cur;
+            for (int i = attrs.length - 1; i >= 0; i--) {
+                attrs[i] = (Attribute) cur;
                 cur = cur.owner();
             }
             Class<?> fieldType = attribute.javaType();
             Object value = resultSet.apply(column++, fieldType);
-            if (value == null && mappings.length > 1) {
+            if (value == null && attrs.length > 1) {
                 continue;
             }
             Object obj = row;
-            for (int i = 0; i < mappings.length - 1; i++) {
-                Attribute mapping = mappings[i];
-                Object tmp = mapping.get(obj);
+            for (int i = 0; i < attrs.length - 1; i++) {
+                Attribute attr = attrs[i];
+                Object tmp = attr.get(obj);
                 if (tmp == null) {
-                    tmp = newInstance(mapping.javaType());
-                    mapping.set(obj, tmp);
+                    tmp = newInstance(attr.javaType());
+                    attr.set(obj, tmp);
                 }
                 obj = tmp;
             }

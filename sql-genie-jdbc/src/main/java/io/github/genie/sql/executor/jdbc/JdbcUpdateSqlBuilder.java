@@ -10,15 +10,15 @@ import java.util.stream.Collectors;
 
 public interface JdbcUpdateSqlBuilder {
 
-    PreparedSql buildInsert(@NotNull EntityType mapping);
+    PreparedSql buildInsert(@NotNull EntityType entityType);
 
     default PreparedSql buildUpdate(@NotNull EntityType entityType) {
         Attribute id = entityType.id();
-        List<BasicAttribute> columns = entityType.fields().stream()
+        List<BasicAttribute> basicAttributes = entityType.attributes().stream()
                 .filter(it -> it instanceof BasicAttribute && it != id)
                 .map(it -> (BasicAttribute) it)
                 .collect(Collectors.toList());
-        return buildUpdate(entityType, columns);
+        return buildUpdate(entityType, basicAttributes);
     }
 
     PreparedSql buildUpdate(@NotNull EntityType entityType, @NotNull List<BasicAttribute> columns);

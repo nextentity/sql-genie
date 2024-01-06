@@ -36,8 +36,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     public static final String ON = " on ";
 
     @Override
-    public PreparedSql build(QueryStructure structure, Metamodel mappings) {
-        return new Builder(structure, mappings).build();
+    public PreparedSql build(QueryStructure structure, Metamodel metamodel) {
+        return new Builder(structure, metamodel).build();
     }
 
 
@@ -115,25 +115,25 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             } else if (queryStructure.select().resultType() == queryStructure.from().type()) {
                 EntityType table = mappers
                         .getEntity(queryStructure.select().resultType());
-                for (Attribute mapping : table.fields()) {
-                    if (!(mapping instanceof BasicAttribute column)) {
+                for (Attribute attribute : table.attributes()) {
+                    if (!(attribute instanceof BasicAttribute column)) {
                         continue;
                     }
                     Column columns = Expressions.ofPath(column.name());
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(mapping);
+                    selectedAttributes.add(attribute);
                 }
             } else {
-                Projection projectionMapping = mappers
+                Projection projection = mappers
                         .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
-                for (ProjectionAttribute mapping : projectionMapping.attributes()) {
-                    if (!(mapping.baseField() instanceof BasicAttribute column)) {
+                for (ProjectionAttribute attr : projection.attributes()) {
+                    if (!(attr.baseField() instanceof BasicAttribute column)) {
                         continue;
                     }
 
                     Column columns = Expressions.ofPath(column.name());
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(mapping.field());
+                    selectedAttributes.add(attr.field());
                 }
             }
         }
@@ -167,12 +167,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         continue;
                     }
                     EntityType entityTypeInfo = am.referenced();
-                    for (Attribute field : entityTypeInfo.fields()) {
-                        if (!(field instanceof BasicAttribute mapping)) {
+                    for (Attribute field : entityTypeInfo.attributes()) {
+                        if (!(field instanceof BasicAttribute attr)) {
                             continue;
                         }
                         sql.append(",");
-                        Column column = Expressions.concat(fetch, mapping.name());
+                        Column column = Expressions.concat(fetch, attr.name());
                         appendPaths(column);
                         appendSelectAlias();
                         selectedExpressions.add(column);

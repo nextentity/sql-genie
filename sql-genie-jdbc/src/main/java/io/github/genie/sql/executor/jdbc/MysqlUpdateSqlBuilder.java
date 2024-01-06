@@ -13,13 +13,13 @@ import java.util.List;
 public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
 
     @Override
-    public PreparedSql buildInsert(@NotNull EntityType mapping) {
-        String tableName = mapping.tableName();
+    public PreparedSql buildInsert(@NotNull EntityType entityType) {
+        String tableName = entityType.tableName();
         List<BasicAttribute> columns = new ArrayList<>();
         StringBuilder sql = new StringBuilder("insert into `")
                 .append(tableName).append("` (");
         String delimiter = "";
-        for (Attribute field : mapping.fields()) {
+        for (Attribute field : entityType.attributes()) {
             if (!(field instanceof BasicAttribute column)) {
                 continue;
             }
@@ -48,7 +48,7 @@ public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
         List<BasicAttribute> versions = null;
         for (BasicAttribute column : columns) {
             sql.append(delimiter).append("`").append(column.columnName());
-            if (column.isVersion()) {
+            if (column.hasVersion()) {
                 sql.append("`=`").append(column.columnName()).append("`+1");
                 versions = versions == null ? new ArrayList<>(1) : versions;
                 versions.add(column);

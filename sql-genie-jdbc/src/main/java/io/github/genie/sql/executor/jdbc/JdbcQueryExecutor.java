@@ -21,7 +21,7 @@ import java.util.List;
 public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
     @NotNull
-    private Metamodel mappings;
+    private Metamodel metamodel;
     @NotNull
     private QuerySqlBuilder sqlBuilder;
     @NotNull
@@ -32,7 +32,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
     @Override
     @NotNull
     public <R> List<R> getList(@NotNull QueryStructure queryStructure) {
-        PreparedSql sql = sqlBuilder.build(queryStructure, mappings);
+        PreparedSql sql = sqlBuilder.build(queryStructure, metamodel);
         try {
             return connectionProvider.execute(connection -> {
                 // noinspection SqlSourceToSinkFlow
@@ -78,7 +78,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
 
     public interface QuerySqlBuilder {
-        PreparedSql build(QueryStructure structure, Metamodel mappings);
+        PreparedSql build(QueryStructure structure, Metamodel metamodel);
 
     }
 

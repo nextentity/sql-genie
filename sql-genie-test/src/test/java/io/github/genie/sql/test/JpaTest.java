@@ -1,7 +1,7 @@
 package io.github.genie.sql.test;
 
 import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.core.mapping.JpaMetamodel;
+import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.test.entity.User;
