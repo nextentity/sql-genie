@@ -1,18 +1,43 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.*;
-import io.github.genie.sql.api.ExpressionOperator.*;
-import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
+import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
+import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.ExpressionOperator.StringOperator;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
-import io.github.genie.sql.api.Query.*;
+import io.github.genie.sql.api.Query;
+import io.github.genie.sql.api.Query.AggAndBuilder;
+import io.github.genie.sql.api.Query.AggGroupBy0;
+import io.github.genie.sql.api.Query.AggWhere0;
+import io.github.genie.sql.api.Query.Collector;
+import io.github.genie.sql.api.Query.GroupBy0;
+import io.github.genie.sql.api.Query.Having0;
+import io.github.genie.sql.api.Query.OrderBy0;
+import io.github.genie.sql.api.Query.QueryStructureBuilder;
+import io.github.genie.sql.api.Query.Select0;
+import io.github.genie.sql.api.Query.SliceQueryStructure;
+import io.github.genie.sql.api.Query.Where0;
+import io.github.genie.sql.api.QueryExecutor;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
+import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
 import io.github.genie.sql.builder.QueryStructures.MultiColumnSelect;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
 import io.github.genie.sql.builder.QueryStructures.SelectClauseImpl;
@@ -136,11 +161,11 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
         structure.orderBy = List.of();
         if (requiredCountSubQuery(queryStructure)) {
             structure.select = COUNT_ANY;
-            return new QueryStructureImpl(COUNT_ANY, (SubQuery) () -> structure);
+            return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else if (queryStructure.groupBy() != null && !queryStructure.groupBy().isEmpty()) {
             structure.select = SELECT_ANY;
             structure.fetch = List.of();
-            return new QueryStructureImpl(COUNT_ANY, (SubQuery) () -> structure);
+            return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else {
             structure.select = COUNT_ANY;
             structure.fetch = List.of();
