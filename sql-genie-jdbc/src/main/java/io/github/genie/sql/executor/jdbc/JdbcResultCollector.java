@@ -1,6 +1,7 @@
 package io.github.genie.sql.executor.jdbc;
 
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import lombok.SneakyThrows;
@@ -32,13 +33,13 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             while (column < columnsCount) {
                 row[column++] = resultSet.getObject(column);
             }
-            return cast(row);
+            return TypeCastUtil.unsafeCast(row);
         } else if (selectClause instanceof SingleColumn singleColumn) {
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }
             Object r = JdbcUtil.getValue(resultSet, 1, singleColumn.resultType());
-            return cast(r);
+            return TypeCastUtil.unsafeCast(r);
         } else {
             if (attributes.size() != columnsCount) {
                 throw new IllegalStateException();
@@ -65,11 +66,5 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             }
         };
     }
-
-    private <R> R cast(Object result) {
-        // noinspection unchecked
-        return (R) result;
-    }
-
 
 }

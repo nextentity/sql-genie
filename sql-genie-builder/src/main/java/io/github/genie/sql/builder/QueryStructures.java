@@ -29,13 +29,13 @@ final class QueryStructures {
 
         From from;
 
-        Expression where = ExpressionBuilders.TRUE;
+        Expression where = Expressions.TRUE;
 
         List<? extends Expression> groupBy = List.of();
 
         List<? extends Order<?>> orderBy = List.of();
 
-        Expression having = ExpressionBuilders.TRUE;
+        Expression having = Expressions.TRUE;
 
         List<? extends Column> fetch = List.of();
 
@@ -120,9 +120,9 @@ final class QueryStructures {
             return "select " + select
                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
                    + " from " + from.type().getName()
-                   + (where == null || ExpressionBuilders.isTrue(where) ? "" : " where " + where)
+                   + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
-                   + (having == null || ExpressionBuilders.isTrue(having) ? "" : " having " + having)
+                   + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
                    + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
                    + (offset == null ? "" : " offset " + offset)
                    + (limit == null ? "" : " limit " + limit)

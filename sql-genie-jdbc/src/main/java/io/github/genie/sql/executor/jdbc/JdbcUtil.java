@@ -1,5 +1,6 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.builder.TypeCastUtil;
 import lombok.Lombok;
 import org.jetbrains.annotations.NotNull;
 
@@ -103,8 +104,7 @@ public abstract class JdbcUtil {
                 result = getter.getValue(resultSet, column);
             }
         }
-        // noinspection unchecked
-        return (X) result;
+        return TypeCastUtil.unsafeCast(result);
     }
 
 

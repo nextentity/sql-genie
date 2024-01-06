@@ -1,17 +1,13 @@
 package io.github.genie.sql.builder.executor;
 
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.Type;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.RecordComponent;
+import java.lang.reflect.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +51,7 @@ public class ProjectionUtil {
             }
             attribute.set(obj, value);
         }
-        // noinspection unchecked
-        return (R) (row);
+        return TypeCastUtil.unsafeCast(row);
     }
 
     @NotNull
@@ -99,8 +94,7 @@ public class ProjectionUtil {
         }
         Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
         Object row = constructor.newInstance(args);
-        // noinspection unchecked
-        return (R) row;
+        return TypeCastUtil.unsafeCast(row);
     }
 
     public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
@@ -114,8 +108,7 @@ public class ProjectionUtil {
         }
 
         Object result = ProjectionUtil.newProxyInstance(fields, resultType, map);
-        //noinspection unchecked
-        return (R) (result);
+        return TypeCastUtil.unsafeCast(result);
     }
 
     @NotNull

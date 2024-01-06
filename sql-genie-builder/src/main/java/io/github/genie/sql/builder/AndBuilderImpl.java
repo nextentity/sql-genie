@@ -1,16 +1,6 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.LockModeType;
-import io.github.genie.sql.api.Order;
-import io.github.genie.sql.api.Path;
-import io.github.genie.sql.api.Query;
-import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
-import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
-import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
+import io.github.genie.sql.api.*;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
@@ -18,6 +8,11 @@ import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Query.AggAndBuilder;
 import io.github.genie.sql.api.Query.Having0;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
+import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
+import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
+import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -28,7 +23,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     DefaultExpressionOperator<T, U, AndBuilderImpl<T, U>> expressionBuilder;
 
     AndBuilderImpl(QueryBuilder<T, U> queryBuilder, Metadata<AggAndBuilder<T, U>> metadata) {
-        expressionBuilder = new DefaultExpressionOperator<>(cast(metadata));
+        expressionBuilder = new DefaultExpressionOperator<>(TypeCastUtil.unsafeCast(metadata));
         this.queryBuilder = queryBuilder;
     }
 
@@ -36,7 +31,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     public <N> PathOperator<T, N, AggAndBuilder<T, U>> and(Path<T, N> path) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(path);
+        Expression right = Expressions.of(path);
         return new DefaultExpressionOperator<>(new Metadata<>(expressions, left, right, this::update));
     }
 
@@ -44,7 +39,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AggAndBuilder<T, U>> and(Path.NumberPath<T, N> path) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(path);
+        Expression right = Expressions.of(path);
         return new NumberOpsImpl<>(new Metadata<>(expressions, left, right, this::update));
     }
 
@@ -58,7 +53,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     private <N extends Comparable<N>> Metadata<AggAndBuilder<T, U>> getAggAndBuilderMetadata(Path<T, N> path) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(path);
+        Expression right = Expressions.of(path);
         return new Metadata<>(expressions, left, right, this::update);
     }
 
@@ -66,7 +61,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     public StringOperator<T, AggAndBuilder<T, U>> and(Path.StringPath<T> path) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(path);
+        Expression right = Expressions.of(path);
         return new StringOpsImpl<>(new Metadata<>(expressions, left, right, this::update));
     }
 
@@ -75,7 +70,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     public AggAndBuilder<T, U> and(Path.BooleanPath<T> path) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(path);
+        Expression right = Expressions.of(path);
         return update(new Metadata<>(expressions, left, right, this::update));
     }
 
@@ -83,7 +78,7 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     public AggAndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate) {
         List<Expression> expressions = expressionBuilder.metadata.expressions;
         Expression left = expressionBuilder.merge();
-        Expression right = ExpressionBuilders.of(predicate);
+        Expression right = Expressions.of(predicate);
         return update(new Metadata<>(expressions, left, right, this::update));
     }
 
@@ -91,12 +86,6 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
     private AndBuilderImpl<T, U> update(Metadata<AggAndBuilder<T, U>> metadata) {
         return new AndBuilderImpl<>(queryBuilder, metadata);
     }
-
-    private static <R> R cast(Object result) {
-        // noinspection unchecked
-        return (R) result;
-    }
-
 
     private QueryBuilder<T, U> getQueryBuilder() {
         QueryStructureImpl structure = queryBuilder.queryStructure().copy();
@@ -141,6 +130,6 @@ class AndBuilderImpl<T, U> implements AggAndBuilder<T, U>, AbstractCollector<U> 
 
     @Override
     public Having0<T, U> groupBy(Collection<Path<T, ?>> paths) {
-        return groupBy(ExpressionBuilders.toExpressionList(paths));
+        return groupBy(Expressions.toExpressionList(paths));
     }
 }

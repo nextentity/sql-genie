@@ -84,7 +84,7 @@ public final class Q {
     public static <T> Predicate<T> and(ExpressionHolder<T, Boolean> predicate,
                                        ExpressionHolder<T, Boolean>... predicates) {
         List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
-        Expression expression = ExpressionBuilders.operate(predicate.expression(), AND, metas);
+        Expression expression = Expressions.operate(predicate.expression(), AND, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
@@ -92,16 +92,16 @@ public final class Q {
     public static <T> Predicate<T> or(ExpressionHolder<T, Boolean> predicate,
                                       ExpressionHolder<T, Boolean>... predicates) {
         List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
-        Expression expression = ExpressionBuilders.operate(predicate.expression(), OR, metas);
+        Expression expression = Expressions.operate(predicate.expression(), OR, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     public static <T> Order<T> desc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(ExpressionBuilders.of(path), DESC);
+        return new OrderImpl<>(Expressions.of(path), DESC);
     }
 
     public static <T> Order<T> asc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(ExpressionBuilders.of(path), ASC);
+        return new OrderImpl<>(Expressions.of(path), ASC);
     }
 
     @SafeVarargs
@@ -116,7 +116,7 @@ public final class Q {
 
 
     public static <T> Predicate<T> not(ExpressionHolder<T, Boolean> lt) {
-        Expression expression = ExpressionBuilders.operate(lt.expression(), NOT);
+        Expression expression = Expressions.operate(lt.expression(), NOT);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 

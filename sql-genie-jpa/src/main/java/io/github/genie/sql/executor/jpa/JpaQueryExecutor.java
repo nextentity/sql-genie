@@ -9,7 +9,8 @@ import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
-import io.github.genie.sql.builder.ExpressionBuilders;
+import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
@@ -49,15 +50,15 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         if (selected instanceof SingleColumn singleColumn) {
             List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
             List<Object> result = objectsList.stream().map(objects -> objects[0]).toList();
-            return castList(result);
+            return TypeCastUtil.cast(result);
         } else if (selected instanceof MultiColumn multiColumn) {
             List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
-            return castList(objectsList);
+            return TypeCastUtil.cast(objectsList);
         } else {
             Class<?> resultType = queryStructure.select().resultType();
             if (resultType == queryStructure.from().type()) {
                 List<?> resultList = getEntityResultList(queryStructure);
-                return castList(resultList);
+                return TypeCastUtil.cast(resultList);
             } else {
                 Projection projection = metamodel
                         .getProjection(queryStructure.from().type(), resultType);
@@ -65,7 +66,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
                             String fieldName = projectionField.baseField().name();
-                            return ExpressionBuilders.fromPath(fieldName);
+                            return Expressions.column(fieldName);
                         })
                         .toList();
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
@@ -94,8 +95,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         for (Object arg : preparedSql.args()) {
             query.setParameter(++position, arg);
         }
-        // noinspection unchecked
-        return query.getResultList();
+        return TypeCastUtil.cast(query.getResultList());
     }
 
 
@@ -117,11 +117,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         CriteriaQuery<?> query = cb.createQuery(Object[].class);
         Root<?> root = query.from(structure.from().type());
         return new ObjectArrayBuilder(root, cb, query, structure, columns).getResultList();
-    }
-
-    private static <T> List<T> castList(List<?> result) {
-        // noinspection unchecked
-        return (List<T>) result;
     }
 
     class ObjectArrayBuilder extends Builder {
@@ -199,7 +194,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected void setWhere(Expression where) {
-            if (where != null && !ExpressionBuilders.isTrue(where)) {
+            if (where != null && !Expressions.isTrue(where)) {
                 query.where(toPredicate(where));
             }
         }

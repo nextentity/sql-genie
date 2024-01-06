@@ -53,10 +53,10 @@ import java.util.List;
 public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Having0<T, U>, AbstractCollector<U> {
 
     static final SingleColumnSelect SELECT_ANY =
-            new SingleColumnSelect(Integer.class, ExpressionBuilders.TRUE);
+            new SingleColumnSelect(Integer.class, Expressions.TRUE);
 
     static final SingleColumnSelect COUNT_ANY =
-            new SingleColumnSelect(Integer.class, ExpressionBuilders.operate(ExpressionBuilders.TRUE, Operator.COUNT));
+            new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT));
 
 
     private final QueryExecutor queryExecutor;
@@ -94,7 +94,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public <R> AggWhere0<T, R> select(Path<T, ? extends R> expression) {
         QueryStructureImpl metadata = queryStructure.copy();
-        Expression paths = ExpressionBuilders.of(expression);
+        Expression paths = Expressions.of(expression);
         Class<?> type = getType(expression);
         metadata.select = new SingleColumnSelect(type, paths);
         return update(metadata);
@@ -102,7 +102,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public AggWhere0<T, Object[]> select(Collection<Path<T, ?>> paths) {
-        return select(ExpressionBuilders.toExpressionList(paths));
+        return select(Expressions.toExpressionList(paths));
     }
 
     @Override
@@ -295,13 +295,13 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
     @Override
     public Having0<T, U> groupBy(Path<T, ?> path) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = List.of(ExpressionBuilders.of(path));
+        metadata.groupBy = List.of(Expressions.of(path));
         return update(metadata);
     }
 
     @Override
     public Having0<T, U> groupBy(Collection<Path<T, ?>> paths) {
-        return groupBy(ExpressionBuilders.toExpressionList(paths));
+        return groupBy(Expressions.toExpressionList(paths));
     }
 
     @Override
@@ -320,7 +320,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public GroupBy0<T, T> fetch(Collection<Path<T, ?>> paths) {
-        return fetch(ExpressionBuilders.toExpressionList(paths));
+        return fetch(Expressions.toExpressionList(paths));
     }
 
     @Override
@@ -333,7 +333,7 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AggAndBuilder<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new NumberOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @NotNull
@@ -343,23 +343,23 @@ public class QueryBuilder<T, U> implements Select0<T, U>, AggWhere0<T, U>, Havin
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AggAndBuilder<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new ComparableOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public StringOperator<T, AggAndBuilder<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new StringOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public AggAndBuilder<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return newChanAndBuilder(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
 
     @Override
     public <N> PathOperator<T, N, AggAndBuilder<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Metadata<>(List.of(), ExpressionBuilders.TRUE, ExpressionBuilders.of(path), this::newChanAndBuilder));
+        return new DefaultExpressionOperator<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     QueryStructureImpl queryStructure() {

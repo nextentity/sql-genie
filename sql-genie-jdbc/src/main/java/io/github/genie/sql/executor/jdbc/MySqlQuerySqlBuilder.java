@@ -405,7 +405,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             Class<?> type = queryStructure.from().type();
 
-            Column join = Expressions.ofPaths(List.of(expression.get(0)));
+            Column join = Expressions.column(List.of(expression.get(0)));
 
             for (String path : expression) {
                 EntityType info = mappers.getEntity(type);
@@ -471,7 +471,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             List<String> paths = new ArrayList<>(k.paths());
             paths.remove(paths.size() - 1);
-            return Expressions.ofPaths(paths);
+            return Expressions.column(paths);
         }
 
         Operator getOperator(Expression e) {

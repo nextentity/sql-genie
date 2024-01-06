@@ -1,25 +1,20 @@
 package io.github.genie.sql.executor.jpa;
 
 
-import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.Operation;
-import io.github.genie.sql.api.Column;
-import io.github.genie.sql.builder.ExpressionBuilders;
-import io.github.genie.sql.api.Operator;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.FetchParent;
+import io.github.genie.sql.api.*;
+import io.github.genie.sql.builder.Expressions;
 import jakarta.persistence.criteria.From;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.github.genie.sql.builder.TypeCastUtil.unsafeCast;
 
 public class ExpressionBuilder {
 
@@ -151,9 +146,9 @@ public class ExpressionBuilder {
                 }
                 case BETWEEN: {
                     if (e1 instanceof Constant cv1
-                            && e2 instanceof Constant cv2
-                            && cv1.value() instanceof Comparable
-                            && cv2.value() instanceof Comparable) {
+                        && e2 instanceof Constant cv2
+                        && cv1.value() instanceof Comparable
+                        && cv2.value() instanceof Comparable) {
                         Comparable<Object> v1 = unsafeCast(cv1.value());
                         Comparable<Object> v2 = unsafeCast(cv2.value());
                         return cb.between(cast(e0), v1, v2);
@@ -171,15 +166,15 @@ public class ExpressionBuilder {
                 case SUBSTRING: {
                     if (args.size() == 1) {
                         if (e1 instanceof Constant cv1
-                                && cv1.value() instanceof Number number) {
+                            && cv1.value() instanceof Number number) {
                             return cb.substring(cast(e0), number.intValue());
                         }
                         return cb.substring(cast(e0), cast(toExpression(e1)));
                     } else if (args.size() == 2) {
                         if (e1 instanceof Constant cv1
-                                && cv1.value() instanceof Number n1
-                                && e2 instanceof Constant cv2
-                                && cv2.value() instanceof Number n2) {
+                            && cv1.value() instanceof Number n1
+                            && e2 instanceof Constant cv2
+                            && cv2.value() instanceof Number n2) {
                             return cb.substring(cast(e0), n1.intValue(), n2.intValue());
                         }
                         return cb.substring(
@@ -221,7 +216,7 @@ public class ExpressionBuilder {
                 }
                 case MOD: {
                     if (e1 instanceof Constant cv1
-                            && cv1.value() instanceof Integer) {
+                        && cv1.value() instanceof Integer) {
                         return cb.mod(cast(e0), ((Integer) cv1.value()));
                     }
                     return cb.mod(cast(e0), cast(toExpression(e1)));
@@ -256,11 +251,6 @@ public class ExpressionBuilder {
         }
     }
 
-    private static <T> T unsafeCast(Object o) {
-        // noinspection unchecked
-        return (T) (o);
-    }
-
     public static <T> jakarta.persistence.criteria.Expression<T> cast(jakarta.persistence.criteria.Expression<?> expression) {
         return unsafeCast(expression);
     }
@@ -288,7 +278,7 @@ public class ExpressionBuilder {
         for (int j = 0; j < size; j++) {
             subPath.add(paths.get(j));
         }
-        return ExpressionBuilders.fromPaths(subPath);
+        return Expressions.column(subPath);
     }
 
     private Join<?, ?> join(Column offset) {
