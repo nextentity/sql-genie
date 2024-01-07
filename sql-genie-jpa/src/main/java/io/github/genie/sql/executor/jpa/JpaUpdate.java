@@ -55,7 +55,7 @@ public class JpaUpdate implements Update {
             EntityType<T> entity = entityManager.getMetamodel().entity(entityType);
             SingularAttribute<? super T, ?> id = entity.getId(entity.getIdType().getJavaType());
             String name = id.getName();
-            Column idPath = Expressions.ofPath(name);
+            Column idPath = Expressions.column(name);
             Expression operate = Expressions.operate(idPath, Operator.IN, ids);
             List<T> dbList = query.from(entityType)
                     .where(ExpressionHolders.of(operate))

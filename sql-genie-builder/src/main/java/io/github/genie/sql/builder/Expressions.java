@@ -39,11 +39,11 @@ public interface Expressions {
     }
 
     static Column of(Path<?, ?> path) {
-        String property = asString(path);
+        String property = columnName(path);
         return column(property);
     }
 
-    static String asString(Path<?, ?> path) {
+    static String columnName(Path<?, ?> path) {
         return Util.getPropertyName(path);
     }
 
@@ -63,11 +63,7 @@ public interface Expressions {
     }
 
     static Expression operate(Expression l, Operator o, Expression r) {
-        if (o.isMultivalued() && l instanceof Operation lo && lo.operator() == o) {
-            List<Expression> args = Util.concat(lo.args(), r);
-            return new OperationMeta(lo.operand(), o, args);
-        }
-        return new OperationMeta(l, o, List.of(r));
+        return operate(l, o, List.of(r));
     }
 
     static Expression operate(Expression l, Operator o) {
@@ -93,15 +89,13 @@ public interface Expressions {
                 .toList();
     }
 
-
-    static Column ofPath(String fieldName) {
-        return column(List.of(fieldName));
-    }
-
     static Column concat(Column join, String path) {
         return column(Util.concat(join.paths(), path));
     }
 
+    static Column concat(Column join, Path<?, ?> path) {
+        return column(Util.concat(join.paths(), columnName(path)));
+    }
 
 
 }

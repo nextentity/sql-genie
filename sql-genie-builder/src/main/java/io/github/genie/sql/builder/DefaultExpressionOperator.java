@@ -159,8 +159,7 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             r.right = Expressions.of(path);
         }
         if (r.right instanceof Column p) {
-            List<String> paths = Util.concat(p.paths(), Expressions.asString(path));
-            r.right = Expressions.column(paths);
+            r.right = Expressions.concat(p, path);
         } else {
             throw new IllegalStateException();
         }

@@ -119,7 +119,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     if (!(attribute instanceof BasicAttribute column)) {
                         continue;
                     }
-                    Column columns = Expressions.ofPath(column.name());
+                    Column columns = Expressions.column(column.name());
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attribute);
                 }
@@ -131,7 +131,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         continue;
                     }
 
-                    Column columns = Expressions.ofPath(column.name());
+                    Column columns = Expressions.column(column.name());
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attr.field());
                 }
