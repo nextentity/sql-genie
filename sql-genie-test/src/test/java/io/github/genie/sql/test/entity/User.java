@@ -31,7 +31,6 @@ public class User {
 
     private Double timestamp;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pid", insertable = false, updatable = false)
     @ToString.Exclude

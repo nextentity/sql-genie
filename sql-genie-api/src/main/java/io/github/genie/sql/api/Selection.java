@@ -7,7 +7,6 @@ public interface Selection extends Serializable {
 
     Class<?> resultType();
 
-
     interface MultiColumn extends Selection {
         List<? extends Expression> columns();
 
@@ -22,6 +21,5 @@ public interface Selection extends Serializable {
         Expression column();
 
     }
-
 
 }

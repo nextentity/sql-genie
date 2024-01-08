@@ -70,7 +70,6 @@ class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
         return new StringOpsImpl<>(new Context<>(expressions, left, right, this::update));
     }
 
-
     @Override
     public AndBuilder0<T, U> and(Path.BooleanPath<T> path) {
         List<Expression> expressions = expressionBuilder.context.expressions;
@@ -99,8 +98,8 @@ class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
     }
 
     @Override
-    public Collector<U> orderBy(List<? extends Order<T>> path) {
-        return getQueryBuilder().orderBy(path);
+    public Collector<U> orderBy(List<? extends Order<T>> orders) {
+        return getQueryBuilder().orderBy(orders);
     }
 
     @Override

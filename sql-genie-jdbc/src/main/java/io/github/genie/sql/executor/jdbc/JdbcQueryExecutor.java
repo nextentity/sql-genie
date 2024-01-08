@@ -76,12 +76,10 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
         return result;
     }
 
-
     public interface QuerySqlBuilder {
         PreparedSql build(QueryStructure structure, Metamodel metamodel);
 
     }
-
 
     public interface PreparedSql {
 

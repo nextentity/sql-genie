@@ -51,7 +51,6 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     static final SingleColumnSelect COUNT_ANY =
             new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT));
 
-
     final QueryExecutor queryExecutor;
     final QueryStructureImpl queryStructure;
 
@@ -64,7 +63,6 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     public QueryConditionBuilder(QueryExecutor queryExecutor, Class<T> type, QueryStructurePostProcessor structurePostProcessor) {
         this(queryExecutor, new QueryStructureImpl(type), structurePostProcessor);
     }
-
 
     QueryConditionBuilder(QueryExecutor queryExecutor, QueryStructureImpl queryStructure, QueryStructurePostProcessor structurePostProcessor) {
         this.queryExecutor = queryExecutor;
@@ -84,9 +82,9 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public Collector<U> orderBy(List<? extends Order<T>> builder) {
+    public Collector<U> orderBy(List<? extends Order<T>> orders) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.orderBy = builder;
+        structure.orderBy = orders;
         return update(structure);
     }
 
@@ -228,7 +226,6 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         };
     }
 
-
     @Override
     public Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl structure = queryStructure.copy();
@@ -250,14 +247,12 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         return groupBy(Expressions.toExpressionList(paths));
     }
 
-
     @Override
     public OrderBy<T, U> having(ExpressionHolder<T, Boolean> predicate) {
         QueryStructureImpl structure = queryStructure.copy();
         structure.having = predicate.expression();
         return update(structure);
     }
-
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path) {
@@ -283,7 +278,6 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     public AndBuilder0<T, U> where(BooleanPath<T> path) {
         return newChanAndBuilder(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
-
 
     @Override
     public <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path) {

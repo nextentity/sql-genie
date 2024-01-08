@@ -1,6 +1,5 @@
 package io.github.genie.sql.executor.jpa;
 
-
 import io.github.genie.sql.api.Expression;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
@@ -19,6 +18,5 @@ public class PredicateBuilder extends ExpressionBuilder {
         }
         return cb.isTrue(cast(toExpression(expression)));
     }
-
 
 }

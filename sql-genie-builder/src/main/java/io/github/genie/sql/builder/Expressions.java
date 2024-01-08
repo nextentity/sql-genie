@@ -27,7 +27,7 @@ public interface Expressions {
 
     static boolean isTrue(Expression expression) {
         return expression instanceof Constant
-                && Boolean.TRUE.equals(((Constant) expression).value());
+               && Boolean.TRUE.equals(((Constant) expression).value());
     }
 
     static Expression of(ExpressionHolder<?, ?> expression) {
@@ -56,7 +56,6 @@ public interface Expressions {
         return Util.getPropertyName(path);
     }
 
-
     static Column column(String path) {
         List<String> paths = new ArrayList<>(1);
         paths.add(path);
@@ -81,8 +80,8 @@ public interface Expressions {
 
     static Expression operate(Expression l, Operator o, List<? extends Expression> r) {
         if (o == Operator.NOT
-                && l instanceof Operation
-                && ((Operation) l).operator() == Operator.NOT) {
+            && l instanceof Operation
+            && ((Operation) l).operator() == Operator.NOT) {
             Operation operation = (Operation) l;
             return operation.operand();
         }
@@ -107,6 +106,5 @@ public interface Expressions {
     static Column concat(Column join, Path<?, ?> path) {
         return column(Util.concat(join.paths(), columnName(path)));
     }
-
 
 }

@@ -26,6 +26,22 @@ public class JpaMetamodel extends AbstractMetamodel {
 
     @Override
     protected String getTableName(Class<?> javaType) {
+        String tableName = getTableNameByAnnotation(javaType);
+        return tableName != null ? tableName : getTableNameByClassName(javaType);
+    }
+
+    protected String getTableNameByClassName(Class<?> javaType) {
+        String tableName;
+        tableName = camelbackToUnderline(javaType.getSimpleName());
+        tableName = unwrapSymbol(tableName);
+        return tableName;
+    }
+
+    private static String camelbackToUnderline(String simpleName) {
+        return simpleName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    protected String getTableNameByAnnotation(Class<?> javaType) {
         Table table = javaType.getAnnotation(Table.class);
         if (table != null && !table.name().isEmpty()) {
             return table.name();
@@ -34,11 +50,7 @@ public class JpaMetamodel extends AbstractMetamodel {
         if (entity != null && !entity.name().isEmpty()) {
             return entity.name();
         }
-        String tableName = javaType.getSimpleName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
-        if (tableName.startsWith("`") && tableName.endsWith("`")) {
-            tableName = tableName.substring(1, tableName.length() - 1);
-        }
-        return tableName;
+        return null;
     }
 
     @Override
@@ -70,10 +82,9 @@ public class JpaMetamodel extends AbstractMetamodel {
     @Override
     protected boolean isVersionField(Attribute field) {
         Version version = getAnnotation(field, Version.class);
-
         if (version != null) {
             Class<?> type = field.javaType();
-            if (type == long.class || type == Long.class || type == Integer.class || type == int.class) {
+            if (isSupportVersion(type)) {
                 return true;
             } else {
                 throw new IllegalStateException("not support version type: " + type);
@@ -82,15 +93,13 @@ public class JpaMetamodel extends AbstractMetamodel {
         return false;
     }
 
+    private static boolean isSupportVersion(Class<?> type) {
+        return type == long.class || type == Long.class || type == Integer.class || type == int.class;
+    }
+
     @Override
     protected boolean isTransient(Attribute field) {
-        if (field.field().getAnnotation(Transient.class) != null) {
-            return true;
-        }
-        if (field.getter() == null) {
-            return false;
-        }
-        return field.getter().getAnnotation(Transient.class) != null;
+        return getAnnotation(field, Transient.class) != null;
     }
 
     @Override
@@ -109,16 +118,25 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     protected String getColumnName(Attribute field) {
+        String columnName = getColumnNameByAnnotation(field);
+        if (columnName == null) {
+            columnName = camelbackToUnderline(field.name());
+        }
+        return unwrapSymbol(columnName);
+    }
+
+    private static String unwrapSymbol(String symbol) {
+        if (symbol.startsWith("`") && symbol.endsWith("`")) {
+            symbol = symbol.substring(1, symbol.length() - 1);
+        }
+        return symbol;
+    }
+
+    private String getColumnNameByAnnotation(Attribute field) {
         Column column = getAnnotation(field, Column.class);
-        String columnName;
         if (column != null && !column.name().isEmpty()) {
-            columnName = column.name();
-        } else {
-            columnName = field.name().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+            return column.name();
         }
-        if (columnName.startsWith("`") && columnName.endsWith("`")) {
-            columnName = columnName.substring(1, columnName.length() - 1);
-        }
-        return columnName;
+        return null;
     }
 }

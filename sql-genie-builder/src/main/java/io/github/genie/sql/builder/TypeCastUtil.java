@@ -7,7 +7,6 @@ import java.util.List;
 
 public class TypeCastUtil {
 
-
     public static <T> List<T> cast(List<?> expression) {
         return unsafeCast(expression);
     }
@@ -20,6 +19,5 @@ public class TypeCastUtil {
         // noinspection unchecked
         return (T) object;
     }
-
 
 }

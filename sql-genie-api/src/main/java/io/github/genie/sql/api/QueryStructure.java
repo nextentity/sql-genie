@@ -1,6 +1,5 @@
 package io.github.genie.sql.api;
 
-
 import java.io.Serializable;
 import java.util.List;
 

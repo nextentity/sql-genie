@@ -1,6 +1,5 @@
 package io.github.genie.sql.executor.jpa;
 
-
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
@@ -36,7 +35,6 @@ public class ExpressionBuilder {
         this.root = root;
         this.cb = cb;
     }
-
 
     public jakarta.persistence.criteria.Expression<?> toExpression(Expression expression) {
         if (expression instanceof Constant) {
@@ -164,9 +162,9 @@ public class ExpressionBuilder {
                 }
                 case BETWEEN: {
                     if (e1 instanceof Constant
-                            && e2 instanceof Constant
-                            && ((Constant) e1).value() instanceof Comparable
-                            && ((Constant) e2).value() instanceof Comparable) {
+                        && e2 instanceof Constant
+                        && ((Constant) e1).value() instanceof Comparable
+                        && ((Constant) e2).value() instanceof Comparable) {
                         Constant cv2 = (Constant) e2;
                         Constant cv1 = (Constant) e1;
                         Comparable<Object> v1 = unsafeCast(cv1.value());
@@ -186,16 +184,16 @@ public class ExpressionBuilder {
                 case SUBSTRING: {
                     if (args.size() == 1) {
                         if (e1 instanceof Constant
-                                && ((Constant) e1).value() instanceof Number) {
+                            && ((Constant) e1).value() instanceof Number) {
                             Number number = (Number) ((Constant) e1).value();
                             return cb.substring(cast(e0), number.intValue());
                         }
                         return cb.substring(cast(e0), cast(toExpression(e1)));
                     } else if (args.size() == 2) {
                         if (e1 instanceof Constant
-                                && ((Constant) e1).value() instanceof Number
-                                && e2 instanceof Constant
-                                && ((Constant) e2).value() instanceof Number) {
+                            && ((Constant) e1).value() instanceof Number
+                            && e2 instanceof Constant
+                            && ((Constant) e2).value() instanceof Number) {
                             Number n2 = (Number) ((Constant) e2).value();
                             Number n1 = (Number) ((Constant) e1).value();
                             return cb.substring(cast(e0), n1.intValue(), n2.intValue());
@@ -243,7 +241,7 @@ public class ExpressionBuilder {
                 }
                 case MOD: {
                     if (e1 instanceof Constant
-                            && ((Constant) e1).value() instanceof Integer) {
+                        && ((Constant) e1).value() instanceof Integer) {
                         Constant cv1 = (Constant) e1;
                         return cb.mod(cast(e0), ((Integer) cv1.value()));
                     }

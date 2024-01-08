@@ -69,9 +69,9 @@ public class Metamodels {
         @Override
         public String toString() {
             return "EntityType{" +
-                    ", tableName='" + tableName + '\'' +
-                    ", javaType=" + javaType().getName() +
-                    '}';
+                   ", tableName='" + tableName + '\'' +
+                   ", javaType=" + javaType().getName() +
+                   '}';
         }
     }
 

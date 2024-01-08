@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
+@SuppressWarnings({"PatternVariableCanBeUsed", "ClassCanBeRecord"})
 final class QueryStructures {
 
     static class QueryStructureImpl implements QueryStructure, Cloneable {
@@ -60,7 +60,6 @@ final class QueryStructures {
             this.from = new FromEntity(from);
             this.select = new SelectClauseImpl(from);
         }
-
 
         protected QueryStructureImpl copy() {
             try {
@@ -173,6 +172,7 @@ final class QueryStructures {
     @Accessors(fluent = true)
     static final class SelectClauseImpl implements Selection {
         private final Class<?> resultType;
+
         @Override
         public String toString() {
             return resultType.getName();

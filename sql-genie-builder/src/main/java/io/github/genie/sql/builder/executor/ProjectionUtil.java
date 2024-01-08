@@ -23,7 +23,7 @@ import java.util.function.BiFunction;
 public class ProjectionUtil {
 
     @NotNull
-    public static <R> R getBeanResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getBeanResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                       @NotNull List<? extends Attribute> attributes,
                                       Class<?> resultType) {
         Object row = newInstance(resultType);
@@ -42,7 +42,7 @@ public class ProjectionUtil {
                 cur = cur.owner();
             }
             Class<?> fieldType = attribute.javaType();
-            Object value = resultSet.apply(column++, fieldType);
+            Object value = extractor.apply(column++, fieldType);
             if (value == null && attrs.length > 1) {
                 continue;
             }
@@ -71,13 +71,13 @@ public class ProjectionUtil {
     }
 
     @NotNull
-    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                         @NotNull List<? extends Attribute> fields,
                                         Class<?> resultType) {
         Map<String, Object> map = new HashMap<>();
         int i = 0;
         for (Attribute attribute : fields) {
-            Object value = resultSet.apply(i++, attribute.javaType());
+            Object value = extractor.apply(i++, attribute.javaType());
             map.put(attribute.name(), value);
         }
         try {
@@ -104,13 +104,13 @@ public class ProjectionUtil {
         return TypeCastUtil.unsafeCast(row);
     }
 
-    public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                            List<? extends Attribute> fields,
                                            Class<?> resultType) {
         Map<Method, Object> map = new HashMap<>();
         int i = 0;
         for (Attribute attribute : fields) {
-            Object value = resultSet.apply(i++, attribute.javaType());
+            Object value = extractor.apply(i++, attribute.javaType());
             map.put(attribute.getter(), value);
         }
 
@@ -124,7 +124,6 @@ public class ProjectionUtil {
         Class<?>[] interfaces = {resultType};
         return Proxy.newProxyInstance(classLoader, interfaces, new Handler(fields, resultType, map));
     }
-
 
     @Data
     @Accessors(fluent = true)
@@ -168,7 +167,6 @@ public class ProjectionUtil {
             InvocationHandler handler = Proxy.getInvocationHandler(other);
             return equals(handler);
         }
-
 
         @Override
         public boolean equals(Object o) {

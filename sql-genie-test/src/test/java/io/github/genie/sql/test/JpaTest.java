@@ -9,7 +9,6 @@ import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-
 @Slf4j
 public class JpaTest {
     private final GenericApiTest apiTest = getGenericApiTest();

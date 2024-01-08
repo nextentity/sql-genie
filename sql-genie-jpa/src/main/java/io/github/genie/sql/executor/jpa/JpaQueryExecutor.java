@@ -41,7 +41,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
     private final Metamodel metamodel;
     private final QuerySqlBuilder querySqlBuilder;
 
-
     public JpaQueryExecutor(EntityManager entityManager, Metamodel metamodel, QuerySqlBuilder querySqlBuilder) {
         this.entityManager = entityManager;
         this.metamodel = metamodel;
@@ -82,15 +81,15 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
                 if (resultType.isInterface()) {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getResultSet(it), list, resultType))
+                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getArrayValueExtractor(it), list, resultType))
                             .collect(Collectors.toList());
                 } else if (resultType.isRecord()) {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getRecordResult(getResultSet(it), list, resultType))
+                            .<T>map(it -> ProjectionUtil.getRecordResult(getArrayValueExtractor(it), list, resultType))
                             .collect(Collectors.toList());
                 } else {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getBeanResult(getResultSet(it), list, resultType))
+                            .<T>map(it -> ProjectionUtil.getBeanResult(getArrayValueExtractor(it), list, resultType))
                             .collect(Collectors.toList());
                 }
             }
@@ -107,12 +106,10 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         return TypeCastUtil.cast(query.getResultList());
     }
 
-
     @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getResultSet(Object[] resultSet) {
+    private static BiFunction<Integer, Class<?>, Object> getArrayValueExtractor(Object[] resultSet) {
         return (index, resultType1) -> resultSet[index];
     }
-
 
     private List<?> getEntityResultList(@NotNull QueryStructure structure) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -164,7 +161,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return entityManager.createQuery(select);
         }
 
-
     }
 
     class EntityBuilder extends Builder {
@@ -179,7 +175,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     }
 
-
     protected static abstract class Builder extends PredicateBuilder {
         protected final QueryStructure structure;
         protected final CriteriaQuery<?> query;
@@ -189,7 +184,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             this.structure = structure;
             this.query = query;
         }
-
 
         protected void setOrderBy(List<? extends Order<?>> orderBy) {
             if (orderBy != null && !orderBy.isEmpty()) {
@@ -259,6 +253,5 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         protected abstract TypedQuery<?> getTypedQuery();
 
     }
-
 
 }

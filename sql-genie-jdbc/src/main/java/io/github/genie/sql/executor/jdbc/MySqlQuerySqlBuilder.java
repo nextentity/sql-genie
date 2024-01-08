@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
-
     public static final String NONE_DELIMITER = "";
     public static final String DELIMITER = ",";
     public static final String FOR_SHARE = " for share";
@@ -58,7 +57,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     public PreparedSql build(QueryStructure structure, Metamodel metamodel) {
         return new Builder(structure, metamodel).build();
     }
-
 
     @SuppressWarnings("PatternVariableCanBeUsed")
     static class Builder {
@@ -92,7 +90,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             Class<?> type = queryStructure.from().type();
             String prefix;
             if (queryStructure.from() instanceof Entity) {
-                prefix = fixSymbol(type.getSimpleName());
+                prefix = sortAlias(type.getSimpleName());
                 this.entity = mappers.getEntity(type);
             } else {
                 prefix = "t";
@@ -208,7 +206,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
         }
 
-
         protected void appendLockModeType(LockModeType lockModeType) {
             if (lockModeType == LockModeType.PESSIMISTIC_READ) {
                 sql.append(FOR_SHARE);
@@ -252,7 +249,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         protected StringBuilder appendTableAlias(String table, Object index, StringBuilder sql) {
-            StringBuilder append = appendBlank(sql).append(fixSymbol(table));
+            StringBuilder append = appendBlank(sql).append(sortAlias(table));
             if (subIndex > 0) {
                 sql.append(subIndex).append("_");
             }
@@ -260,7 +257,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         @NotNull
-        private static String fixSymbol(String symbol) {
+        private static String sortAlias(String symbol) {
             return symbol.toLowerCase().substring(0, 1);
         }
 
@@ -269,10 +266,9 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         protected StringBuilder appendBlank(StringBuilder sql) {
-            //noinspection SizeReplaceableByIsEmpty
+            // noinspection SizeReplaceableByIsEmpty
             return sql.length() == 0 || " (,+-*/=><".indexOf(sql.charAt(sql.length() - 1)) >= 0 ? sql : sql.append(' ');
         }
-
 
         protected void appendWhere() {
             Expression where = queryStructure.where();
@@ -295,7 +291,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         protected void appendExpression(Expression expr) {
             appendExpression(args, expr);
         }
-
 
         protected void appendExpression(List<Object> args, Expression expression) {
             if (expression instanceof Constant) {
@@ -452,7 +447,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             sql.append(sign);
         }
-
 
         protected void appendPaths(Column column) {
             appendBlank();

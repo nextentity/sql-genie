@@ -36,7 +36,6 @@ public class Example {
         // select * from employee where id = 1
         query.where(Employee::getId).eq(1).getSingle();
 
-
         // select employee.*, company.* from
         // employee left join company
         // on employee.company_id = company.id
@@ -57,7 +56,6 @@ public class Example {
         // on employee.company_id = company.id
         // where company.name = 'Microsoft'
         query.where(Employee::getCompany).get(Company::getName).eq("Microsoft").getList();
-
 
         // page
         Page<Employee> page = query

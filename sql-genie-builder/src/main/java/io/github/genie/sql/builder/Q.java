@@ -56,7 +56,6 @@ public final class Q {
         return Q.<T>of().get(path);
     }
 
-
     public static <T, E extends Number & Comparable<E>>
     NumberOperator<T, E, Predicate<T>> min(NumberPath<T, E> path) {
         return get(path).min();

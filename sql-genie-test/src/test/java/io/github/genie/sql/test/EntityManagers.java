@@ -10,7 +10,6 @@ import java.util.Map;
 public class EntityManagers {
     private static final EntityManagerFactory factory = getEntityManagerFactory();
 
-
     private static final EntityManager ENTITY_MANAGER = doGetEntityManager();
 
     private EntityManagers() {
@@ -23,7 +22,6 @@ public class EntityManagers {
     private static EntityManager doGetEntityManager() {
         return factory.createEntityManager();
     }
-
 
     private static EntityManagerFactory getEntityManagerFactory() {
         DataSourceConfig config = new DataSourceConfig();

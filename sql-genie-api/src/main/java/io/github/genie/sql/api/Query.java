@@ -31,7 +31,7 @@ public interface Query {
 
         <R> Where0<T, R> select(ExpressionHolder<T, R> expression);
 
-        <R> Where0<T, R> select(Path<T, ? extends R> expression);
+        <R> Where0<T, R> select(Path<T, ? extends R> path);
 
         Where0<T, Object[]> select(Collection<Path<T, ?>> paths);
 
@@ -166,18 +166,18 @@ public interface Query {
 
     interface OrderBy<T, U> extends Collector<U> {
 
-        Collector<U> orderBy(List<? extends Order<T>> path);
+        Collector<U> orderBy(List<? extends Order<T>> orders);
 
-        default Collector<U> orderBy(Order<T> path) {
-            return orderBy(Lists.of(path));
+        default Collector<U> orderBy(Order<T> order) {
+            return orderBy(Lists.of(order));
         }
 
         default Collector<U> orderBy(Order<T> p0, Order<T> p1) {
             return orderBy(Lists.of(p0, p1));
         }
 
-        default Collector<U> orderBy(Order<T> p0, Order<T> p1, Order<T> p2) {
-            return orderBy(Lists.of(p0, p1, p2));
+        default Collector<U> orderBy(Order<T> order1, Order<T> order2, Order<T> order3) {
+            return orderBy(Lists.of(order1, order2, order3));
         }
 
     }
@@ -337,7 +337,6 @@ public interface Query {
 
         AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate);
 
-
     }
 
     interface QueryStructureBuilder {
@@ -354,10 +353,10 @@ public interface Query {
 
     @Data
     @Accessors(fluent = true)
+    @SuppressWarnings("ClassCanBeRecord")
     final class SliceQueryStructure {
         private final QueryStructure count;
         private final QueryStructure list;
     }
-
 
 }

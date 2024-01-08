@@ -1,6 +1,5 @@
 package io.github.genie.sql.builder.meta;
 
-
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Metamodels.AbstractType;
@@ -172,7 +171,6 @@ public abstract class AbstractMetamodel implements Metamodel {
                 ? ((BasicAttribute) join).columnName()
                 : joinName;
     }
-
 
     private void setOwner(Attribute attribute, Type owner) {
         if (attribute instanceof AbstractType) {

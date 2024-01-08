@@ -48,18 +48,19 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
                 throw new IllegalStateException();
             }
             Class<?> resultType = selectClause.resultType();
+            BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
             if (resultType.isInterface()) {
-                return ProjectionUtil.getInterfaceResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getInterfaceResult(extractor, attributes, resultType);
             } else if (resultType.isRecord()) {
-                return ProjectionUtil.getRecordResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getRecordResult(extractor, attributes, resultType);
             } else {
-                return ProjectionUtil.getBeanResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getBeanResult(extractor, attributes, resultType);
             }
         }
     }
 
     @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getJdbcResultFunction(@NotNull ResultSet resultSet) {
+    private static BiFunction<Integer, Class<?>, Object> getJdbcResultValueExtractor(@NotNull ResultSet resultSet) {
         // noinspection Convert2Lambda
         return new BiFunction<>() {
             @SneakyThrows

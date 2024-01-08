@@ -21,7 +21,6 @@ public interface AbstractCollector<T> extends Collector<T> {
         }
     }
 
-
     @Override
     default <R> R slice(Sliceable<T, R> sliceable) {
         int count = count();

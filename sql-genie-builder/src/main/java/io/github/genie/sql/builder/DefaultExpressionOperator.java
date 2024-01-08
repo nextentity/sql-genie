@@ -1,16 +1,27 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.Lists;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,7 +67,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     public B eq(U value) {
         return build(operateRight(Operator.EQ, value));
     }
-
 
     @Override
     public B eq(ExpressionHolder<T, U> value) {
@@ -133,7 +143,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     public B isNotNull() {
         return build(operateRight(Operator.IS_NOT_NULL, Lists.of()));
     }
-
 
     @Override
     public Expression expression() {
@@ -229,20 +238,20 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
 
-        public B ge(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.GE, value));
+        public B ge(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.GE, expression));
         }
 
-        public B gt(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.GT, value));
+        public B gt(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.GT, expression));
         }
 
-        public B le(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.LE, value));
+        public B le(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.LE, expression));
         }
 
-        public B lt(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.LT, value));
+        public B lt(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.LT, expression));
         }
 
         public B between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
@@ -256,7 +265,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         public B between(U l, ExpressionHolder<T, U> r) {
             return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
-
 
         @Override
         public B notBetween(U l, U r) {
@@ -323,7 +331,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         public NumberOpsImpl(Context<B> context) {
             super(context);
         }
-
 
         @Override
         public NumberOperator<T, U, B> add(U value) {
@@ -413,15 +420,15 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
-        public AndConnector<T> and(List<ExpressionHolder<T, Boolean>> values) {
+        public AndConnector<T> and(List<ExpressionHolder<T, Boolean>> expressions) {
             Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.AND, values.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            Expression expression = Expressions.operate(mt, Operator.AND, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
             return new AndConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, AndConnectorImpl::new));
         }
 
-        public OrConnector<T> or(List<ExpressionHolder<T, Boolean>> values) {
+        public OrConnector<T> or(List<ExpressionHolder<T, Boolean>> expressions) {
             Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.OR, values.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            Expression expression = Expressions.operate(mt, Operator.OR, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
             return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
@@ -491,7 +498,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             return new AndConnectorImpl<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
 
-
     }
 
     static class OrConnectorImpl<T> extends BooleanOpsImpl<T, OrConnector<T>> implements OrConnector<T> {
@@ -517,7 +523,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             Expression m = Expressions.operate(expression, Operator.NOT);
             return new PredicateOpsImpl<>(new Context<>(Lists.of(), TRUE, m, PredicateOpsImpl::new));
         }
-
 
     }
 
@@ -549,7 +554,7 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
     @NotNull
     @AllArgsConstructor
-    @lombok.Data
+    @Data
     protected static class Context<B> {
         List<Expression> expressions;
         Expression left;

@@ -19,7 +19,6 @@
     <module>sql-genie-jpa-metamodel</module>
   </modules>
 
-
   <dependencyManagement>
     <dependencies>
 
@@ -192,6 +191,5 @@
       </plugin>
     </plugins>
   </build>
-
 
 </project>

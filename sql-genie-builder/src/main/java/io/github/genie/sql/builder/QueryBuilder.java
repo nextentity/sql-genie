@@ -56,11 +56,10 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         return update(structure);
     }
 
-
-    public <R> Where0<T, R> select(Path<T, ? extends R> expression) {
+    public <R> Where0<T, R> select(Path<T, ? extends R> path) {
         QueryStructureImpl structure = queryStructure.copy();
-        Expression paths = Expressions.of(expression);
-        Class<?> type = getType(expression);
+        Expression paths = Expressions.of(path);
+        Class<?> type = getType(path);
         structure.select = new SingleColumnSelect(type, paths);
         return update(structure);
     }

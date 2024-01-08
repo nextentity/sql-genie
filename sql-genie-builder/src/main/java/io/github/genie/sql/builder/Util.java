@@ -1,6 +1,5 @@
 package io.github.genie.sql.builder;
 
-
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;

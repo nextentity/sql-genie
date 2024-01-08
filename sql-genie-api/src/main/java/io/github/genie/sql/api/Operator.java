@@ -36,7 +36,6 @@ public enum Operator {
     NULLIF("nullif", 0),
     IF_NULL("ifnull", 0),
 
-
     // aggregate function
     MIN("min", 0, false, true),
     MAX("max", 0, false, true),

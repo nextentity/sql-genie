@@ -163,7 +163,6 @@ public class JdbcUpdate implements Update {
         return columns;
     }
 
-
     private <T> List<T> doInsert(List<T> entities,
                                  EntityType entityType,
                                  Connection connection,
