@@ -7,7 +7,7 @@ import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.api.Query.Having;
+import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
@@ -20,6 +20,7 @@ import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
 import io.github.genie.sql.api.Query.GroupBy;
+import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.Query.OrderBy;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.SliceQueryStructure;
@@ -39,7 +40,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, AbstractCollector<U> {
 
     static final SingleColumnSelect SELECT_ANY =
@@ -139,7 +142,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     protected boolean requiredCountSubQuery(Expression column) {
         if (column instanceof Column) {
             return false;
-        } else if (column instanceof Operation operation) {
+        } else if (column instanceof Operation) {
+            Operation operation = (Operation) column;
             Expression expression = operation.operand();
             if (requiredCountSubQuery(expression)) {
                 return true;
@@ -228,14 +232,16 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     @Override
     public Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = expressions.stream().map(ExpressionHolder::expression).toList();
+        metadata.groupBy = expressions.stream()
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList());
         return update(metadata);
     }
 
     @Override
     public Having<T, U> groupBy(Path<T, ?> path) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = List.of(Expressions.of(path));
+        metadata.groupBy = Lists.of(Expressions.of(path));
         return update(metadata);
     }
 

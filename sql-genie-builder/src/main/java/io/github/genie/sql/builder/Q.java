@@ -19,6 +19,7 @@ import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.github.genie.sql.api.Operator.AND;
 import static io.github.genie.sql.api.Operator.NOT;
@@ -83,7 +84,9 @@ public final class Q {
     @SafeVarargs
     public static <T> Predicate<T> and(ExpressionHolder<T, Boolean> predicate,
                                        ExpressionHolder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
+        List<Expression> metas = Arrays.stream(predicates)
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList());
         Expression expression = Expressions.operate(predicate.expression(), AND, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
@@ -91,7 +94,9 @@ public final class Q {
     @SafeVarargs
     public static <T> Predicate<T> or(ExpressionHolder<T, Boolean> predicate,
                                       ExpressionHolder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
+        List<Expression> metas = Arrays.stream(predicates)
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList());
         Expression expression = Expressions.operate(predicate.expression(), OR, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
@@ -106,12 +111,16 @@ public final class Q {
 
     @SafeVarargs
     public static <T> List<Order<T>> desc(Path<T, ? extends Comparable<?>>... paths) {
-        return Arrays.stream(paths).map(Q::desc).toList();
+        return Arrays.stream(paths)
+                .map(Q::desc)
+                .collect(Collectors.toList());
     }
 
     @SafeVarargs
     public static <T> List<Order<T>> asc(Path<T, Comparable<?>>... paths) {
-        return Arrays.stream(paths).map(Q::asc).toList();
+        return Arrays.stream(paths)
+                .map(Q::asc)
+                .collect(Collectors.toList());
     }
 
 

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
 public abstract class AbstractMetamodel implements Metamodel {
 
@@ -156,7 +157,8 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected void setAnyToOneAttributeColumnName(Map<String, Attribute> map) {
         for (Entry<String, Attribute> entry : map.entrySet()) {
             Attribute value = entry.getValue();
-            if (value instanceof AnyToOneAttributeImpl attr) {
+            if (value instanceof AnyToOneAttributeImpl) {
+                AnyToOneAttributeImpl attr = (AnyToOneAttributeImpl) value;
                 String joinColumnName = getJoinColumnName(map, attr);
                 attr.joinColumnName(joinColumnName);
             }
@@ -166,8 +168,8 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected String getJoinColumnName(Map<String, Attribute> map, AnyToOneAttributeImpl attr) {
         String joinName = attr.joinName();
         Attribute join = map.get(joinName);
-        return join instanceof BasicAttribute basic
-                ? basic.columnName()
+        return join instanceof BasicAttribute
+                ? ((BasicAttribute) join).columnName()
                 : joinName;
     }
 

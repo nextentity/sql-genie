@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 public class JsonSerializablePredicateValueTest {
-    public static ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper();
 
     static {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

@@ -3,6 +3,7 @@ package io.github.genie.sql.executor.jpa;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     private final EntityManager entityManager;
@@ -52,11 +54,13 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return queryByNativeSql(queryStructure);
         }
         Selection selected = queryStructure.select();
-        if (selected instanceof SingleColumn singleColumn) {
-            List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
-            List<Object> result = objectsList.stream().map(objects -> objects[0]).toList();
+        if (selected instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleColumn.column()));
+            List<Object> result = objectsList.stream().map(objects -> objects[0]).collect(Collectors.toList());
             return TypeCastUtil.cast(result);
-        } else if (selected instanceof MultiColumn multiColumn) {
+        } else if (selected instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selected;
             List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
             return TypeCastUtil.cast(objectsList);
         } else {
@@ -73,21 +77,21 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                             String fieldName = projectionField.baseField().name();
                             return Expressions.column(fieldName);
                         })
-                        .toList();
+                        .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).toList();
+                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
                 if (resultType.isInterface()) {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getInterfaceResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .collect(Collectors.toList());
                 } else if (resultType.isRecord()) {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getRecordResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .collect(Collectors.toList());
                 } else {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getBeanResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .collect(Collectors.toList());
                 }
             }
         }

@@ -716,31 +716,6 @@ public abstract class GenericApiTest {
                 .collect(Collectors.toList());
         assertEquals(qList, fList);
 
-        // qList = isValid.and(User::getPid).nullIf(4).eq(2)
-        //         .getList();
-        // fList = validUsers.stream().filter(user -> {
-        //             Integer pid = user.getPid();
-        //             if (pid != null && pid == 4) {
-        //                 pid = null;
-        //             }
-        //             return pid != null && pid == 2;
-        //         })
-        //         .collect(Collectors.toList());
-        // assertEquals(qList, fList);
-
-        // qList = isValid.and(User::getPid).ifNull(2).eq(2)
-        //         .getList();
-        // fList = validUsers.stream().filter(user -> {
-        //             Integer pid = user.getPid();
-        //             if (pid == null) {
-        //                 pid = 2;
-        //             }
-        //             return pid == 2;
-        //         })
-        //         .collect(Collectors.toList());
-        // assertEquals(qList, fList);
-
-
         qList = userQuery.where(isValid.and(User::getRandomNumber).ge(10))
                 .getList();
         fList = validUsers.stream().filter(user -> user.getRandomNumber() >= 10)

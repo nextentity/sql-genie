@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 final class QueryStructures {
 
     static class QueryStructureImpl implements QueryStructure, Cloneable {
@@ -281,7 +282,8 @@ final class QueryStructures {
     }
 
     private static String toString(Operation parent, Expression subMeta) {
-        if (subMeta instanceof Operation o) {
+        if (subMeta instanceof Operation) {
+            Operation o = (Operation) subMeta;
             if (o.operator().priority() > parent.operator().priority()) {
                 return "(" + subMeta + ')';
             }

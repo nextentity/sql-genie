@@ -1,5 +1,6 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Update;
 import io.github.genie.sql.builder.exception.OptimisticLockException;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
 public class JdbcUpdate implements Update {
 
@@ -112,7 +114,7 @@ public class JdbcUpdate implements Update {
             String sql = preparedSql.sql();
             log.debug(sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                setArgs(List.of(entity), preparedSql.columns(), statement);
+                setArgs(Lists.of(entity), preparedSql.columns(), statement);
                 int i = statement.executeUpdate();
                 List<BasicAttribute> versions = preparedSql.versionColumns();
                 boolean hasVersion = isNotEmpty(versions);
@@ -150,7 +152,8 @@ public class JdbcUpdate implements Update {
     private static <T> List<BasicAttribute> getNonNullColumn(T entity, EntityType entityType) {
         List<BasicAttribute> columns = new ArrayList<>();
         for (Attribute attribute : entityType.attributes()) {
-            if (attribute instanceof BasicAttribute column) {
+            if (attribute instanceof BasicAttribute) {
+                BasicAttribute column = (BasicAttribute) attribute;
                 Object invoke = column.get(entity);
                 if (invoke != null) {
                     columns.add(column);

@@ -6,12 +6,12 @@ import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
+import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
@@ -25,7 +25,7 @@ import java.util.List;
 
 class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
     private final QueryConditionBuilder<T, U> queryBuilder;
-    DefaultExpressionOperator<T, U, AndBuilderImpl<T, U>> expressionBuilder;
+    final DefaultExpressionOperator<T, U, AndBuilderImpl<T, U>> expressionBuilder;
 
     AndBuilderImpl(QueryConditionBuilder<T, U> queryBuilder, Metadata<AndBuilder0<T, U>> metadata) {
         expressionBuilder = new DefaultExpressionOperator<>(TypeCastUtil.unsafeCast(metadata));

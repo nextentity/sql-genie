@@ -15,6 +15,7 @@ import java.util.function.BiFunction;
 import static io.github.genie.sql.api.Selection.MultiColumn;
 import static io.github.genie.sql.api.Selection.SingleColumn;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
 
     @Override
@@ -25,7 +26,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             throws SQLException {
         int columnsCount = resultSet.getMetaData().getColumnCount();
         int column = 0;
-        if (selectClause instanceof MultiColumn multiColumn) {
+        if (selectClause instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selectClause;
             if (multiColumn.columns().size() != columnsCount) {
                 throw new IllegalStateException();
             }
@@ -34,7 +36,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
                 row[column++] = resultSet.getObject(column);
             }
             return TypeCastUtil.unsafeCast(row);
-        } else if (selectClause instanceof SingleColumn singleColumn) {
+        } else if (selectClause instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selectClause;
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }

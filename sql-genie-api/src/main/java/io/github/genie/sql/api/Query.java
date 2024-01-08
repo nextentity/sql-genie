@@ -36,44 +36,44 @@ public interface Query {
         Where0<T, Object[]> select(Collection<Path<T, ?>> paths);
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
-            return select(List.of(p0, p1));
+            return select(Lists.of(p0, p1));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return select(List.of(p0, p1, p2));
+            return select(Lists.of(p0, p1, p2));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return select(List.of(p0, p1, p2, p3));
+            return select(Lists.of(p0, p1, p2, p3));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return select(List.of(p0, p1, p2, p3, p4));
+            return select(Lists.of(p0, p1, p2, p3, p4));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                            Path<T, ?> p5) {
-            return select(List.of(p0, p1, p2, p3, p4, p5));
+            return select(Lists.of(p0, p1, p2, p3, p4, p5));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                            Path<T, ?> p5, Path<T, ?> p6) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6));
+            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                            Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7));
+            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                            Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
+            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
         }
 
         default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
                                            Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
         }
 
     }
@@ -85,15 +85,15 @@ public interface Query {
         Where<T, T> fetch(Collection<Path<T, ?>> paths);
 
         default Where<T, T> fetch(Path<T, ?> path) {
-            return fetch(List.of(path));
+            return fetch(Lists.of(path));
         }
 
         default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
-            return fetch(List.of(p0, p1));
+            return fetch(Lists.of(p0, p1));
         }
 
         default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
-            return fetch(List.of(p0, p1, p3));
+            return fetch(Lists.of(p0, p1, p3));
         }
 
     }
@@ -138,23 +138,23 @@ public interface Query {
         Having<T, U> groupBy(Collection<Path<T, ?>> paths);
 
         default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1) {
-            return groupBy(List.of(p0, p1));
+            return groupBy(Lists.of(p0, p1));
         }
 
         default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return groupBy(List.of(p0, p1, p2));
+            return groupBy(Lists.of(p0, p1, p2));
         }
 
         default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return groupBy(List.of(p0, p1, p2, p3));
+            return groupBy(Lists.of(p0, p1, p2, p3));
         }
 
         default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return groupBy(List.of(p0, p1, p2, p3, p4));
+            return groupBy(Lists.of(p0, p1, p2, p3, p4));
         }
 
         default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4, Path<T, ?> p5) {
-            return groupBy(List.of(p0, p1, p2, p3, p4, p5));
+            return groupBy(Lists.of(p0, p1, p2, p3, p4, p5));
         }
     }
 
@@ -169,15 +169,15 @@ public interface Query {
         Collector<U> orderBy(List<? extends Order<T>> path);
 
         default Collector<U> orderBy(Order<T> path) {
-            return orderBy(List.of(path));
+            return orderBy(Lists.of(path));
         }
 
         default Collector<U> orderBy(Order<T> p0, Order<T> p1) {
-            return orderBy(List.of(p0, p1));
+            return orderBy(Lists.of(p0, p1));
         }
 
         default Collector<U> orderBy(Order<T> p0, Order<T> p1, Order<T> p2) {
-            return orderBy(List.of(p0, p1, p2));
+            return orderBy(Lists.of(p0, p1, p2));
         }
 
     }

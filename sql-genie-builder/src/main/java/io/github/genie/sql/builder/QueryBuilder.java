@@ -20,7 +20,9 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Select<T>, Fetch<T> {
     public QueryBuilder(QueryExecutor queryExecutor, Class<T> type) {
         super(queryExecutor, type);
@@ -35,7 +37,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         List<Column> list = new ArrayList<>(expressions.size());
         for (PathOperator<T, ?, Predicate<T>> expression : expressions) {
             Expression expr = expression.expression();
-            if (expr instanceof Column column) {
+            if (expr instanceof Column) {
+                Column column = (Column) expr;
                 list.add(column);
             }
         }
@@ -68,7 +71,9 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
 
     public Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl metadata = queryStructure.copy();
-        metadata.select = new MultiColumnSelect(expressions.stream().map(ExpressionHolder::expression).toList());
+        metadata.select = new MultiColumnSelect(expressions.stream()
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList()));
         return update(metadata);
     }
 

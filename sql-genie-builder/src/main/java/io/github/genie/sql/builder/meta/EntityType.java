@@ -10,8 +10,6 @@ public interface EntityType extends Type {
 
     Collection<? extends Attribute> attributes();
 
-    Class<?> javaType();
-
     Attribute getAttribute(String fieldName);
 
     Attribute version();
