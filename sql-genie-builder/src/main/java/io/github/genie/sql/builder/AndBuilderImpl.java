@@ -14,7 +14,7 @@ import io.github.genie.sql.api.Query.Collector;
 import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
+import io.github.genie.sql.builder.DefaultExpressionOperator.Context;
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
@@ -27,69 +27,69 @@ class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
     private final QueryConditionBuilder<T, U> queryBuilder;
     final DefaultExpressionOperator<T, U, AndBuilderImpl<T, U>> expressionBuilder;
 
-    AndBuilderImpl(QueryConditionBuilder<T, U> queryBuilder, Metadata<AndBuilder0<T, U>> metadata) {
-        expressionBuilder = new DefaultExpressionOperator<>(TypeCastUtil.unsafeCast(metadata));
+    AndBuilderImpl(QueryConditionBuilder<T, U> queryBuilder, Context<AndBuilder0<T, U>> context) {
+        expressionBuilder = new DefaultExpressionOperator<>(TypeCastUtil.unsafeCast(context));
         this.queryBuilder = queryBuilder;
     }
 
     @Override
     public <N> PathOperator<T, N, AndBuilder0<T, U>> and(Path<T, N> path) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(path);
-        return new DefaultExpressionOperator<>(new Metadata<>(expressions, left, right, this::update));
+        return new DefaultExpressionOperator<>(new Context<>(expressions, left, right, this::update));
     }
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> and(Path.NumberPath<T, N> path) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(path);
-        return new NumberOpsImpl<>(new Metadata<>(expressions, left, right, this::update));
+        return new NumberOpsImpl<>(new Context<>(expressions, left, right, this::update));
     }
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> and(Path.ComparablePath<T, N> path) {
-        Metadata<AndBuilder0<T, U>> metadata = getAggAndBuilderMetadata(path);
-        return new ComparableOpsImpl<>(metadata);
+        Context<AndBuilder0<T, U>> ctx = getAggAndBuilderMetadata(path);
+        return new ComparableOpsImpl<>(ctx);
     }
 
     @NotNull
-    private <N extends Comparable<N>> Metadata<AndBuilder0<T, U>> getAggAndBuilderMetadata(Path<T, N> path) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+    private <N extends Comparable<N>> DefaultExpressionOperator.Context<AndBuilder0<T, U>> getAggAndBuilderMetadata(Path<T, N> path) {
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(path);
-        return new Metadata<>(expressions, left, right, this::update);
+        return new Context<>(expressions, left, right, this::update);
     }
 
     @Override
     public StringOperator<T, AndBuilder0<T, U>> and(Path.StringPath<T> path) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(path);
-        return new StringOpsImpl<>(new Metadata<>(expressions, left, right, this::update));
+        return new StringOpsImpl<>(new Context<>(expressions, left, right, this::update));
     }
 
 
     @Override
     public AndBuilder0<T, U> and(Path.BooleanPath<T> path) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(path);
-        return update(new Metadata<>(expressions, left, right, this::update));
+        return update(new Context<>(expressions, left, right, this::update));
     }
 
     @Override
     public AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate) {
-        List<Expression> expressions = expressionBuilder.metadata.expressions;
+        List<Expression> expressions = expressionBuilder.context.expressions;
         Expression left = expressionBuilder.merge();
         Expression right = Expressions.of(predicate);
-        return update(new Metadata<>(expressions, left, right, this::update));
+        return update(new Context<>(expressions, left, right, this::update));
     }
 
     @NotNull
-    private AndBuilderImpl<T, U> update(Metadata<AndBuilder0<T, U>> metadata) {
-        return new AndBuilderImpl<>(queryBuilder, metadata);
+    private AndBuilderImpl<T, U> update(Context<AndBuilder0<T, U>> context) {
+        return new AndBuilderImpl<>(queryBuilder, context);
     }
 
     private QueryConditionBuilder<T, U> getQueryBuilder() {

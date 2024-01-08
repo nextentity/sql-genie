@@ -33,7 +33,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     public Where0<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions) {
-        QueryStructureImpl metadata = queryStructure.copy();
+        QueryStructureImpl structure = queryStructure.copy();
         List<Column> list = new ArrayList<>(expressions.size());
         for (PathOperator<T, ?, Predicate<T>> expression : expressions) {
             Expression expr = expression.expression();
@@ -42,8 +42,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
                 list.add(column);
             }
         }
-        metadata.fetch = list;
-        return update(metadata);
+        structure.fetch = list;
+        return update(structure);
     }
 
     public Where0<T, T> fetch(Collection<Path<T, ?>> paths) {
@@ -51,18 +51,18 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     public <R> Where0<T, R> select(Class<R> projectionType) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.select = new SelectClauseImpl(projectionType);
-        return update(metadata);
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.select = new SelectClauseImpl(projectionType);
+        return update(structure);
     }
 
 
     public <R> Where0<T, R> select(Path<T, ? extends R> expression) {
-        QueryStructureImpl metadata = queryStructure.copy();
+        QueryStructureImpl structure = queryStructure.copy();
         Expression paths = Expressions.of(expression);
         Class<?> type = getType(expression);
-        metadata.select = new SingleColumnSelect(type, paths);
-        return update(metadata);
+        structure.select = new SingleColumnSelect(type, paths);
+        return update(structure);
     }
 
     public Where0<T, Object[]> select(Collection<Path<T, ?>> paths) {
@@ -70,19 +70,19 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     public Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.select = new MultiColumnSelect(expressions.stream()
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.select = new MultiColumnSelect(expressions.stream()
                 .map(ExpressionHolder::expression)
                 .collect(Collectors.toList()));
-        return update(metadata);
+        return update(structure);
     }
 
     public <R> Where0<T, R> select(ExpressionHolder<T, R> paths) {
-        QueryStructureImpl metadata = queryStructure.copy();
+        QueryStructureImpl structure = queryStructure.copy();
         Expression expression = paths.expression();
         Class<?> type = Object.class;
-        metadata.select = new SingleColumnSelect(type, expression);
-        return update(metadata);
+        structure.select = new SingleColumnSelect(type, expression);
+        return update(structure);
     }
 
     protected Class<?> getType(Path<?, ?> path) {

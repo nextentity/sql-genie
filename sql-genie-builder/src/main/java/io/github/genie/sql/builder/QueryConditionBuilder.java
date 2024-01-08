@@ -30,7 +30,7 @@ import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.Metadata;
+import io.github.genie.sql.builder.DefaultExpressionOperator.Context;
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
 import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
@@ -78,23 +78,23 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.where = predicate.expression();
-        return update(metadata);
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.where = predicate.expression();
+        return update(structure);
     }
 
     @Override
     public Collector<U> orderBy(List<? extends Order<T>> builder) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.orderBy = builder;
-        return update(metadata);
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.orderBy = builder;
+        return update(structure);
     }
 
     @Override
     public int count() {
-        QueryStructure metadata = buildCountData();
-        metadata = structurePostProcessor.preCountQuery(this, metadata);
-        return queryExecutor.<Number>getList(metadata).get(0).intValue();
+        QueryStructure structure = buildCountData();
+        structure = structurePostProcessor.preCountQuery(this, structure);
+        return queryExecutor.<Number>getList(structure).get(0).intValue();
     }
 
     @NotNull
@@ -116,8 +116,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         }
     }
 
-    boolean requiredCountSubQuery(QueryStructureImpl metadata) {
-        Selection select = metadata.select();
+    boolean requiredCountSubQuery(QueryStructureImpl structure) {
+        Selection select = structure.select();
         if (select instanceof SingleColumnSelect) {
             Expression column = ((SingleColumnSelect) select).column();
             return requiredCountSubQuery(column);
@@ -127,7 +127,7 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
                 return true;
             }
         }
-        return requiredCountSubQuery(metadata.having());
+        return requiredCountSubQuery(structure.having());
     }
 
     protected boolean requiredCountSubQuery(List<? extends Expression> columns) {
@@ -163,40 +163,40 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public List<U> getList(int offset, int maxResult, LockModeType lockModeType) {
-        QueryStructure metadata = buildListData(offset, maxResult, lockModeType);
-        metadata = structurePostProcessor.preListQuery(this, metadata);
-        return queryList(metadata);
+        QueryStructure structure = buildListData(offset, maxResult, lockModeType);
+        structure = structurePostProcessor.preListQuery(this, structure);
+        return queryList(structure);
     }
 
-    public <X> List<X> queryList(QueryStructure metadata) {
-        return queryExecutor.getList(metadata);
+    public <X> List<X> queryList(QueryStructure structure) {
+        return queryExecutor.getList(structure);
     }
 
     @NotNull
     QueryStructures.QueryStructureImpl buildListData(int offset, int maxResult, LockModeType lockModeType) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.offset = offset;
-        metadata.limit = maxResult;
-        metadata.lockType = lockModeType;
-        return metadata;
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.offset = offset;
+        structure.limit = maxResult;
+        structure.lockType = lockModeType;
+        return structure;
     }
 
     @Override
     public boolean exist(int offset) {
-        QueryStructure metadata = buildExistData(offset);
-        metadata = structurePostProcessor.preExistQuery(this, metadata);
-        return !queryList(metadata).isEmpty();
+        QueryStructure structure = buildExistData(offset);
+        structure = structurePostProcessor.preExistQuery(this, structure);
+        return !queryList(structure).isEmpty();
     }
 
     @NotNull
     QueryStructures.QueryStructureImpl buildExistData(int offset) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.select = SELECT_ANY;
-        metadata.offset = offset;
-        metadata.limit = 1;
-        metadata.fetch = Lists.of();
-        metadata.orderBy = Lists.of();
-        return metadata;
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.select = SELECT_ANY;
+        structure.offset = offset;
+        structure.limit = 1;
+        structure.fetch = Lists.of();
+        structure.orderBy = Lists.of();
+        return structure;
     }
 
     @Override
@@ -231,18 +231,18 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = expressions.stream()
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.groupBy = expressions.stream()
                 .map(ExpressionHolder::expression)
                 .collect(Collectors.toList());
-        return update(metadata);
+        return update(structure);
     }
 
     @Override
     public Having<T, U> groupBy(Path<T, ?> path) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.groupBy = Lists.of(Expressions.of(path));
-        return update(metadata);
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.groupBy = Lists.of(Expressions.of(path));
+        return update(structure);
     }
 
     @Override
@@ -253,41 +253,41 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public OrderBy<T, U> having(ExpressionHolder<T, Boolean> predicate) {
-        QueryStructureImpl metadata = queryStructure.copy();
-        metadata.having = predicate.expression();
-        return update(metadata);
+        QueryStructureImpl structure = queryStructure.copy();
+        structure.having = predicate.expression();
+        return update(structure);
     }
 
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new NumberOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @NotNull
-    protected AndBuilder0<T, U> newChanAndBuilder(Metadata<AndBuilder0<T, U>> metadata) {
-        return new AndBuilderImpl<>(QueryConditionBuilder.this, metadata);
+    protected AndBuilder0<T, U> newChanAndBuilder(Context<AndBuilder0<T, U>> context) {
+        return new AndBuilderImpl<>(QueryConditionBuilder.this, context);
     }
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new ComparableOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new StringOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public AndBuilder0<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return newChanAndBuilder(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
 
     @Override
     public <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new DefaultExpressionOperator<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     QueryStructureImpl queryStructure() {
