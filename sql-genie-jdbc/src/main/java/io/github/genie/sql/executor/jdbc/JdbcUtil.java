@@ -1,5 +1,6 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.builder.TypeCastUtil;
 import lombok.Lombok;
 import org.jetbrains.annotations.NotNull;
 
@@ -87,7 +88,6 @@ public abstract class JdbcUtil {
         return PRIMITIVE_MAP.getOrDefault(javaType, javaType);
     }
 
-
     public static <X> X getValue(ResultSet resultSet, int column, Class<X> targetType) throws SQLException {
         Object result = resultSet.getObject(column);
         if (result == null) {
@@ -103,10 +103,8 @@ public abstract class JdbcUtil {
                 result = getter.getValue(resultSet, column);
             }
         }
-        // noinspection unchecked
-        return (X) result;
+        return TypeCastUtil.unsafeCast(result);
     }
-
 
     public static void setParam(PreparedStatement pst, List<?> args) throws SQLException {
         int i = 0;
@@ -156,5 +154,4 @@ public abstract class JdbcUtil {
         T getValue(ResultSet resultSet, int index) throws SQLException;
     }
 }
-
 

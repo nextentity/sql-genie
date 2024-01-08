@@ -1,6 +1,8 @@
 package io.github.genie.sql.builder.meta;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
 import java.lang.reflect.Field;
@@ -17,52 +19,30 @@ public class Metamodels {
     }
 
     @Data
+    @Accessors(fluent = true)
     public static class AttributeImpl implements Attribute, AbstractType {
 
         protected Class<?> javaType;
         protected Type owner;
-        protected String fieldName;
+        protected String name;
         protected Method getter;
         protected Method setter;
         protected Field field;
 
         @Override
-        public Type owner() {
-            return owner;
-        }
-
-        @Override
-        public Class<?> javaType() {
-            return javaType;
-        }
-
-        @Override
-        public String name() {
-            return fieldName;
-        }
-
-        @Override
-        public Method getter() {
-            return getter;
-        }
-
-        @Override
-        public Method setter() {
-            return setter;
-        }
-
-        @Override
-        public Field field() {
-            return field;
+        public void setOwner(Type owner) {
+            this.owner = owner;
         }
 
         @Override
         public String toString() {
-            return getFieldName();
+            return name();
         }
+
     }
 
     @Data
+    @Accessors(fluent = true)
     public static class EntityTypeImpl implements EntityType, AbstractType {
 
         private Class<?> javaType;
@@ -70,73 +50,43 @@ public class Metamodels {
         private Attribute id;
         private Attribute version;
         private String tableName;
-        private Map<String, Attribute> fields;
+        private Map<String, Attribute> attributeMap;
 
-        @Override
-        public Attribute id() {
-            return id;
+        public Collection<Attribute> attributes() {
+            return attributeMap.values();
         }
 
         @Override
-        public Type owner() {
-            return owner;
-        }
-
-        @Override
-        public Class<?> javaType() {
-            return javaType;
-        }
-
-        @Override
-        public String tableName() {
-            return tableName;
+        public void setOwner(Type owner) {
+            this.owner = owner;
         }
 
         @Override
         public Attribute getAttribute(String fieldName) {
-            return fields.get(fieldName);
-        }
-
-        @Override
-        public Collection<? extends Attribute> fields() {
-            return fields.values();
-        }
-
-        @Override
-        public Attribute version() {
-            return version;
+            return attributeMap.get(fieldName);
         }
 
         @Override
         public String toString() {
-            return "TableMapping{" +
-                    ", tableName='" + tableName + '\'' +
-                    ", javaType=" + getJavaType().getName() +
-                    '}';
+            return "EntityType{" +
+                   ", tableName='" + tableName + '\'' +
+                   ", javaType=" + javaType().getName() +
+                   '}';
         }
     }
 
     @Data
+    @Accessors(fluent = true)
     public static class BasicAttributeImpl implements BasicAttribute, AbstractType {
         @Delegate
         private Attribute attribute;
         private String columnName;
-        private boolean versionColumn;
+        private boolean hasVersion;
 
-        public BasicAttributeImpl(Attribute attribute, String columnName, boolean versionColumn) {
+        public BasicAttributeImpl(Attribute attribute, String columnName, boolean hasVersion) {
             this.attribute = attribute;
             this.columnName = columnName;
-            this.versionColumn = versionColumn;
-        }
-
-        @Override
-        public String columnName() {
-            return columnName;
-        }
-
-        @Override
-        public boolean isVersion() {
-            return versionColumn;
+            this.hasVersion = hasVersion;
         }
 
         @Override
@@ -146,46 +96,37 @@ public class Metamodels {
     }
 
     @Data
+    @Accessors(fluent = true)
     public static class AnyToOneAttributeImpl implements AnyToOneAttribute, AbstractType {
         @Delegate
         private Attribute attribute;
+        private String joinName;
         private String joinColumnName;
         private String referencedColumnName;
-        private Supplier<EntityType> referenced;
+        private Supplier<EntityType> referencedSupplier;
+        @Getter(lazy = true)
+        private final EntityType referenced = referencedSupplier.get();
 
         public AnyToOneAttributeImpl(Attribute attribute) {
             this.attribute = attribute;
         }
 
-        public AnyToOneAttributeImpl() {
-        }
-
-        @Override
-        public String joinColumnName() {
-            return joinColumnName;
-        }
-
-        @Override
-        public String referencedColumnName() {
-            return referencedColumnName;
-        }
-
-        @Override
-        public EntityType referenced() {
-            return referenced.get();
-        }
-
         @Override
         public void setOwner(Type owner) {
             ((AttributeImpl) attribute).setOwner(owner);
         }
     }
 
-    record ProjectionAttributeImpl(Attribute baseField, Attribute field) implements ProjectionAttribute {
-
+    @Data
+    @Accessors(fluent = true)
+    static final class ProjectionAttributeImpl implements ProjectionAttribute {
+        private final Attribute baseField;
+        private final Attribute field;
     }
 
-    record ProjectionImpl(List<ProjectionAttribute> attributes) implements Projection {
-
+    @Data
+    @Accessors(fluent = true)
+    static final class ProjectionImpl implements Projection {
+        private final List<ProjectionAttribute> attributes;
     }
 }

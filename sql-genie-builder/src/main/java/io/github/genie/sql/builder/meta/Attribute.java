@@ -16,8 +16,6 @@ public interface Attribute extends Type {
 
     Field field();
 
-    Class<?> javaType();
-
     default Object get(Object entity) {
         try {
             Method getter = getter();

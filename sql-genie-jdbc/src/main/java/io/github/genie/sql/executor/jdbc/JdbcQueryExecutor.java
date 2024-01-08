@@ -1,8 +1,8 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
@@ -21,7 +21,7 @@ import java.util.List;
 public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
     @NotNull
-    private Metamodel mappings;
+    private Metamodel metamodel;
     @NotNull
     private QuerySqlBuilder sqlBuilder;
     @NotNull
@@ -32,7 +32,7 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
     @Override
     @NotNull
     public <R> List<R> getList(@NotNull QueryStructure queryStructure) {
-        PreparedSql sql = sqlBuilder.build(queryStructure, mappings);
+        PreparedSql sql = sqlBuilder.build(queryStructure, metamodel);
         try {
             return connectionProvider.execute(connection -> {
                 // noinspection SqlSourceToSinkFlow
@@ -76,12 +76,10 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
         return result;
     }
 
-
     public interface QuerySqlBuilder {
-        PreparedSql build(QueryStructure structure, Metamodel mappings);
+        PreparedSql build(QueryStructure structure, Metamodel metamodel);
 
     }
-
 
     public interface PreparedSql {
 

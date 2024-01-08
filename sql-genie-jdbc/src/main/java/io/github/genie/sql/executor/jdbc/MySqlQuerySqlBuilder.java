@@ -1,15 +1,34 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.Lists;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.Expressions;
-import io.github.genie.sql.builder.meta.*;
+import io.github.genie.sql.builder.meta.AnyToOneAttribute;
+import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.BasicAttribute;
+import io.github.genie.sql.builder.meta.EntityType;
+import io.github.genie.sql.builder.meta.Metamodel;
+import io.github.genie.sql.builder.meta.Projection;
+import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -19,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
-
 
     public static final String NONE_DELIMITER = "";
     public static final String DELIMITER = ",";
@@ -36,11 +54,11 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     public static final String ON = " on ";
 
     @Override
-    public PreparedSql build(QueryStructure structure, Metamodel mappings) {
-        return new Builder(structure, mappings).build();
+    public PreparedSql build(QueryStructure structure, Metamodel metamodel) {
+        return new Builder(structure, metamodel).build();
     }
 
-
+    @SuppressWarnings("PatternVariableCanBeUsed")
     static class Builder {
 
         protected final StringBuilder sql;
@@ -72,7 +90,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             Class<?> type = queryStructure.from().type();
             String prefix;
             if (queryStructure.from() instanceof Entity) {
-                prefix = fixSymbol(type.getSimpleName());
+                prefix = sortAlias(type.getSimpleName());
                 this.entity = mappers.getEntity(type);
             } else {
                 prefix = "t";
@@ -108,32 +126,36 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         private void buildProjectionPaths() {
             Selection selected = queryStructure.select();
-            if (selected instanceof SingleColumn singleColumn) {
+            if (selected instanceof SingleColumn) {
+                SingleColumn singleColumn = (SingleColumn) selected;
                 selectedExpressions.add(singleColumn.column());
-            } else if (selected instanceof MultiColumn multiColumn) {
+            } else if (selected instanceof MultiColumn) {
+                MultiColumn multiColumn = (MultiColumn) selected;
                 selectedExpressions.addAll(multiColumn.columns());
             } else if (queryStructure.select().resultType() == queryStructure.from().type()) {
                 EntityType table = mappers
                         .getEntity(queryStructure.select().resultType());
-                for (Attribute mapping : table.fields()) {
-                    if (!(mapping instanceof BasicAttribute column)) {
+                for (Attribute attribute : table.attributes()) {
+                    if (!(attribute instanceof BasicAttribute)) {
                         continue;
                     }
-                    Column columns = Expressions.ofPath(column.name());
+                    BasicAttribute column = (BasicAttribute) attribute;
+                    Column columns = Expressions.column(column.name());
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(mapping);
+                    selectedAttributes.add(attribute);
                 }
             } else {
-                Projection projectionMapping = mappers
+                Projection projection = mappers
                         .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
-                for (ProjectionAttribute mapping : projectionMapping.attributes()) {
-                    if (!(mapping.baseField() instanceof BasicAttribute column)) {
+                for (ProjectionAttribute attr : projection.attributes()) {
+                    if (!(attr.baseField() instanceof BasicAttribute)) {
                         continue;
                     }
+                    BasicAttribute column = (BasicAttribute) attr.baseField();
 
-                    Column columns = Expressions.ofPath(column.name());
+                    Column columns = Expressions.column(column.name());
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(mapping.field());
+                    selectedAttributes.add(attr.field());
                 }
             }
         }
@@ -163,16 +185,18 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             if (fetchClause != null) {
                 for (Column fetch : fetchClause) {
                     Attribute attribute = getAttribute(fetch);
-                    if (!(attribute instanceof AnyToOneAttribute am)) {
+                    if (!(attribute instanceof AnyToOneAttribute)) {
                         continue;
                     }
+                    AnyToOneAttribute am = (AnyToOneAttribute) attribute;
                     EntityType entityTypeInfo = am.referenced();
-                    for (Attribute field : entityTypeInfo.fields()) {
-                        if (!(field instanceof BasicAttribute mapping)) {
+                    for (Attribute field : entityTypeInfo.attributes()) {
+                        if (!(field instanceof BasicAttribute)) {
                             continue;
                         }
+                        BasicAttribute attr = (BasicAttribute) field;
                         sql.append(",");
-                        Column column = Expressions.concat(fetch, mapping.name());
+                        Column column = Expressions.concat(fetch, attr.name());
                         appendPaths(column);
                         appendSelectAlias();
                         selectedExpressions.add(column);
@@ -181,7 +205,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 }
             }
         }
-
 
         protected void appendLockModeType(LockModeType lockModeType) {
             if (lockModeType == LockModeType.PESSIMISTIC_READ) {
@@ -198,7 +221,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             From from = queryStructure.from();
             if (from instanceof Entity) {
                 appendFromTable();
-            } else if (from instanceof SubQuery subQuery) {
+            } else if (from instanceof SubQuery) {
+                SubQuery subQuery = (SubQuery) from;
                 appendSubQuery(subQuery.queryStructure());
             }
             appendFromAlias();
@@ -225,7 +249,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         protected StringBuilder appendTableAlias(String table, Object index, StringBuilder sql) {
-            StringBuilder append = appendBlank(sql).append(fixSymbol(table));
+            StringBuilder append = appendBlank(sql).append(sortAlias(table));
             if (subIndex > 0) {
                 sql.append(subIndex).append("_");
             }
@@ -233,8 +257,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         @NotNull
-        private static String fixSymbol(String symbol) {
-            return symbol.toLowerCase().substring(0, Math.min(4, symbol.length()));
+        private static String sortAlias(String symbol) {
+            return symbol.toLowerCase().substring(0, 1);
         }
 
         protected StringBuilder appendBlank() {
@@ -242,9 +266,9 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         protected StringBuilder appendBlank(StringBuilder sql) {
-            return sql.isEmpty() || " (,+-*/=><".indexOf(sql.charAt(sql.length() - 1)) >= 0 ? sql : sql.append(' ');
+            // noinspection SizeReplaceableByIsEmpty
+            return sql.length() == 0 || " (,+-*/=><".indexOf(sql.charAt(sql.length() - 1)) >= 0 ? sql : sql.append(' ');
         }
-
 
         protected void appendWhere() {
             Expression where = queryStructure.where();
@@ -268,13 +292,15 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             appendExpression(args, expr);
         }
 
-
         protected void appendExpression(List<Object> args, Expression expression) {
-            if (expression instanceof Constant constant) {
+            if (expression instanceof Constant) {
+                Constant constant = (Constant) expression;
                 appendConstant(args, constant);
-            } else if (expression instanceof Column column) {
+            } else if (expression instanceof Column) {
+                Column column = (Column) expression;
                 appendPaths(column);
-            } else if (expression instanceof Operation operation) {
+            } else if (expression instanceof Operation) {
+                Operation operation = (Operation) expression;
                 appendOperation(args, operation);
             } else {
                 throw new UnsupportedOperationException("unknown type " + expression.getClass());
@@ -283,7 +309,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         private void appendConstant(List<Object> args, Constant constant) {
             Object value = constant.value();
-            if (value instanceof Boolean b) {
+            if (value instanceof Boolean) {
+                Boolean b = (Boolean) value;
                 appendBlank().append(b ? 1 : 0);
             } else {
                 appendBlank().append('?');
@@ -297,7 +324,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             Operator operator0 = getOperator(leftOperand);
             List<? extends Expression> rightOperand = operation.args();
             switch (operator) {
-                case NOT -> {
+                case NOT: {
                     appendOperator(operator);
                     sql.append(' ');
                     if (operator0 != null && operator0.priority() > operator.priority()) {
@@ -307,9 +334,22 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     } else {
                         appendExpression(args, leftOperand);
                     }
+                    break;
                 }
-                case AND, OR, LIKE, MOD, GT, EQ, NE, GE, LT,
-                        LE, ADD, SUBTRACT, MULTIPLY, DIVIDE -> {
+                case AND:
+                case OR:
+                case LIKE:
+                case MOD:
+                case GT:
+                case EQ:
+                case NE:
+                case GE:
+                case LT:
+                case LE:
+                case ADD:
+                case SUBTRACT:
+                case MULTIPLY:
+                case DIVIDE: {
                     appendBlank();
                     if (operator0 != null && operator0.priority() > operator.priority()) {
                         sql.append('(');
@@ -329,9 +369,20 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                             appendExpression(args, value);
                         }
                     }
+                    break;
                 }
-                case LOWER, UPPER, SUBSTRING, TRIM, LENGTH,
-                        NULLIF, IF_NULL, MIN, MAX, COUNT, AVG, SUM -> {
+                case LOWER:
+                case UPPER:
+                case SUBSTRING:
+                case TRIM:
+                case LENGTH:
+                case NULLIF:
+                case IF_NULL:
+                case MIN:
+                case MAX:
+                case COUNT:
+                case AVG:
+                case SUM: {
                     appendOperator(operator);
                     sql.append('(');
                     appendExpression(args, leftOperand);
@@ -340,8 +391,9 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         appendExpression(args, expression);
                     }
                     sql.append(")");
+                    break;
                 }
-                case IN -> {
+                case IN: {
                     if (rightOperand.isEmpty()) {
                         appendBlank().append(0);
                     } else {
@@ -356,17 +408,20 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         }
                         sql.append(")");
                     }
+                    break;
                 }
-                case BETWEEN -> {
+                case BETWEEN: {
                     appendBlank();
                     appendExpression(args, leftOperand);
                     appendOperator(operator);
                     appendBlank();
                     Expression operate = Expressions
-                            .operate(rightOperand.get(0), Operator.AND, List.of(rightOperand.get(1)));
+                            .operate(rightOperand.get(0), Operator.AND, Lists.of(rightOperand.get(1)));
                     appendExpression(args, operate);
+                    break;
                 }
-                case IS_NULL, IS_NOT_NULL -> {
+                case IS_NULL:
+                case IS_NOT_NULL: {
                     appendBlank();
                     if (operator0 != null && operator0.priority()
                                              > operator.priority()) {
@@ -378,8 +433,10 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     }
                     appendBlank();
                     appendOperator(operator);
+                    break;
                 }
-                default -> throw new UnsupportedOperationException("unknown operator " + operator);
+                default:
+                    throw new UnsupportedOperationException("unknown operator " + operator);
             }
         }
 
@@ -390,7 +447,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             sql.append(sign);
         }
-
 
         protected void appendPaths(Column column) {
             appendBlank();
@@ -405,15 +461,17 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             Class<?> type = queryStructure.from().type();
 
-            Column join = Expressions.ofPaths(List.of(expression.get(0)));
+            Column join = Expressions.column(Lists.of(expression.get(0)));
 
             for (String path : expression) {
                 EntityType info = mappers.getEntity(type);
                 Attribute attribute = info.getAttribute(path);
                 if (i++ == iMax) {
-                    if (attribute instanceof AnyToOneAttribute joinColumnMapper) {
+                    if (attribute instanceof AnyToOneAttribute) {
+                        AnyToOneAttribute joinColumnMapper = (AnyToOneAttribute) attribute;
                         sb.append(joinColumnMapper.joinColumnName());
-                    } else if (attribute instanceof BasicAttribute basicColumnMapper) {
+                    } else if (attribute instanceof BasicAttribute) {
+                        BasicAttribute basicColumnMapper = (BasicAttribute) attribute;
                         sb.append(basicColumnMapper.columnName());
                     } else {
                         throw new IllegalStateException();
@@ -449,7 +507,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     Attribute parentAttribute = getAttribute(parent);
                     appendTableAttribute(sql, parentAttribute, parentIndex);
                 }
-                if (attribute instanceof AnyToOneAttribute join) {
+                if (attribute instanceof AnyToOneAttribute) {
+                    AnyToOneAttribute join = (AnyToOneAttribute) attribute;
                     sql.append(".").append(join.joinColumnName()).append("=");
                     appendTableAttribute(sql, attribute, v);
                     String referenced = join.referencedColumnName();
@@ -471,11 +530,11 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
             List<String> paths = new ArrayList<>(k.paths());
             paths.remove(paths.size() - 1);
-            return Expressions.ofPaths(paths);
+            return Expressions.column(paths);
         }
 
         Operator getOperator(Expression e) {
-            return e instanceof Operation expression ? expression.operator() : null;
+            return e instanceof Operation ? ((Operation) e).operator() : null;
         }
 
         protected StringBuilder appendTableAttribute(StringBuilder sb, Attribute attribute, Integer index) {
@@ -487,10 +546,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         protected Attribute getAttribute(Column path) {
             Type schema = entity;
             for (String s : path.paths()) {
-                if (schema instanceof AnyToOneAttribute associationProperty) {
+                if (schema instanceof AnyToOneAttribute) {
+                    AnyToOneAttribute associationProperty = (AnyToOneAttribute) schema;
                     schema = associationProperty.referenced();
                 }
-                if (schema instanceof EntityType ts) {
+                if (schema instanceof EntityType) {
+                    EntityType ts = (EntityType) schema;
                     schema = ts.getAttribute(s);
                 } else {
                     throw new IllegalStateException();
@@ -552,6 +613,11 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
     }
 
-    public record PreparedSqlImpl(String sql, List<?> args, List<Attribute> selected) implements PreparedSql {
+    @Data
+    @Accessors(fluent = true)
+    public static final class PreparedSqlImpl implements PreparedSql {
+        private final String sql;
+        private final List<?> args;
+        private final List<Attribute> selected;
     }
 }

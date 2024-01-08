@@ -12,5 +12,4 @@ public interface Slice<T> {
 
     int limit();
 
-
 }

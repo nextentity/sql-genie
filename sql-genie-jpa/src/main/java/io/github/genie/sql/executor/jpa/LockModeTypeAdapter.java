@@ -1,6 +1,5 @@
 package io.github.genie.sql.executor.jpa;
 
-
 import io.github.genie.sql.api.LockModeType;
 
 public class LockModeTypeAdapter {

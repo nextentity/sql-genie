@@ -77,7 +77,6 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
     }
 
-
     interface StringOperator<T, B> extends ComparableOperator<T, String, B> {
 
         B like(String value);
@@ -94,7 +93,6 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
             return like('%' + value + '%');
         }
 
-
         B notLike(String value);
 
         default B nitStartWith(String value) {
@@ -108,7 +106,6 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
         default B notContains(String value) {
             return notLike('%' + value + '%');
         }
-
 
         StringOperator<T, B> lower();
 
@@ -169,13 +166,13 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
         B notBetween(U l, U r);
 
-        B ge(ExpressionHolder<T, U> value);
+        B ge(ExpressionHolder<T, U> expression);
 
-        B gt(ExpressionHolder<T, U> value);
+        B gt(ExpressionHolder<T, U> expression);
 
-        B le(ExpressionHolder<T, U> value);
+        B le(ExpressionHolder<T, U> expression);
 
-        B lt(ExpressionHolder<T, U> value);
+        B lt(ExpressionHolder<T, U> expression);
 
         B between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r);
 
@@ -198,10 +195,8 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
     interface PredicateOrOperator<T> {
         <R> PathOperator<T, R, OrConnector<T>> or(Path<T, R> path);
 
-
         <R extends Comparable<R>>
         ComparableOperator<T, R, OrConnector<T>> or(ComparablePath<T, R> path);
-
 
         <R extends Number & Comparable<R>>
         NumberOperator<T, R, OrConnector<T>> or(NumberPath<T, R> path);
@@ -210,19 +205,17 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
         StringOperator<T, OrConnector<T>> or(StringPath<T> path);
 
-        OrConnector<T> or(ExpressionHolder<T, Boolean> value);
+        OrConnector<T> or(ExpressionHolder<T, Boolean> expression);
 
-        OrConnector<T> or(List<ExpressionHolder<T, Boolean>> values);
+        OrConnector<T> or(List<ExpressionHolder<T, Boolean>> expressions);
 
     }
 
     interface PredicateAndOperator<T> {
         <R> PathOperator<T, R, AndConnector<T>> and(Path<T, R> path);
 
-
         <R extends Comparable<R>>
         ComparableOperator<T, R, AndConnector<T>> and(ComparablePath<T, R> path);
-
 
         <R extends Number & Comparable<R>>
         NumberOperator<T, R, AndConnector<T>> and(NumberPath<T, R> path);
@@ -231,9 +224,9 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
         AndConnector<T> and(BooleanPath<T> path);
 
-        AndConnector<T> and(ExpressionHolder<T, Boolean> value);
+        AndConnector<T> and(ExpressionHolder<T, Boolean> expression);
 
-        AndConnector<T> and(List<ExpressionHolder<T, Boolean>> values);
+        AndConnector<T> and(List<ExpressionHolder<T, Boolean>> expressions);
     }
 
     interface BooleanOperator<T, B> extends ComparableOperator<T, Boolean, B> {
@@ -242,7 +235,6 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
 
     }
 
-
     interface OrConnector<T> extends BooleanOperator<T, OrConnector<T>>, PredicateOrOperator<T> {
 
     }
@@ -250,6 +242,5 @@ public interface ExpressionOperator<T, U, B> extends ExpressionHolder<T, U> {
     interface AndConnector<T> extends BooleanOperator<T, AndConnector<T>>, PredicateAndOperator<T> {
 
     }
-
 
 }

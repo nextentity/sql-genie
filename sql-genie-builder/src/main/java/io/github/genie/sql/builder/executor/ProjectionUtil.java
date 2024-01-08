@@ -1,9 +1,12 @@
 package io.github.genie.sql.builder.executor;
 
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.Type;
+import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
@@ -20,7 +23,7 @@ import java.util.function.BiFunction;
 public class ProjectionUtil {
 
     @NotNull
-    public static <R> R getBeanResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getBeanResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                       @NotNull List<? extends Attribute> attributes,
                                       Class<?> resultType) {
         Object row = newInstance(resultType);
@@ -32,31 +35,30 @@ public class ProjectionUtil {
                 deep++;
                 cur = cur.owner();
             }
-            Attribute[] mappings = new Attribute[deep - 1];
+            Attribute[] attrs = new Attribute[deep - 1];
             cur = attribute;
-            for (int i = mappings.length - 1; i >= 0; i--) {
-                mappings[i] = (Attribute) cur;
+            for (int i = attrs.length - 1; i >= 0; i--) {
+                attrs[i] = (Attribute) cur;
                 cur = cur.owner();
             }
             Class<?> fieldType = attribute.javaType();
-            Object value = resultSet.apply(column++, fieldType);
-            if (value == null && mappings.length > 1) {
+            Object value = extractor.apply(column++, fieldType);
+            if (value == null && attrs.length > 1) {
                 continue;
             }
             Object obj = row;
-            for (int i = 0; i < mappings.length - 1; i++) {
-                Attribute mapping = mappings[i];
-                Object tmp = mapping.get(obj);
+            for (int i = 0; i < attrs.length - 1; i++) {
+                Attribute attr = attrs[i];
+                Object tmp = attr.get(obj);
                 if (tmp == null) {
-                    tmp = newInstance(mapping.javaType());
-                    mapping.set(obj, tmp);
+                    tmp = newInstance(attr.javaType());
+                    attr.set(obj, tmp);
                 }
                 obj = tmp;
             }
             attribute.set(obj, value);
         }
-        // noinspection unchecked
-        return (R) (row);
+        return TypeCastUtil.unsafeCast(row);
     }
 
     @NotNull
@@ -69,13 +71,13 @@ public class ProjectionUtil {
     }
 
     @NotNull
-    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                         @NotNull List<? extends Attribute> fields,
                                         Class<?> resultType) {
         Map<String, Object> map = new HashMap<>();
         int i = 0;
         for (Attribute attribute : fields) {
-            Object value = resultSet.apply(i++, attribute.javaType());
+            Object value = extractor.apply(i++, attribute.javaType());
             map.put(attribute.name(), value);
         }
         try {
@@ -99,23 +101,21 @@ public class ProjectionUtil {
         }
         Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
         Object row = constructor.newInstance(args);
-        // noinspection unchecked
-        return (R) row;
+        return TypeCastUtil.unsafeCast(row);
     }
 
-    public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> resultSet,
+    public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                            List<? extends Attribute> fields,
                                            Class<?> resultType) {
         Map<Method, Object> map = new HashMap<>();
         int i = 0;
         for (Attribute attribute : fields) {
-            Object value = resultSet.apply(i++, attribute.javaType());
+            Object value = extractor.apply(i++, attribute.javaType());
             map.put(attribute.getter(), value);
         }
 
         Object result = ProjectionUtil.newProxyInstance(fields, resultType, map);
-        //noinspection unchecked
-        return (R) (result);
+        return TypeCastUtil.unsafeCast(result);
     }
 
     @NotNull
@@ -125,11 +125,13 @@ public class ProjectionUtil {
         return Proxy.newProxyInstance(classLoader, interfaces, new Handler(fields, resultType, map));
     }
 
-
-    private record Handler(List<? extends Attribute> fields,
-                           Class<?> resultType,
-                           Map<Method, Object> data) implements InvocationHandler {
+    @Data
+    @Accessors(fluent = true)
+    private static class Handler implements InvocationHandler {
         private static final Method EQUALS = getEqualsMethod();
+        private final List<? extends Attribute> fields;
+        private final Class<?> resultType;
+        private final Map<Method, Object> data;
 
         @SneakyThrows
         @NotNull
@@ -165,7 +167,6 @@ public class ProjectionUtil {
             InvocationHandler handler = Proxy.getInvocationHandler(other);
             return equals(handler);
         }
-
 
         @Override
         public boolean equals(Object o) {

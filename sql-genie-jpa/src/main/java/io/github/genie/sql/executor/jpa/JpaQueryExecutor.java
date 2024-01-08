@@ -1,15 +1,18 @@
 package io.github.genie.sql.executor.jpa;
 
+import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.*;
-import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.From.SubQuery;
-import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.Lists;
+import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
-import io.github.genie.sql.builder.ExpressionBuilders;
+import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
@@ -20,19 +23,23 @@ import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     private final EntityManager entityManager;
     private final Metamodel metamodel;
     private final QuerySqlBuilder querySqlBuilder;
-
 
     public JpaQueryExecutor(EntityManager entityManager, Metamodel metamodel, QuerySqlBuilder querySqlBuilder) {
         this.entityManager = entityManager;
@@ -46,42 +53,44 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return queryByNativeSql(queryStructure);
         }
         Selection selected = queryStructure.select();
-        if (selected instanceof SingleColumn singleColumn) {
-            List<Object[]> objectsList = getObjectsList(queryStructure, List.of(singleColumn.column()));
-            List<Object> result = objectsList.stream().map(objects -> objects[0]).toList();
-            return castList(result);
-        } else if (selected instanceof MultiColumn multiColumn) {
+        if (selected instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleColumn.column()));
+            List<Object> result = objectsList.stream().map(objects -> objects[0]).collect(Collectors.toList());
+            return TypeCastUtil.cast(result);
+        } else if (selected instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selected;
             List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
-            return castList(objectsList);
+            return TypeCastUtil.cast(objectsList);
         } else {
             Class<?> resultType = queryStructure.select().resultType();
             if (resultType == queryStructure.from().type()) {
                 List<?> resultList = getEntityResultList(queryStructure);
-                return castList(resultList);
+                return TypeCastUtil.cast(resultList);
             } else {
-                Projection projectionMapping = metamodel
+                Projection projection = metamodel
                         .getProjection(queryStructure.from().type(), resultType);
-                List<ProjectionAttribute> fields = projectionMapping.attributes();
+                List<ProjectionAttribute> fields = projection.attributes();
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
                             String fieldName = projectionField.baseField().name();
-                            return ExpressionBuilders.fromPath(fieldName);
+                            return Expressions.column(fieldName);
                         })
-                        .toList();
+                        .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).toList();
+                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
                 if (resultType.isInterface()) {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getArrayValueExtractor(it), list, resultType))
+                            .collect(Collectors.toList());
                 } else if (resultType.isRecord()) {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getRecordResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .<T>map(it -> ProjectionUtil.getRecordResult(getArrayValueExtractor(it), list, resultType))
+                            .collect(Collectors.toList());
                 } else {
                     return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getBeanResult(getResultSet(it), list, resultType))
-                            .toList();
+                            .<T>map(it -> ProjectionUtil.getBeanResult(getArrayValueExtractor(it), list, resultType))
+                            .collect(Collectors.toList());
                 }
             }
         }
@@ -94,16 +103,13 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         for (Object arg : preparedSql.args()) {
             query.setParameter(++position, arg);
         }
-        // noinspection unchecked
-        return query.getResultList();
+        return TypeCastUtil.cast(query.getResultList());
     }
-
 
     @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getResultSet(Object[] resultSet) {
+    private static BiFunction<Integer, Class<?>, Object> getArrayValueExtractor(Object[] resultSet) {
         return (index, resultType1) -> resultSet[index];
     }
-
 
     private List<?> getEntityResultList(@NotNull QueryStructure structure) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -117,11 +123,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         CriteriaQuery<?> query = cb.createQuery(Object[].class);
         Root<?> root = query.from(structure.from().type());
         return new ObjectArrayBuilder(root, cb, query, structure, columns).getResultList();
-    }
-
-    private static <T> List<T> castList(List<?> result) {
-        // noinspection unchecked
-        return (List<T>) result;
     }
 
     class ObjectArrayBuilder extends Builder {
@@ -160,7 +161,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return entityManager.createQuery(select);
         }
 
-
     }
 
     class EntityBuilder extends Builder {
@@ -175,7 +175,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
     }
 
-
     protected static abstract class Builder extends PredicateBuilder {
         protected final QueryStructure structure;
         protected final CriteriaQuery<?> query;
@@ -185,7 +184,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             this.structure = structure;
             this.query = query;
         }
-
 
         protected void setOrderBy(List<? extends Order<?>> orderBy) {
             if (orderBy != null && !orderBy.isEmpty()) {
@@ -199,7 +197,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected void setWhere(Expression where) {
-            if (where != null && !ExpressionBuilders.isTrue(where)) {
+            if (where != null && !Expressions.isTrue(where)) {
                 query.where(toPredicate(where));
             }
         }
@@ -255,6 +253,5 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         protected abstract TypedQuery<?> getTypedQuery();
 
     }
-
 
 }
