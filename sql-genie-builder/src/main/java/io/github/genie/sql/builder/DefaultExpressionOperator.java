@@ -543,7 +543,7 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     @NotNull
     @AllArgsConstructor
     @Data
-    static class Metadata<B> {
+    protected static class Metadata<B> {
         List<Expression> expressions;
         Expression left;
         Expression right;

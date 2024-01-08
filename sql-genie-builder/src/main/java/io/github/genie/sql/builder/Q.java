@@ -2,20 +2,20 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.Order;
-import io.github.genie.sql.api.Path;
-import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.ExpressionOperator.Root;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.builder.QueryStructures.OrderImpl;
+import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
+import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 
 import java.util.Arrays;
 import java.util.List;

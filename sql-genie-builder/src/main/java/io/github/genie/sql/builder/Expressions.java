@@ -1,8 +1,14 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Path;
 import io.github.genie.sql.builder.QueryStructures.ColumnMeta;
 import io.github.genie.sql.builder.QueryStructures.ConstantMeta;
 import io.github.genie.sql.builder.QueryStructures.OperationMeta;

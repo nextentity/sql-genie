@@ -7,7 +7,7 @@ public interface AbstractQueryExecutor extends QueryExecutor {
     default Query createQuery() {
         return new Query() {
             @Override
-            public <T> Select0<T, T> from(Class<T> type) {
+            public <T> Select<T> from(Class<T> type) {
                 return new QueryBuilder<>(AbstractQueryExecutor.this, type);
             }
         };
@@ -16,7 +16,7 @@ public interface AbstractQueryExecutor extends QueryExecutor {
     default Query createQuery(QueryStructurePostProcessor structurePostProcessor) {
         return new Query() {
             @Override
-            public <T> Select0<T, T> from(Class<T> type) {
+            public <T> Select<T> from(Class<T> type) {
                 return new QueryBuilder<>(AbstractQueryExecutor.this, type, structurePostProcessor);
             }
         };

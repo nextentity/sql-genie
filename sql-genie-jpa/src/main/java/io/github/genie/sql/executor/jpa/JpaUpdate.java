@@ -1,6 +1,10 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Query;
+import io.github.genie.sql.api.Update;
 import io.github.genie.sql.builder.ExpressionHolders;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.meta.ReflectUtil;
@@ -10,7 +14,11 @@ import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Slf4j
 public class JpaUpdate implements Update {

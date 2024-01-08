@@ -4,10 +4,17 @@ import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Type;
+import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.RecordComponent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,10 +126,13 @@ public class ProjectionUtil {
     }
 
 
-    private record Handler(List<? extends Attribute> fields,
-                           Class<?> resultType,
-                           Map<Method, Object> data) implements InvocationHandler {
+    @Data
+    @Accessors(fluent = true)
+    private static class Handler implements InvocationHandler {
         private static final Method EQUALS = getEqualsMethod();
+        private final List<? extends Attribute> fields;
+        private final Class<?> resultType;
+        private final Map<Method, Object> data;
 
         @SneakyThrows
         @NotNull

@@ -1,28 +1,37 @@
 package io.github.genie.sql.test.example;
 
 import io.github.genie.sql.api.Query;
-import io.github.genie.sql.api.Query.Select0;
+import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.builder.Q;
-import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
+import io.github.genie.sql.meta.JpaMetamodel;
+import io.github.genie.sql.test.DataSourceConfig;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Example {
 
     public static void main(String[] args) {
+        DataSourceConfig config = new DataSourceConfig();
 
-        try (EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa")) {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("javax.persistence.jdbc.url", config.getUrl());
+        properties.put("javax.persistence.jdbc.user", config.getUser());
+        properties.put("javax.persistence.jdbc.password", config.getPassword());
+        try (EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa", properties)) {
             EntityManager em = factory.createEntityManager();
             Query builder = new JpaQueryExecutor(em, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery();
-            Select0<Employee, Employee> select0 = builder.from(Employee.class);
+            Select<Employee> select0 = builder.from(Employee.class);
             runExample(select0);
         }
     }
 
-    private static void runExample(Select0<Employee, Employee> query) {
+    private static void runExample(Select<Employee> query) {
 
         // select * from employee where id = 1
         query.where(Employee::getId).eq(1).getSingle();

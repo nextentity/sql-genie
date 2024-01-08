@@ -117,9 +117,16 @@ public class Metamodels {
         }
     }
 
-    record ProjectionAttributeImpl(Attribute baseField, Attribute field) implements ProjectionAttribute {
+    @Data
+    @Accessors(fluent = true)
+    static final class ProjectionAttributeImpl implements ProjectionAttribute {
+        private final Attribute baseField;
+        private final Attribute field;
     }
 
-    record ProjectionImpl(List<ProjectionAttribute> attributes) implements Projection {
+    @Data
+    @Accessors(fluent = true)
+    static final class ProjectionImpl implements Projection {
+        private final List<ProjectionAttribute> attributes;
     }
 }

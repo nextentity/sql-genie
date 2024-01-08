@@ -7,16 +7,16 @@ public interface QueryStructurePostProcessor {
     QueryStructurePostProcessor NONE = new QueryStructurePostProcessor() {
     };
 
-    default QueryStructure preCountQuery(QueryBuilder<?, ?> builder, QueryStructure queryStructure) {
+    default QueryStructure preCountQuery(QueryConditionBuilder<?, ?> executor, QueryStructure queryStructure) {
         return queryStructure;
     }
 
-    default QueryStructure preListQuery(QueryBuilder<?, ?> builder, QueryStructure queryStructure) {
+    default QueryStructure preListQuery(QueryConditionBuilder<?, ?> builder, QueryStructure queryStructure) {
         return queryStructure;
     }
 
 
-    default QueryStructure preExistQuery(QueryBuilder<?, ?> builder, QueryStructure queryStructure) {
+    default QueryStructure preExistQuery(QueryConditionBuilder<?, ?> builder, QueryStructure queryStructure) {
         return queryStructure;
     }
 

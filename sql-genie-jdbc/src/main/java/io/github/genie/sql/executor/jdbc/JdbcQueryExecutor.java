@@ -1,8 +1,8 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;

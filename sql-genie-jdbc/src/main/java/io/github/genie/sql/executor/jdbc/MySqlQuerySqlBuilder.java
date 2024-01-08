@@ -1,15 +1,33 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.Expressions;
-import io.github.genie.sql.builder.meta.*;
+import io.github.genie.sql.builder.meta.AnyToOneAttribute;
+import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.BasicAttribute;
+import io.github.genie.sql.builder.meta.EntityType;
+import io.github.genie.sql.builder.meta.Metamodel;
+import io.github.genie.sql.builder.meta.Projection;
+import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -234,7 +252,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         @NotNull
         private static String fixSymbol(String symbol) {
-            return symbol.toLowerCase().substring(0, Math.min(4, symbol.length()));
+            return symbol.toLowerCase().substring(0, 1);
         }
 
         protected StringBuilder appendBlank() {
@@ -552,6 +570,11 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
     }
 
-    public record PreparedSqlImpl(String sql, List<?> args, List<Attribute> selected) implements PreparedSql {
+    @Data
+    @Accessors(fluent = true)
+    public static final class PreparedSqlImpl implements PreparedSql {
+        private final String sql;
+        private final List<?> args;
+        private final List<Attribute> selected;
     }
 }

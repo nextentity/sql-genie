@@ -1,11 +1,12 @@
 package io.github.genie.sql.executor.jpa;
 
+import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.*;
-import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.From.SubQuery;
-import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
@@ -21,7 +22,11 @@ import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

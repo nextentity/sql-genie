@@ -8,16 +8,16 @@ import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query;
-import io.github.genie.sql.api.Query.Select0;
+import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Slice;
-import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
 import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
 import io.github.genie.sql.executor.jdbc.JdbcUpdate;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jdbc.MysqlUpdateSqlBuilder;
+import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.test.entity.User;
 import io.github.genie.sql.test.projection.UserInterface;
 import io.github.genie.sql.test.projection.UserModel;
@@ -68,7 +68,7 @@ public abstract class GenericApiTest {
 
     private static List<User> allUsers;
 
-    private final Select0<User, User> userQuery;
+    private final Select<User> userQuery;
 
     private static final MysqlDataSource dataSource = new DataSourceConfig().getMysqlDataSource();
 
@@ -149,7 +149,7 @@ public abstract class GenericApiTest {
         return result;
     }
 
-    public GenericApiTest(Select0<User, User> userQuery) {
+    public GenericApiTest(Select<User> userQuery) {
         this.userQuery = userQuery;
     }
 

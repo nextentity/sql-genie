@@ -1,9 +1,9 @@
 package io.github.genie.sql.test;
 
-import io.github.genie.sql.api.Query.Select0;
-import io.github.genie.sql.meta.JpaMetamodel;
+import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
+import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.test.entity.User;
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ public class JpaTest {
 
     static GenericApiTest getGenericApiTest() {
         EntityManager manager = EntityManagers.getEntityManager();
-        Select0<User, User> userQuery = new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder())
+        Select<User> userQuery = new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder())
                 .createQuery(new TestPostProcessor())
                 .from(User.class);
         return new GenericApiTest(userQuery) {

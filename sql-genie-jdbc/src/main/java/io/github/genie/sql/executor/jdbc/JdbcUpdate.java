@@ -4,12 +4,12 @@ import io.github.genie.sql.api.Update;
 import io.github.genie.sql.builder.exception.OptimisticLockException;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.exception.TransactionRequiredException;
-import io.github.genie.sql.executor.jdbc.ConnectionProvider.ConnectionCallback;
-import io.github.genie.sql.executor.jdbc.JdbcUpdateSqlBuilder.PreparedSql;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.BasicAttribute;
 import io.github.genie.sql.builder.meta.EntityType;
 import io.github.genie.sql.builder.meta.Metamodel;
+import io.github.genie.sql.executor.jdbc.ConnectionProvider.ConnectionCallback;
+import io.github.genie.sql.executor.jdbc.JdbcUpdateSqlBuilder.PreparedSql;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;

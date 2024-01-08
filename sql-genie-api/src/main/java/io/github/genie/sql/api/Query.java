@@ -1,10 +1,16 @@
 package io.github.genie.sql.api;
 
-import io.github.genie.sql.api.ExpressionOperator.*;
+import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
+import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
+import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -13,135 +19,88 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public interface Query {
 
-    <T> Select0<T, T> from(Class<T> type);
+    <T> Select<T> from(Class<T> type);
 
-    interface Select0<T, U> extends Fetch<T>, Select<T>, GroupBy0<T, U> {
+    interface Select<T> extends Fetch<T> {
+
+        <R> Where<T, R> select(Class<R> projectionType);
+
+        Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
+
+        <R> Where0<T, R> select(ExpressionHolder<T, R> expression);
+
+        <R> Where0<T, R> select(Path<T, ? extends R> expression);
+
+        Where0<T, Object[]> select(Collection<Path<T, ?>> paths);
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
+            return select(List.of(p0, p1));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
+            return select(List.of(p0, p1, p2));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
+            return select(List.of(p0, p1, p2, p3));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
+            return select(List.of(p0, p1, p2, p3, p4));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                           Path<T, ?> p5) {
+            return select(List.of(p0, p1, p2, p3, p4, p5));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                           Path<T, ?> p5, Path<T, ?> p6) {
+            return select(List.of(p0, p1, p2, p3, p4, p5, p6));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
+            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
+            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
+        }
+
+        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
+            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+        }
+
     }
 
-    interface GroupBy0<T, U> extends GroupBy<T, U>, Where0<T, U> {
-    }
+    interface Fetch<T> extends Where<T, T> {
 
-    interface Where0<T, U> extends Where<T, U>, OrderBy0<T, U> {
-    }
+        Where<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions);
 
-    interface OrderBy0<T, U> extends OrderBy<T, U>, Collector<U> {
-    }
+        Where<T, T> fetch(Collection<Path<T, ?>> paths);
 
-    interface AggWhere0<T, U> extends AggWhere<T, U>, AggGroupBy0<T, U> {
-    }
-
-    interface AggGroupBy0<T, U> extends OrderBy0<T, U>, GroupBy<T, U> {
-    }
-
-    interface Having0<T, U> extends Having<T, U>, OrderBy0<T, U> {
-    }
-
-
-    interface Fetch<T> {
-
-        GroupBy0<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions);
-
-        GroupBy0<T, T> fetch(Collection<Path<T, ?>> paths);
-
-        default GroupBy0<T, T> fetch(Path<T, ?> path) {
+        default Where<T, T> fetch(Path<T, ?> path) {
             return fetch(List.of(path));
         }
 
-
-        default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
+        default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
             return fetch(List.of(p0, p1));
         }
 
-        default GroupBy0<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
+        default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
             return fetch(List.of(p0, p1, p3));
         }
 
     }
 
-    interface Select<T> {
+    interface Where<T, U> extends OrderBy<T, U> {
 
-        <R> Where0<T, R> select(Class<R> projectionType);
-
-        AggWhere0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
-
-        <R> AggWhere0<T, R> select(ExpressionHolder<T, R> expression);
-
-        <R> AggWhere0<T, R> select(Path<T, ? extends R> expression);
-
-        AggWhere0<T, Object[]> select(Collection<Path<T, ?>> paths);
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
-            return select(List.of(p0, p1));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return select(List.of(p0, p1, p2));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return select(List.of(p0, p1, p2, p3));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return select(List.of(p0, p1, p2, p3, p4));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                              Path<T, ?> p5) {
-            return select(List.of(p0, p1, p2, p3, p4, p5));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                              Path<T, ?> p5, Path<T, ?> p6) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
-        }
-
-        default AggWhere0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                              Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return select(List.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
-        }
-
-
-    }
-
-
-    interface AggWhere<T, U> extends Where<T, U> {
-
-        AggGroupBy0<T, U> where(ExpressionHolder<T, Boolean> predicate);
-
-        @Override
-        <N> PathOperator<T, N, AggAndBuilder<T, U>> where(Path<T, N> path);
-
-        @Override
-        <N extends Comparable<N>> ComparableOperator<T, N, AggAndBuilder<T, U>> where(ComparablePath<T, N> path);
-
-        @Override
-        <N extends Number & Comparable<N>> NumberOperator<T, N, AggAndBuilder<T, U>> where(NumberPath<T, N> path);
-
-        @Override
-        StringOperator<T, AggAndBuilder<T, U>> where(StringPath<T> path);
-
-        @Override
-        AggAndBuilder<T, U> where(BooleanPath<T> path);
-
-    }
-
-    interface Where<T, U> {
-
-        OrderBy0<T, U> where(ExpressionHolder<T, Boolean> predicate);
+        OrderBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
         <N> PathOperator<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
 
@@ -155,80 +114,57 @@ public interface Query {
 
     }
 
-    interface AggAndBuilder<T, U> extends AndBuilder<T, U>, AggGroupBy0<T, U> {
-        @Override
-        <N> PathOperator<T, N, AggAndBuilder<T, U>> and(Path<T, N> path);
+    interface Where0<T, U> extends GroupBy<T, U>, Where<T, U> {
 
-        @Override
-        <N extends Number & Comparable<N>> NumberOperator<T, N, AggAndBuilder<T, U>> and(NumberPath<T, N> path);
+        GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
-        @Override
-        <N extends Comparable<N>> ComparableOperator<T, N, AggAndBuilder<T, U>> and(ComparablePath<T, N> path);
+        <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path);
 
-        @Override
-        AggAndBuilder<T, U> and(BooleanPath<T> path);
+        <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path);
 
-        @Override
-        StringOperator<T, AggAndBuilder<T, U>> and(StringPath<T> path);
+        <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path);
 
-        @Override
-        AggAndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
+        StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path);
 
+        AndBuilder0<T, U> where(BooleanPath<T> path);
 
     }
 
-    interface AndBuilder<T, U> extends OrderBy0<T, U> {
+    interface GroupBy<T, U> extends OrderBy<T, U> {
+        Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions);
 
-        <N> PathOperator<T, N, ? extends AndBuilder<T, U>> and(Path<T, N> path);
+        Having<T, U> groupBy(Path<T, ?> path);
 
-        <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> and(NumberPath<T, N> path);
+        Having<T, U> groupBy(Collection<Path<T, ?>> paths);
 
-        <N extends Comparable<N>> ComparableOperator<T, N, ? extends AndBuilder<T, U>> and(ComparablePath<T, N> path);
-
-        StringOperator<T, ? extends AndBuilder<T, U>> and(StringPath<T> path);
-
-        AndBuilder<T, U> and(BooleanPath<T> path);
-
-        AndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
-
-    }
-
-    interface GroupBy<T, U> {
-        Having0<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions);
-
-        Having0<T, U> groupBy(Path<T, ?> path);
-
-        Having0<T, U> groupBy(Collection<Path<T, ?>> paths);
-
-        default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1) {
+        default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1) {
             return groupBy(List.of(p0, p1));
         }
 
-        default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
+        default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
             return groupBy(List.of(p0, p1, p2));
         }
 
-        default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
+        default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
             return groupBy(List.of(p0, p1, p2, p3));
         }
 
-        default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
+        default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
             return groupBy(List.of(p0, p1, p2, p3, p4));
         }
 
-        default Having0<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                      Path<T, ?> p5) {
+        default Having<T, U> groupBy(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4, Path<T, ?> p5) {
             return groupBy(List.of(p0, p1, p2, p3, p4, p5));
         }
     }
 
-    interface Having<T, U> {
+    interface Having<T, U> extends OrderBy<T, U> {
 
-        OrderBy0<T, U> having(ExpressionHolder<T, Boolean> predicate);
+        OrderBy<T, U> having(ExpressionHolder<T, Boolean> predicate);
 
     }
 
-    interface OrderBy<T, U> {
+    interface OrderBy<T, U> extends Collector<U> {
 
         Collector<U> orderBy(List<? extends Order<T>> path);
 
@@ -245,7 +181,6 @@ public interface Query {
         }
 
     }
-
 
     interface Collector<T> {
 
@@ -373,6 +308,38 @@ public interface Query {
 
     }
 
+    interface AndBuilder<T, U> extends OrderBy<T, U> {
+
+        <N> PathOperator<T, N, ? extends AndBuilder<T, U>> and(Path<T, N> path);
+
+        <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> and(NumberPath<T, N> path);
+
+        <N extends Comparable<N>> ComparableOperator<T, N, ? extends AndBuilder<T, U>> and(ComparablePath<T, N> path);
+
+        StringOperator<T, ? extends AndBuilder<T, U>> and(StringPath<T> path);
+
+        AndBuilder<T, U> and(BooleanPath<T> path);
+
+        AndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
+
+    }
+
+    interface AndBuilder0<T, U> extends GroupBy<T, U>, AndBuilder<T, U> {
+        <N> PathOperator<T, N, AndBuilder0<T, U>> and(Path<T, N> path);
+
+        <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> and(NumberPath<T, N> path);
+
+        <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> and(ComparablePath<T, N> path);
+
+        AndBuilder0<T, U> and(BooleanPath<T> path);
+
+        StringOperator<T, AndBuilder0<T, U>> and(StringPath<T> path);
+
+        AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate);
+
+
+    }
+
     interface QueryStructureBuilder {
 
         QueryStructure count();
@@ -385,7 +352,12 @@ public interface Query {
 
     }
 
-    record SliceQueryStructure(QueryStructure count, QueryStructure list) {
+    @Data
+    @Accessors(fluent = true)
+    final class SliceQueryStructure {
+        private final QueryStructure count;
+        private final QueryStructure list;
     }
+
 
 }
