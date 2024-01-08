@@ -7,6 +7,7 @@ import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
@@ -36,13 +37,13 @@ final class QueryStructures {
 
         Expression where = Expressions.TRUE;
 
-        List<? extends Expression> groupBy = List.of();
+        List<? extends Expression> groupBy = Lists.of();
 
-        List<? extends Order<?>> orderBy = List.of();
+        List<? extends Order<?>> orderBy = Lists.of();
 
         Expression having = Expressions.TRUE;
 
-        List<? extends Column> fetch = List.of();
+        List<? extends Column> fetch = Lists.of();
 
         Integer offset;
 
@@ -259,7 +260,7 @@ final class QueryStructures {
         if (o.args() != null) {
             r = o.args();
         } else {
-            r = List.of();
+            r = Lists.of();
         }
         if (o.operator().isMultivalued()) {
             return Stream.concat(Stream.of(l), r.stream())

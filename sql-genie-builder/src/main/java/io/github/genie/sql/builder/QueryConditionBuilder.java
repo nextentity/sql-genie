@@ -101,17 +101,17 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     QueryStructures.QueryStructureImpl buildCountData() {
         QueryStructureImpl structure = queryStructure.copy();
         structure.lockType = LockModeType.NONE;
-        structure.orderBy = List.of();
+        structure.orderBy = Lists.of();
         if (requiredCountSubQuery(queryStructure)) {
             structure.select = COUNT_ANY;
             return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else if (queryStructure.groupBy() != null && !queryStructure.groupBy().isEmpty()) {
             structure.select = SELECT_ANY;
-            structure.fetch = List.of();
+            structure.fetch = Lists.of();
             return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else {
             structure.select = COUNT_ANY;
-            structure.fetch = List.of();
+            structure.fetch = Lists.of();
             return structure;
         }
     }
@@ -194,8 +194,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         metadata.select = SELECT_ANY;
         metadata.offset = offset;
         metadata.limit = 1;
-        metadata.fetch = List.of();
-        metadata.orderBy = List.of();
+        metadata.fetch = Lists.of();
+        metadata.orderBy = Lists.of();
         return metadata;
     }
 
@@ -261,7 +261,7 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new NumberOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @NotNull
@@ -271,23 +271,23 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new ComparableOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new StringOpsImpl<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     @Override
     public AndBuilder0<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return newChanAndBuilder(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
 
     @Override
     public <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Metadata<>(List.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new DefaultExpressionOperator<>(new Metadata<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
     }
 
     QueryStructureImpl queryStructure() {
