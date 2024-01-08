@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
 public abstract class AbstractMetamodel implements Metamodel {
 

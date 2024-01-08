@@ -15,7 +15,6 @@ import java.util.function.BiFunction;
 import static io.github.genie.sql.api.Selection.MultiColumn;
 import static io.github.genie.sql.api.Selection.SingleColumn;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
 
     @Override
@@ -51,8 +50,6 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
             if (resultType.isInterface()) {
                 return ProjectionUtil.getInterfaceResult(extractor, attributes, resultType);
-            } else if (resultType.isRecord()) {
-                return ProjectionUtil.getRecordResult(extractor, attributes, resultType);
             } else {
                 return ProjectionUtil.getBeanResult(extractor, attributes, resultType);
             }
@@ -62,7 +59,7 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
     @NotNull
     private static BiFunction<Integer, Class<?>, Object> getJdbcResultValueExtractor(@NotNull ResultSet resultSet) {
         // noinspection Convert2Lambda
-        return new BiFunction<>() {
+        return new BiFunction<Integer, Class<?>, Object>() {
             @SneakyThrows
             @Override
             public Object apply(Integer index, Class<?> resultType) {

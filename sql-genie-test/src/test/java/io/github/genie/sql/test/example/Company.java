@@ -1,8 +1,9 @@
 package io.github.genie.sql.test.example;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import lombok.Data;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
 @Data
 @Entity

@@ -58,8 +58,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         return new Builder(structure, metamodel).build();
     }
 
-    @SuppressWarnings("PatternVariableCanBeUsed")
-    static class Builder {
+        static class Builder {
 
         protected final StringBuilder sql;
         protected final List<Object> args;

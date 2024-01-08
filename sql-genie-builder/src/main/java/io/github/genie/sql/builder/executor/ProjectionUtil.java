@@ -3,18 +3,16 @@ package io.github.genie.sql.builder.executor;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.ReflectUtil;
 import io.github.genie.sql.builder.meta.Type;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.lang.reflect.RecordComponent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,40 +68,6 @@ public class ProjectionUtil {
         }
     }
 
-    @NotNull
-    public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                        @NotNull List<? extends Attribute> fields,
-                                        Class<?> resultType) {
-        Map<String, Object> map = new HashMap<>();
-        int i = 0;
-        for (Attribute attribute : fields) {
-            Object value = extractor.apply(i++, attribute.javaType());
-            map.put(attribute.name(), value);
-        }
-        try {
-            return ProjectionUtil.getRecordResult(resultType, map);
-        } catch (ReflectiveOperationException e) {
-            throw new BeanReflectiveException(e);
-        }
-    }
-
-    @NotNull
-    public static <R> R getRecordResult(Class<?> resultType, Map<String, Object> map)
-            throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        int i;
-        RecordComponent[] components = resultType.getRecordComponents();
-        Object[] args = new Object[components.length];
-        Class<?>[] parameterTypes = new Class[components.length];
-        for (i = 0; i < components.length; i++) {
-            RecordComponent component = components[i];
-            args[i] = map.get(component.getName());
-            parameterTypes[i] = component.getType();
-        }
-        Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
-        Object row = constructor.newInstance(args);
-        return TypeCastUtil.unsafeCast(row);
-    }
-
     public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                            List<? extends Attribute> fields,
                                            Class<?> resultType) {
@@ -151,7 +115,7 @@ public class ProjectionUtil {
                 return method.invoke(this, args);
             }
             if (method.isDefault()) {
-                return InvocationHandler.invokeDefault(proxy, method, args);
+                return ReflectUtil.invokeDefaultMethod(proxy, method, args);
             }
             throw new AbstractMethodError(method.toString());
         }

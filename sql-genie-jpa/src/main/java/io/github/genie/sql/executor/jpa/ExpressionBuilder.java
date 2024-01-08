@@ -6,15 +6,15 @@ import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.builder.Expressions;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.FetchParent;
-import jakarta.persistence.criteria.From;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.FetchParent;
+import javax.persistence.criteria.From;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +22,6 @@ import java.util.Map;
 
 import static io.github.genie.sql.builder.TypeCastUtil.unsafeCast;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public class ExpressionBuilder {
 
     protected final Root<?> root;
@@ -36,7 +35,7 @@ public class ExpressionBuilder {
         this.cb = cb;
     }
 
-    public jakarta.persistence.criteria.Expression<?> toExpression(Expression expression) {
+    public javax.persistence.criteria.Expression<?> toExpression(Expression expression) {
         if (expression instanceof Constant) {
             Constant cv = (Constant) expression;
             return cb.literal(cv.value());
@@ -49,21 +48,21 @@ public class ExpressionBuilder {
             Operation ov = (Operation) expression;
             List<? extends Expression> args = ov.args();
             Operator operator = ov.operator();
-            jakarta.persistence.criteria.Expression<?> e0 = toExpression(ov.operand());
+            javax.persistence.criteria.Expression<?> e0 = toExpression(ov.operand());
             Expression e1 = ov.firstArg();
             Expression e2 = ov.secondArg();
             switch (operator) {
                 case NOT:
                     return cb.not(cast(e0));
                 case AND: {
-                    jakarta.persistence.criteria.Expression<Boolean> res = cast(e0);
+                    javax.persistence.criteria.Expression<Boolean> res = cast(e0);
                     for (Expression arg : args) {
                         res = cb.and(res, cast(toExpression(arg)));
                     }
                     return res;
                 }
                 case OR: {
-                    jakarta.persistence.criteria.Expression<Boolean> res = cast(e0);
+                    javax.persistence.criteria.Expression<Boolean> res = cast(e0);
                     for (Expression arg : args) {
                         res = cb.or(res, cast(toExpression(arg)));
                     }
@@ -157,7 +156,8 @@ public class ExpressionBuilder {
                         }
                         return in;
                     } else {
-                        return cb.literal(false);
+                        javax.persistence.criteria.Expression<Boolean> expr = cb.literal(true);
+                        return cb.notEqual(expr, expr);
                     }
                 }
                 case BETWEEN: {
@@ -279,7 +279,7 @@ public class ExpressionBuilder {
         }
     }
 
-    public static <T> jakarta.persistence.criteria.Expression<T> cast(jakarta.persistence.criteria.Expression<?> expression) {
+    public static <T> javax.persistence.criteria.Expression<T> cast(javax.persistence.criteria.Expression<?> expression) {
         return unsafeCast(expression);
     }
 

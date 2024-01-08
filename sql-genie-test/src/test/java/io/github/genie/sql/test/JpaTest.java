@@ -5,9 +5,10 @@ import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.meta.JpaMetamodel;
 import io.github.genie.sql.test.entity.User;
-import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+
+import javax.persistence.EntityManager;
 
 @Slf4j
 public class JpaTest {

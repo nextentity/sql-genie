@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public interface Expressions {
 
     Expression TRUE = of(true);

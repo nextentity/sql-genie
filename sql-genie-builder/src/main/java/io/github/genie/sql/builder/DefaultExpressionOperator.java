@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import static io.github.genie.sql.api.Lists.of;
 import static io.github.genie.sql.builder.Expressions.TRUE;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
     private static final Expression EMPTY_PATH = Expressions.column(of());

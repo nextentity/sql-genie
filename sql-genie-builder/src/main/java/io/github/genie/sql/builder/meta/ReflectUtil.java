@@ -5,6 +5,10 @@ import lombok.SneakyThrows;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -38,6 +42,34 @@ public class ReflectUtil {
                     writer.invoke(target, sv);
                 }
             }
+        }
+    }
+
+
+    public static Object invokeDefaultMethod(Object proxy, Method method, Object[] args) throws Throwable {
+        final float version = Float.parseFloat(System.getProperty("java.class.version"));
+        if (version <= 52) {
+            final Constructor<Lookup> constructor = MethodHandles.Lookup.class
+                    .getDeclaredConstructor(Class.class);
+            constructor.setAccessible(true);
+
+            final Class<?> clazz = method.getDeclaringClass();
+            MethodHandles.Lookup lookup = constructor.newInstance(clazz);
+            return lookup
+                    .in(clazz)
+                    .unreflectSpecial(method, clazz)
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
+        } else {
+            return MethodHandles.lookup()
+                    .findSpecial(
+                            method.getDeclaringClass(),
+                            method.getName(),
+                            MethodType.methodType(method.getReturnType(), new Class[0]),
+                            method.getDeclaringClass()
+                    )
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
         }
     }
 
