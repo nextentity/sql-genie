@@ -4,6 +4,7 @@ import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
@@ -21,16 +22,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static io.github.genie.sql.api.Lists.of;
+import static io.github.genie.sql.builder.Expressions.TRUE;
+
+@SuppressWarnings("PatternVariableCanBeUsed")
 class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
-    private static final Expression TRUE = ExpressionBuilders.TRUE;
-    private static final Expression EMPTY_PATH = ExpressionBuilders.fromPaths(List.of());
-    protected Metadata<B> metadata;
+    private static final Expression EMPTY_PATH = Expressions.column(of());
+    protected final Context<B> context;
 
-    public DefaultExpressionOperator(Metadata<? extends B> metadata) {
-        // noinspection unchecked
-        this.metadata = (Metadata<B>) metadata;
+    public DefaultExpressionOperator(Context<? extends B> context) {
+        this.context = TypeCastUtil.unsafeCast(context);
     }
 
     @Override
@@ -63,7 +68,6 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         return build(operateRight(Operator.EQ, value));
     }
 
-
     @Override
     public B eq(ExpressionHolder<T, U> value) {
         return build(operateRight(Operator.EQ, value));
@@ -82,7 +86,10 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     @SafeVarargs
     @Override
     public final B in(U... values) {
-        return build(operateRight(Operator.IN, Arrays.stream(values).map(ExpressionBuilders::of).toList()));
+        List<Expression> expressions = Arrays.stream(values)
+                .map(Expressions::of)
+                .collect(Collectors.toList());
+        return build(operateRight(Operator.IN, expressions));
     }
 
     @Override
@@ -92,15 +99,20 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
     @Override
     public B in(@NotNull Collection<? extends U> values) {
-        Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
-        return build(metadata);
+        Context<B> ctx = operateRight(Operator.IN, values.stream()
+                .map(Expressions::of)
+                .collect(Collectors.toList()));
+        return build(ctx);
     }
 
     @SafeVarargs
     @Override
     public final B notIn(U... values) {
-        Metadata<B> metadata = operateRight(Operator.IN, Arrays.stream(values).map(ExpressionBuilders::of).toList());
-        return build(metadata.not());
+        List<Expression> expressions = Arrays.stream(values)
+                .map(Expressions::of)
+                .collect(Collectors.toList());
+        Context<B> ctx = operateRight(Operator.IN, expressions);
+        return build(ctx.not());
     }
 
     @Override
@@ -110,31 +122,33 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
     @Override
     public B notIn(@NotNull Collection<? extends U> values) {
-        Metadata<B> metadata = operateRight(Operator.IN, values.stream().map(ExpressionBuilders::of).toList());
-        return build(metadata.not());
+        List<Expression> expressions = values.stream()
+                .map(Expressions::of)
+                .collect(Collectors.toList());
+        Context<B> ctx = operateRight(Operator.IN, expressions);
+        return build(ctx.not());
     }
 
     @Override
     public B isNull() {
-        return build(operateRight(Operator.IS_NULL, List.of()));
+        return build(operateRight(Operator.IS_NULL, Lists.of()));
     }
 
     @Override
     public NumberOperator<T, Integer, B> count() {
-        return new NumberOpsImpl<>(operateRight(Operator.COUNT, List.of()));
+        return new NumberOpsImpl<>(operateRight(Operator.COUNT, Lists.of()));
     }
 
     @Override
     public B isNotNull() {
-        return build(operateRight(Operator.IS_NOT_NULL, List.of()));
+        return build(operateRight(Operator.IS_NOT_NULL, Lists.of()));
     }
-
 
     @Override
     public Expression expression() {
         Expression merge = merge();
 
-        List<Expression> expressions = metadata.getExpressions();
+        List<Expression> expressions = context.getExpressions();
         if (expressions.isEmpty()) {
             return merge;
         }
@@ -145,48 +159,48 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             r.add(iterator.next());
         }
         r.add(merge);
-        return ExpressionBuilders.operate(l, Operator.OR, r);
+        return Expressions.operate(l, Operator.OR, r);
     }
 
     protected Expression merge() {
-        return ExpressionBuilders.isTrue(metadata.left)
-                ? metadata.right
-                : ExpressionBuilders.operate(metadata.left, Operator.AND, metadata.right);
+        return Expressions.isTrue(context.left)
+                ? context.right
+                : Expressions.operate(context.left, Operator.AND, context.right);
     }
 
-    protected Metadata<B> toPaths(Path<?, ?> path) {
-        Metadata<B> r = metadata.clone0();
+    protected Context<B> toPaths(Path<?, ?> path) {
+        Context<B> r = context.clone0();
         if (r.right == null) {
-            r.right = ExpressionBuilders.of(path);
+            r.right = Expressions.of(path);
         }
-        if (r.right instanceof Column p) {
-            List<String> paths = Util.concat(p.paths(), ExpressionBuilders.asString(path));
-            r.right = ExpressionBuilders.fromPaths(paths);
+        if (r.right instanceof Column) {
+            Column p = (Column) r.right;
+            r.right = Expressions.concat(p, path);
         } else {
             throw new IllegalStateException();
         }
         return r;
     }
 
-    protected B build(Metadata<B> metadata) {
-        return this.metadata.builder.build(metadata);
+    protected B build(Context<B> context) {
+        return this.context.builder.apply(context);
     }
 
-    protected Metadata<B> operateRight(Operator operator, Object rightOperand) {
-        return operateRight(operator, ExpressionBuilders.of(rightOperand));
+    protected Context<B> operateRight(Operator operator, Object rightOperand) {
+        return operateRight(operator, Expressions.of(rightOperand));
     }
 
-    protected Metadata<B> operateRight(Operator operator, ExpressionHolder<?, ?> rightOperand) {
+    protected Context<B> operateRight(Operator operator, ExpressionHolder<?, ?> rightOperand) {
         return operateRight(operator, rightOperand.expression());
     }
 
-    protected Metadata<B> operateRight(Operator operator, Expression rightOperand) {
-        return operateRight(operator, List.of(rightOperand));
+    protected Context<B> operateRight(Operator operator, Expression rightOperand) {
+        return operateRight(operator, Lists.of(rightOperand));
     }
 
-    protected Metadata<B> operateRight(Operator operator, List<? extends Expression> rightOperand) {
-        Metadata<B> res = metadata.clone0();
-        res.right = ExpressionBuilders.operate(metadata.getRight(), operator, rightOperand);
+    protected Context<B> operateRight(Operator operator, List<? extends Expression> rightOperand) {
+        Context<B> res = context.clone0();
+        res.right = Expressions.operate(context.getRight(), operator, rightOperand);
         return res;
     }
 
@@ -200,8 +214,8 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
     static class ComparableOpsImpl<T, U extends Comparable<U>, B> extends DefaultExpressionOperator<T, U, B> implements ComparableOperator<T, U, B> {
 
-        public ComparableOpsImpl(Metadata<B> metadata) {
-            super(metadata);
+        public ComparableOpsImpl(Context<B> context) {
+            super(context);
         }
 
         public B ge(U value) {
@@ -221,63 +235,62 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         }
 
         public B between(U l, U r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))));
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
 
-        public B ge(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.GE, value));
+        public B ge(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.GE, expression));
         }
 
-        public B gt(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.GT, value));
+        public B gt(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.GT, expression));
         }
 
-        public B le(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.LE, value));
+        public B le(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.LE, expression));
         }
 
-        public B lt(ExpressionHolder<T, U> value) {
-            return build(operateRight(Operator.LT, value));
+        public B lt(ExpressionHolder<T, U> expression) {
+            return build(operateRight(Operator.LT, expression));
         }
 
         public B between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))));
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
 
         public B between(ExpressionHolder<T, U> l, U r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))));
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
 
         public B between(U l, ExpressionHolder<T, U> r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))));
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))));
         }
-
 
         @Override
         public B notBetween(U l, U r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))).not());
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))).not());
         }
 
         @Override
         public B notBetween(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))).not());
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))).not());
         }
 
         @Override
         public B notBetween(ExpressionHolder<T, U> l, U r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))).not());
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))).not());
         }
 
         @Override
         public B notBetween(U l, ExpressionHolder<T, U> r) {
-            return build(operateRight(Operator.BETWEEN, List.of(ExpressionBuilders.of(l), ExpressionBuilders.of(r))).not());
+            return build(operateRight(Operator.BETWEEN, Lists.of(Expressions.of(l), Expressions.of(r))).not());
         }
     }
 
     static class StringOpsImpl<T, B> extends ComparableOpsImpl<T, String, B> implements StringOperator<T, B> {
 
-        public StringOpsImpl(Metadata<B> metadata) {
-            super(metadata);
+        public StringOpsImpl(Context<B> context) {
+            super(context);
         }
 
         public B like(String value) {
@@ -285,27 +298,27 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         }
 
         public StringOperator<T, B> lower() {
-            return new StringOpsImpl<>(operateRight(Operator.LOWER, List.of()));
+            return new StringOpsImpl<>(operateRight(Operator.LOWER, Lists.of()));
         }
 
         public StringOperator<T, B> upper() {
-            return new StringOpsImpl<>(operateRight(Operator.UPPER, List.of()));
+            return new StringOpsImpl<>(operateRight(Operator.UPPER, Lists.of()));
         }
 
         public StringOperator<T, B> substring(int a, int b) {
-            return new StringOpsImpl<>(operateRight(Operator.SUBSTRING, List.of(ExpressionBuilders.of(a), ExpressionBuilders.of(b))));
+            return new StringOpsImpl<>(operateRight(Operator.SUBSTRING, Lists.of(Expressions.of(a), Expressions.of(b))));
         }
 
         public StringOperator<T, B> substring(int a) {
-            return new StringOpsImpl<>(operateRight(Operator.SUBSTRING, List.of(ExpressionBuilders.of(a))));
+            return new StringOpsImpl<>(operateRight(Operator.SUBSTRING, Lists.of(Expressions.of(a))));
         }
 
         public StringOperator<T, B> trim() {
-            return new StringOpsImpl<>(operateRight(Operator.TRIM, List.of()));
+            return new StringOpsImpl<>(operateRight(Operator.TRIM, Lists.of()));
         }
 
         public NumberOperator<T, Integer, B> length() {
-            return new NumberOpsImpl<>(operateRight(Operator.LENGTH, List.of()));
+            return new NumberOpsImpl<>(operateRight(Operator.LENGTH, Lists.of()));
         }
 
         @Override
@@ -315,10 +328,9 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     }
 
     static class NumberOpsImpl<T, U extends Number & Comparable<U>, B> extends ComparableOpsImpl<T, U, B> implements NumberOperator<T, U, B> {
-        public NumberOpsImpl(Metadata<B> metadata) {
-            super(metadata);
+        public NumberOpsImpl(Context<B> context) {
+            super(context);
         }
-
 
         @Override
         public NumberOperator<T, U, B> add(U value) {
@@ -372,153 +384,151 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
 
         @Override
         public <V extends Number & Comparable<V>> NumberOperator<T, V, B> sum() {
-            return new NumberOpsImpl<>(operateRight(Operator.SUM, List.of()));
+            return new NumberOpsImpl<>(operateRight(Operator.SUM, Lists.of()));
         }
 
         @Override
         public <V extends Number & Comparable<V>> NumberOperator<T, V, B> avg() {
-            return new NumberOpsImpl<>(operateRight(Operator.AVG, List.of()));
+            return new NumberOpsImpl<>(operateRight(Operator.AVG, Lists.of()));
         }
 
         @Override
         public <V extends Number & Comparable<V>> NumberOperator<T, V, B> max() {
-            return new NumberOpsImpl<>(operateRight(Operator.MAX, List.of()));
+            return new NumberOpsImpl<>(operateRight(Operator.MAX, Lists.of()));
         }
 
         @Override
         public <V extends Number & Comparable<V>> NumberOperator<T, V, B> min() {
-            return new NumberOpsImpl<>(operateRight(Operator.MIN, List.of()));
+            return new NumberOpsImpl<>(operateRight(Operator.MIN, Lists.of()));
         }
     }
 
     static class BooleanOpsImpl<T, B> extends ComparableOpsImpl<T, Boolean, B> implements BooleanOperator<T, B> {
-        public BooleanOpsImpl(Metadata<B> metadata) {
-            super(metadata);
+        public BooleanOpsImpl(Context<B> context) {
+            super(context);
         }
 
         public AndConnector<T> and(ExpressionHolder<T, Boolean> value) {
             Expression mt = expression();
-            Expression expression = ExpressionBuilders.operate(mt, Operator.AND, value.expression());
-            return new AndConnectorImpl<>(new Metadata<>(List.of(), TRUE, expression, AndConnectorImpl::new));
+            Expression expression = Expressions.operate(mt, Operator.AND, value.expression());
+            return new AndConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, AndConnectorImpl::new));
         }
 
         public OrConnector<T> or(ExpressionHolder<T, Boolean> value) {
             Expression mt = expression();
-            Expression expression = ExpressionBuilders.operate(mt, Operator.OR, value.expression());
-            return new OrConnectorImpl<>(new Metadata<>(List.of(), TRUE, expression, OrConnectorImpl::new));
+            Expression expression = Expressions.operate(mt, Operator.OR, value.expression());
+            return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
-        public AndConnector<T> and(List<ExpressionHolder<T, Boolean>> values) {
+        public AndConnector<T> and(List<ExpressionHolder<T, Boolean>> expressions) {
             Expression mt = expression();
-            Expression expression = ExpressionBuilders.operate(mt, Operator.AND, values.stream().map(ExpressionHolder::expression).toList());
-            return new AndConnectorImpl<>(new Metadata<>(List.of(), TRUE, expression, AndConnectorImpl::new));
+            Expression expression = Expressions.operate(mt, Operator.AND, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            return new AndConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, AndConnectorImpl::new));
         }
 
-        public OrConnector<T> or(List<ExpressionHolder<T, Boolean>> values) {
+        public OrConnector<T> or(List<ExpressionHolder<T, Boolean>> expressions) {
             Expression mt = expression();
-            Expression expression = ExpressionBuilders.operate(mt, Operator.OR, values.stream().map(ExpressionHolder::expression).toList());
-            return new OrConnectorImpl<>(new Metadata<>(List.of(), TRUE, expression, OrConnectorImpl::new));
+            Expression expression = Expressions.operate(mt, Operator.OR, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
         @Override
         public Predicate<T> then() {
             return new PredicateOpsImpl<>(
-                    new Metadata<>(List.of(), TRUE, merge(), PredicateOpsImpl::new));
+                    new Context<>(Lists.of(), TRUE, merge(), PredicateOpsImpl::new));
         }
 
         public <R> PathOperator<T, R, OrConnector<T>> or(Path<T, R> path) {
-            List<Expression> expressions = Util.concat(metadata.expressions, merge());
-            return new DefaultExpressionOperator<>(new Metadata<>(expressions, TRUE, ExpressionBuilders.of(path), OrConnectorImpl::new));
+            List<Expression> expressions = Util.concat(context.expressions, merge());
+            return new DefaultExpressionOperator<>(new Context<>(expressions, TRUE, Expressions.of(path), OrConnectorImpl::new));
         }
 
         public <R extends Comparable<R>> ComparableOperator<T, R, OrConnector<T>> or(ComparablePath<T, R> path) {
-            List<Expression> expressions = Util.concat(metadata.expressions, merge());
-            return new ComparableOpsImpl<>(new Metadata<>(expressions, TRUE, ExpressionBuilders.of(path), OrConnectorImpl::new));
+            List<Expression> expressions = Util.concat(context.expressions, merge());
+            return new ComparableOpsImpl<>(new Context<>(expressions, TRUE, Expressions.of(path), OrConnectorImpl::new));
         }
 
         public <R extends Number & Comparable<R>> NumberOperator<T, R, OrConnector<T>> or(NumberPath<T, R> path) {
-            List<Expression> expressions = Util.concat(metadata.expressions, merge());
-            return new NumberOpsImpl<>(new Metadata<>(expressions, TRUE, ExpressionBuilders.of(path), OrConnectorImpl::new));
+            List<Expression> expressions = Util.concat(context.expressions, merge());
+            return new NumberOpsImpl<>(new Context<>(expressions, TRUE, Expressions.of(path), OrConnectorImpl::new));
         }
 
         public StringOperator<T, OrConnector<T>> or(StringPath<T> path) {
-            List<Expression> expressions = Util.concat(metadata.expressions, merge());
-            return new StringOpsImpl<>(new Metadata<>(expressions, TRUE, ExpressionBuilders.of(path), OrConnectorImpl::new));
+            List<Expression> expressions = Util.concat(context.expressions, merge());
+            return new StringOpsImpl<>(new Context<>(expressions, TRUE, Expressions.of(path), OrConnectorImpl::new));
         }
 
         public OrConnector<T> or(BooleanPath<T> path) {
-            List<Expression> expressions = Util.concat(metadata.expressions, merge());
-            return new OrConnectorImpl<>(new Metadata<>(expressions, TRUE, ExpressionBuilders.of(path), OrConnectorImpl::new));
+            List<Expression> expressions = Util.concat(context.expressions, merge());
+            return new OrConnectorImpl<>(new Context<>(expressions, TRUE, Expressions.of(path), OrConnectorImpl::new));
         }
 
         public <R> PathOperator<T, R, AndConnector<T>> and(Path<T, R> path) {
-            List<Expression> expressions = metadata.expressions;
+            List<Expression> expressions = context.expressions;
             Expression left = merge();
-            Expression right = ExpressionBuilders.of(path);
-            return new DefaultExpressionOperator<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
+            Expression right = Expressions.of(path);
+            return new DefaultExpressionOperator<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
 
         public <R extends Comparable<R>> ComparableOperator<T, R, AndConnector<T>> and(ComparablePath<T, R> path) {
-            List<Expression> expressions = metadata.expressions;
+            List<Expression> expressions = context.expressions;
             Expression left = merge();
-            Expression right = ExpressionBuilders.of(path);
-            return new ComparableOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
+            Expression right = Expressions.of(path);
+            return new ComparableOpsImpl<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
 
         public <R extends Number & Comparable<R>> NumberOperator<T, R, AndConnector<T>> and(NumberPath<T, R> path) {
-            List<Expression> expressions = metadata.expressions;
+            List<Expression> expressions = context.expressions;
             Expression left = merge();
-            Expression right = ExpressionBuilders.of(path);
-            return new NumberOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
+            Expression right = Expressions.of(path);
+            return new NumberOpsImpl<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
 
         public StringOperator<T, AndConnector<T>> and(StringPath<T> path) {
-            List<Expression> expressions = metadata.expressions;
+            List<Expression> expressions = context.expressions;
             Expression left = merge();
-            Expression right = ExpressionBuilders.of(path);
-            return new StringOpsImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
+            Expression right = Expressions.of(path);
+            return new StringOpsImpl<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
 
         public AndConnector<T> and(BooleanPath<T> path) {
-            List<Expression> expressions = metadata.expressions;
+            List<Expression> expressions = context.expressions;
             Expression left = merge();
-            Expression right = ExpressionBuilders.of(path);
-            return new AndConnectorImpl<>(new Metadata<>(expressions, left, right, AndConnectorImpl::new));
+            Expression right = Expressions.of(path);
+            return new AndConnectorImpl<>(new Context<>(expressions, left, right, AndConnectorImpl::new));
         }
-
 
     }
 
     static class OrConnectorImpl<T> extends BooleanOpsImpl<T, OrConnector<T>> implements OrConnector<T> {
-        public OrConnectorImpl(Metadata<OrConnector<T>> metadata) {
-            super(metadata);
+        public OrConnectorImpl(Context<OrConnector<T>> context) {
+            super(context);
         }
     }
 
     static class AndConnectorImpl<T> extends BooleanOpsImpl<T, AndConnector<T>> implements AndConnector<T> {
-        public AndConnectorImpl(Metadata<AndConnector<T>> metadata) {
-            super(metadata);
+        public AndConnectorImpl(Context<AndConnector<T>> context) {
+            super(context);
         }
     }
 
     static class PredicateOpsImpl<T> extends BooleanOpsImpl<T, Predicate<T>> implements Predicate<T> {
-        public PredicateOpsImpl(Metadata<Predicate<T>> metadata) {
-            super(metadata);
+        public PredicateOpsImpl(Context<Predicate<T>> context) {
+            super(context);
         }
 
         @Override
         public Predicate<T> not() {
             Expression expression = expression();
-            Expression m = ExpressionBuilders.operate(expression, Operator.NOT);
-            return new PredicateOpsImpl<>(new Metadata<>(List.of(), TRUE, m, PredicateOpsImpl::new));
+            Expression m = Expressions.operate(expression, Operator.NOT);
+            return new PredicateOpsImpl<>(new Context<>(Lists.of(), TRUE, m, PredicateOpsImpl::new));
         }
-
 
     }
 
     static class RootImpl<T> extends DefaultExpressionOperator<T, T, Predicate<T>> implements Root<T> {
         public RootImpl() {
-            super(new Metadata<>(List.of(), TRUE, EMPTY_PATH, PredicateOpsImpl::new));
+            super(new Context<>(Lists.of(), TRUE, EMPTY_PATH, PredicateOpsImpl::new));
         }
 
         public <U> PathOperator<T, U, Predicate<T>> get(Path<T, U> path) {
@@ -545,31 +555,26 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     @NotNull
     @AllArgsConstructor
     @Data
-    static class Metadata<B> {
+    protected static class Context<B> {
         List<Expression> expressions;
         Expression left;
         Expression right;
-        BuilderFactory<B> builder;
+        Function<Context<B>, B> builder;
 
-        public Metadata<B> clone0() {
-            return new Metadata<>(expressions, left, right, builder);
+        public Context<B> clone0() {
+            return new Context<>(expressions, left, right, builder);
         }
 
-        Metadata<B> not() {
-            right = ExpressionBuilders.operate(right, Operator.NOT);
+        Context<B> not() {
+            right = Expressions.operate(right, Operator.NOT);
             return this;
         }
 
     }
 
-    interface BuilderFactory<T> {
-        T build(Metadata<T> metadata);
-
-    }
-
-    public static <T> PredicateOpsImpl<T> ofBoolOps(Expression expression) {
-        return new PredicateOpsImpl<>(new Metadata<>(
-                List.of(),
+    public static <T> Predicate<T> ofBoolOps(Expression expression) {
+        return new PredicateOpsImpl<>(new Context<>(
+                Lists.of(),
                 TRUE,
                 expression,
                 PredicateOpsImpl::new
@@ -579,8 +584,8 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     static class PathExpressionImpl<T, U>
             extends DefaultExpressionOperator<T, U, Predicate<T>>
             implements PathOperator<T, U, Predicate<T>> {
-        public PathExpressionImpl(Metadata<? extends Predicate<T>> metadata) {
-            super(metadata);
+        public PathExpressionImpl(Context<? extends Predicate<T>> context) {
+            super(context);
         }
 
         public @Override <V> PathOperator<T, V, Predicate<T>> get(Path<U, V> path) {
@@ -592,8 +597,8 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
     static class StringExpressionImpl<T>
             extends StringOpsImpl<T, Predicate<T>>
             implements StringOperator<T, Predicate<T>> {
-        public StringExpressionImpl(Metadata<Predicate<T>> metadata) {
-            super(metadata);
+        public StringExpressionImpl(Context<Predicate<T>> context) {
+            super(context);
         }
     }
 
@@ -601,16 +606,16 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
             extends NumberOpsImpl<T, U, Predicate<T>>
             implements NumberOperator<T, U, Predicate<T>> {
 
-        public NumberExpressionImpl(Metadata<Predicate<T>> metadata) {
-            super(metadata);
+        public NumberExpressionImpl(Context<Predicate<T>> context) {
+            super(context);
         }
     }
 
     static class ComparableExpressionImpl<T, U extends Comparable<U>>
             extends ComparableOpsImpl<T, U, Predicate<T>>
             implements ComparableOperator<T, U, Predicate<T>> {
-        public ComparableExpressionImpl(Metadata<Predicate<T>> metadata) {
-            super(metadata);
+        public ComparableExpressionImpl(Context<Predicate<T>> context) {
+            super(context);
         }
     }
 

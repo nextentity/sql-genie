@@ -1,6 +1,7 @@
 package io.github.genie.sql.executor.jdbc;
 
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import lombok.SneakyThrows;
@@ -14,6 +15,7 @@ import java.util.function.BiFunction;
 import static io.github.genie.sql.api.Selection.MultiColumn;
 import static io.github.genie.sql.api.Selection.SingleColumn;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
 
     @Override
@@ -24,7 +26,8 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             throws SQLException {
         int columnsCount = resultSet.getMetaData().getColumnCount();
         int column = 0;
-        if (selectClause instanceof MultiColumn multiColumn) {
+        if (selectClause instanceof MultiColumn) {
+            MultiColumn multiColumn = (MultiColumn) selectClause;
             if (multiColumn.columns().size() != columnsCount) {
                 throw new IllegalStateException();
             }
@@ -32,30 +35,32 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             while (column < columnsCount) {
                 row[column++] = resultSet.getObject(column);
             }
-            return cast(row);
-        } else if (selectClause instanceof SingleColumn singleColumn) {
+            return TypeCastUtil.unsafeCast(row);
+        } else if (selectClause instanceof SingleColumn) {
+            SingleColumn singleColumn = (SingleColumn) selectClause;
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }
             Object r = JdbcUtil.getValue(resultSet, 1, singleColumn.resultType());
-            return cast(r);
+            return TypeCastUtil.unsafeCast(r);
         } else {
             if (attributes.size() != columnsCount) {
                 throw new IllegalStateException();
             }
             Class<?> resultType = selectClause.resultType();
+            BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
             if (resultType.isInterface()) {
-                return ProjectionUtil.getInterfaceResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getInterfaceResult(extractor, attributes, resultType);
             } else if (resultType.isRecord()) {
-                return ProjectionUtil.getRecordResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getRecordResult(extractor, attributes, resultType);
             } else {
-                return ProjectionUtil.getBeanResult(getJdbcResultFunction(resultSet), attributes, resultType);
+                return ProjectionUtil.getBeanResult(extractor, attributes, resultType);
             }
         }
     }
 
     @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getJdbcResultFunction(@NotNull ResultSet resultSet) {
+    private static BiFunction<Integer, Class<?>, Object> getJdbcResultValueExtractor(@NotNull ResultSet resultSet) {
         // noinspection Convert2Lambda
         return new BiFunction<>() {
             @SneakyThrows
@@ -65,11 +70,5 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             }
         };
     }
-
-    private <R> R cast(Object result) {
-        // noinspection unchecked
-        return (R) result;
-    }
-
 
 }

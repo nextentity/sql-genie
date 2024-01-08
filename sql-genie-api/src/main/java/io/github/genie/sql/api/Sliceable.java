@@ -1,6 +1,5 @@
 package io.github.genie.sql.api;
 
-
 import java.util.List;
 
 public interface Sliceable<T, U> {

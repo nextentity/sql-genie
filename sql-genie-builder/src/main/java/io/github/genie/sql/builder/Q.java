@@ -2,23 +2,25 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.Order;
-import io.github.genie.sql.api.Path;
-import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.ExpressionOperator.Root;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.builder.QueryStructures.OrderImpl;
+import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.Order.SortOrder;
+import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
+import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.github.genie.sql.api.Operator.AND;
 import static io.github.genie.sql.api.Operator.NOT;
@@ -54,7 +56,6 @@ public final class Q {
         return Q.<T>of().get(path);
     }
 
-
     public static <T, E extends Number & Comparable<E>>
     NumberOperator<T, E, Predicate<T>> min(NumberPath<T, E> path) {
         return get(path).min();
@@ -83,40 +84,51 @@ public final class Q {
     @SafeVarargs
     public static <T> Predicate<T> and(ExpressionHolder<T, Boolean> predicate,
                                        ExpressionHolder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
-        Expression expression = ExpressionBuilders.operate(predicate.expression(), AND, metas);
+        List<Expression> metas = Arrays.stream(predicates)
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList());
+        Expression expression = Expressions.operate(predicate.expression(), AND, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     @SafeVarargs
     public static <T> Predicate<T> or(ExpressionHolder<T, Boolean> predicate,
                                       ExpressionHolder<T, Boolean>... predicates) {
-        List<Expression> metas = Arrays.stream(predicates).map(ExpressionHolder::expression).toList();
-        Expression expression = ExpressionBuilders.operate(predicate.expression(), OR, metas);
+        List<Expression> metas = Arrays.stream(predicates)
+                .map(ExpressionHolder::expression)
+                .collect(Collectors.toList());
+        Expression expression = Expressions.operate(predicate.expression(), OR, metas);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 
     public static <T> Order<T> desc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(ExpressionBuilders.of(path), DESC);
+        return new OrderImpl<>(Expressions.of(path), DESC);
     }
 
     public static <T> Order<T> asc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(ExpressionBuilders.of(path), ASC);
+        return new OrderImpl<>(Expressions.of(path), ASC);
     }
 
     @SafeVarargs
     public static <T> List<Order<T>> desc(Path<T, ? extends Comparable<?>>... paths) {
-        return Arrays.stream(paths).map(Q::desc).toList();
+        return Arrays.stream(paths)
+                .map(Q::desc)
+                .collect(Collectors.toList());
     }
 
     @SafeVarargs
     public static <T> List<Order<T>> asc(Path<T, Comparable<?>>... paths) {
-        return Arrays.stream(paths).map(Q::asc).toList();
+        return Arrays.stream(paths)
+                .map(Q::asc)
+                .collect(Collectors.toList());
     }
 
+    public static <T> Order<T> orderBy(ExpressionHolder<T, ? extends Comparable<?>> expression, SortOrder order) {
+        return new OrderImpl<>(expression.expression(), order);
+    }
 
     public static <T> Predicate<T> not(ExpressionHolder<T, Boolean> lt) {
-        Expression expression = ExpressionBuilders.operate(lt.expression(), NOT);
+        Expression expression = Expressions.operate(lt.expression(), NOT);
         return DefaultExpressionOperator.ofBoolOps(expression);
     }
 

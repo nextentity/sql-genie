@@ -60,20 +60,4 @@ public class Users {
 
     }
 
-    interface A {
-
-    }
-
-    interface B {
-
-    }
-
-    interface C {
-        <T extends A & B> T get();
-    }
-
-    class D implements A, B {
-    }
-
-
 }

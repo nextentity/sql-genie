@@ -1,13 +1,12 @@
 package io.github.genie.sql.builder.meta;
 
-
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
+import io.github.genie.sql.builder.meta.Metamodels.AbstractType;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.EntityTypeImpl;
-import io.github.genie.sql.builder.meta.Metamodels.AbstractType;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -24,17 +23,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
 public abstract class AbstractMetamodel implements Metamodel {
 
-    private final Map<Class<?>, EntityType> tableMappings = new ConcurrentHashMap<>();
+    private final Map<Class<?>, EntityType> entityTypes = new ConcurrentHashMap<>();
     private final Map<List<Class<?>>, Projection> projections = new ConcurrentHashMap<>();
 
     @Override
     public EntityType getEntity(Class<?> entityType) {
-        return tableMappings.computeIfAbsent(entityType, this::createMapping);
+        return entityTypes.computeIfAbsent(entityType, this::createEntityType);
     }
 
     @Override
@@ -47,27 +48,27 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     @NotNull
     protected Projection createProjection(Class<?> baseType, Class<?> projectionType) {
-        EntityType mapping = getEntity(baseType);
+        EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
         if (projectionType.isInterface()) {
             Method[] methods = projectionType.getMethods();
             for (Method method : methods) {
                 if (method.getParameterCount() == 0) {
                     String name = Util.getPropertyName(method.getName());
-                    Attribute baseField = mapping.getAttribute(name);
+                    Attribute baseField = entity.getAttribute(name);
                     if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
-                        AttributeImpl fieldMapping = new AttributeImpl();
-                        fieldMapping.setGetter(method);
-                        fieldMapping.setFieldName(name);
-                        fieldMapping.setJavaType(method.getReturnType());
-                        list.add(new ProjectionAttributeImpl(baseField, fieldMapping));
+                        AttributeImpl attribute = new AttributeImpl();
+                        attribute.getter(method);
+                        attribute.name(name);
+                        attribute.javaType(method.getReturnType());
+                        list.add(new ProjectionAttributeImpl(baseField, attribute));
                     }
                 }
             }
         } else {
             List<Attribute> fields = getAllFields(projectionType);
             for (Attribute field : fields) {
-                Attribute baseField = mapping.getAttribute(field.name());
+                Attribute baseField = entity.getAttribute(field.name());
                 if (field.javaType() == baseField.javaType()) {
                     list.add(new ProjectionAttributeImpl(baseField, field));
                 }
@@ -95,12 +96,12 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected abstract String getColumnName(Attribute field);
 
-    protected EntityTypeImpl createMapping(Class<?> entityType) {
-        EntityTypeImpl tableMapping = new EntityTypeImpl();
-        tableMapping.setJavaType(entityType);
+    protected EntityTypeImpl createEntityType(Class<?> entityType) {
+        EntityTypeImpl result = new EntityTypeImpl();
+        result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
-        tableMapping.setFields(map);
-        tableMapping.setTableName(getTableName(entityType));
+        result.attributeMap(map);
+        result.tableName(getTableName(entityType));
         List<Attribute> allFields = getAllFields(entityType);
         boolean hasVersion = false;
         for (Attribute field : allFields) {
@@ -120,16 +121,16 @@ public abstract class AbstractMetamodel implements Metamodel {
                 }
                 attribute = new BasicAttributeImpl(field, getColumnName(field), versionColumn);
                 if (versionColumn) {
-                    tableMapping.setVersion(attribute);
+                    result.version(attribute);
                 }
 
             } else if (isAnyToOne(field)) {
                 AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(field);
-                ato.setJoinColumnName(getJoinColumnName(field));
-                ato.setReferencedColumnName(getReferencedColumnName(field));
-                ato.setReferenced(() -> {
-                    EntityTypeImpl res = createMapping(field.javaType());
-                    for (Map.Entry<String, Attribute> e : res.getFields().entrySet()) {
+                ato.joinName(getJoinColumnName(field));
+                ato.referencedColumnName(getReferencedColumnName(field));
+                ato.referencedSupplier(() -> {
+                    EntityTypeImpl res = createEntityType(field.javaType());
+                    for (Map.Entry<String, Attribute> e : res.attributeMap().entrySet()) {
                         setOwner(e.getValue(), ato);
                     }
                     return res;
@@ -141,16 +142,35 @@ public abstract class AbstractMetamodel implements Metamodel {
             }
 
             boolean isMarkedId = isMarkedId(attribute);
-            if (isMarkedId || tableMapping.getId() == null && "id".equals(field.name())) {
-                tableMapping.setId(attribute);
+            if (isMarkedId || result.id() == null && "id".equals(field.name())) {
+                result.id(attribute);
             }
 
             map.put(attribute.name(), attribute);
-            setOwner(attribute, tableMapping);
+            setOwner(attribute, result);
         }
-        return tableMapping;
+        setAnyToOneAttributeColumnName(map);
+        return result;
     }
 
+    protected void setAnyToOneAttributeColumnName(Map<String, Attribute> map) {
+        for (Entry<String, Attribute> entry : map.entrySet()) {
+            Attribute value = entry.getValue();
+            if (value instanceof AnyToOneAttributeImpl) {
+                AnyToOneAttributeImpl attr = (AnyToOneAttributeImpl) value;
+                String joinColumnName = getJoinColumnName(map, attr);
+                attr.joinColumnName(joinColumnName);
+            }
+        }
+    }
+
+    protected String getJoinColumnName(Map<String, Attribute> map, AnyToOneAttributeImpl attr) {
+        String joinName = attr.joinName();
+        Attribute join = map.get(joinName);
+        return join instanceof BasicAttribute
+                ? ((BasicAttribute) join).columnName()
+                : joinName;
+    }
 
     private void setOwner(Attribute attribute, Type owner) {
         if (attribute instanceof AbstractType) {
@@ -178,7 +198,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 }
                 Method getter = descriptor.getReadMethod();
                 Method setter = descriptor.getWriteMethod();
-                Attribute value = newFieldMapping(field, getter, setter);
+                Attribute value = newAttribute(field, getter, setter);
                 if (isTransient(value)) {
                     continue;
                 }
@@ -192,19 +212,19 @@ public abstract class AbstractMetamodel implements Metamodel {
             if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
                 continue;
             }
-            map.computeIfAbsent(field, k -> newFieldMapping(field, null, null));
+            map.computeIfAbsent(field, k -> newAttribute(field, null, null));
         }
         return new ArrayList<>(map.values());
     }
 
-    protected Attribute newFieldMapping(Field field, Method getter, Method setter) {
+    protected Attribute newAttribute(Field field, Method getter, Method setter) {
         AttributeImpl value = new AttributeImpl();
         String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
-        value.setFieldName(name);
-        value.setGetter(getter);
-        value.setSetter(setter);
-        value.setField(field);
-        value.setJavaType(getter != null ? getter.getReturnType() : field.getType());
+        value.name(name);
+        value.getter(getter);
+        value.setter(setter);
+        value.field(field);
+        value.javaType(getter != null ? getter.getReturnType() : field.getType());
         return value;
     }
 

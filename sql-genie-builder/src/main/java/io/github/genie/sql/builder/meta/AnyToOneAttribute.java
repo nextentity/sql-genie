@@ -4,6 +4,8 @@ public interface AnyToOneAttribute extends Attribute {
 
     String joinColumnName();
 
+    String joinName();
+
     String referencedColumnName();
 
     EntityType referenced();

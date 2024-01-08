@@ -4,6 +4,6 @@ public interface BasicAttribute extends Attribute {
 
     String columnName();
 
-    boolean isVersion();
+    boolean hasVersion();
 
 }

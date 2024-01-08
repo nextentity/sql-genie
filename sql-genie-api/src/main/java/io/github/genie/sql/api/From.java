@@ -1,6 +1,8 @@
 package io.github.genie.sql.api;
 
-public interface From {
+import java.io.Serializable;
+
+public interface From extends Serializable {
 
     Class<?> type();
 

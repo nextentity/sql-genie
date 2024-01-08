@@ -1,8 +1,24 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.*;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.From;
+import io.github.genie.sql.api.From.Entity;
+import io.github.genie.sql.api.From.SubQuery;
+import io.github.genie.sql.api.Lists;
+import io.github.genie.sql.api.LockModeType;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.Operator;
+import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Slice;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -10,6 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings({"PatternVariableCanBeUsed", "ClassCanBeRecord"})
 final class QueryStructures {
 
     static class QueryStructureImpl implements QueryStructure, Cloneable {
@@ -18,15 +35,15 @@ final class QueryStructures {
 
         From from;
 
-        Expression where = ExpressionBuilders.TRUE;
+        Expression where = Expressions.TRUE;
 
-        List<? extends Expression> groupBy = List.of();
+        List<? extends Expression> groupBy = Lists.of();
 
-        List<? extends Order<?>> orderBy = List.of();
+        List<? extends Order<?>> orderBy = Lists.of();
 
-        Expression having = ExpressionBuilders.TRUE;
+        Expression having = Expressions.TRUE;
 
-        List<? extends Column> fetch = List.of();
+        List<? extends Column> fetch = Lists.of();
 
         Integer offset;
 
@@ -40,10 +57,9 @@ final class QueryStructures {
         }
 
         public QueryStructureImpl(Class<?> from) {
-            this.from = (From.Entity) () -> from;
+            this.from = new FromEntity(from);
             this.select = new SelectClauseImpl(from);
         }
-
 
         protected QueryStructureImpl copy() {
             try {
@@ -109,9 +125,9 @@ final class QueryStructures {
             return "select " + select
                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
                    + " from " + from.type().getName()
-                   + (where == null || ExpressionBuilders.isTrue(where) ? "" : " where " + where)
+                   + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
-                   + (having == null || ExpressionBuilders.isTrue(having) ? "" : " having " + having)
+                   + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
                    + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
                    + (offset == null ? "" : " offset " + offset)
                    + (limit == null ? "" : " limit " + limit)
@@ -124,7 +140,24 @@ final class QueryStructures {
 
     }
 
-    record OrderImpl<T>(Expression expression, SortOrder order) implements Order<T> {
+    @Data
+    @Accessors(fluent = true)
+    static final class FromEntity implements Entity {
+        private final Class<?> type;
+    }
+
+    @Data
+    @Accessors(fluent = true)
+    static final class FromSubQuery implements SubQuery {
+        private final QueryStructure queryStructure;
+    }
+
+    @Data
+    @Accessors(fluent = true)
+    static final class OrderImpl<T> implements Order<T> {
+        private final Expression expression;
+        private final SortOrder order;
+
         public static <T> OrderImpl<T> of(ExpressionHolder<T, ?> holder, SortOrder order) {
             return new OrderImpl<>(holder.expression(), order);
         }
@@ -135,7 +168,11 @@ final class QueryStructures {
         }
     }
 
-    record SelectClauseImpl(Class<?> resultType) implements Selection {
+    @Data
+    @Accessors(fluent = true)
+    static final class SelectClauseImpl implements Selection {
+        private final Class<?> resultType;
+
         @Override
         public String toString() {
             return resultType.getName();
@@ -143,7 +180,11 @@ final class QueryStructures {
 
     }
 
-    record MultiColumnSelect(List<? extends Expression> columns) implements MultiColumn {
+    @Data
+    @Accessors(fluent = true)
+    static final class MultiColumnSelect implements MultiColumn {
+        private final List<? extends Expression> columns;
+
         @Override
         public String toString() {
             return String.valueOf(columns);
@@ -151,27 +192,49 @@ final class QueryStructures {
 
     }
 
-    record SingleColumnSelect(Class<?> resultType, Expression column) implements SingleColumn {
+    @Data
+    @Accessors(fluent = true)
+    static final class SingleColumnSelect implements SingleColumn {
+        private final Class<?> resultType;
+        private final Expression column;
+
+        SingleColumnSelect(Class<?> resultType, Expression column) {
+            this.resultType = resultType;
+            this.column = column;
+        }
+
         @Override
         public String toString() {
             return String.valueOf(column);
         }
     }
 
-    record SliceImpl<T>(List<T> data, long total, int offset, int limit) implements Slice<T> {
+    @Data
+    @Accessors(fluent = true)
+    static final class SliceImpl<T> implements Slice<T> {
+        private final List<T> data;
+        private final long total;
+        private final int offset;
+        private final int limit;
     }
 
-    record ConstantMeta(Object value) implements Constant {
+    @Data
+    @Accessors(fluent = true)
+    static final class ConstantMeta implements Constant {
+        private final Object value;
+
         @Override
         public String toString() {
             return String.valueOf(value);
         }
     }
 
-    record OperationMeta(Expression operand,
-                         Operator operator,
-                         List<? extends Expression> args)
-            implements Operation {
+    @Data
+    @Accessors(fluent = true)
+    static final class OperationMeta implements Operation {
+        private final Expression operand;
+        private final Operator operator;
+        private final List<? extends Expression> args;
 
         @Override
         public String toString() {
@@ -180,7 +243,11 @@ final class QueryStructures {
 
     }
 
-    record ColumnMeta(List<String> paths) implements Column {
+    @Data
+    @Accessors(fluent = true)
+    static final class ColumnMeta implements Column {
+        private final List<String> paths;
+
         @Override
         public String toString() {
             return String.join(".", paths);
@@ -193,7 +260,7 @@ final class QueryStructures {
         if (o.args() != null) {
             r = o.args();
         } else {
-            r = List.of();
+            r = Lists.of();
         }
         if (o.operator().isMultivalued()) {
             return Stream.concat(Stream.of(l), r.stream())
@@ -216,7 +283,8 @@ final class QueryStructures {
     }
 
     private static String toString(Operation parent, Expression subMeta) {
-        if (subMeta instanceof Operation o) {
+        if (subMeta instanceof Operation) {
+            Operation o = (Operation) subMeta;
             if (o.operator().priority() > parent.operator().priority()) {
                 return "(" + subMeta + ')';
             }
