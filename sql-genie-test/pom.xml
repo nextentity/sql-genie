@@ -10,7 +10,6 @@
     <version>1.0.0</version>
   </parent>
 
-  <groupId>io.github.huanghaha</groupId>
   <artifactId>sql-genie-test</artifactId>
 
   <properties>
