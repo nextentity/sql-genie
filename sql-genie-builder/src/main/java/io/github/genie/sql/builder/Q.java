@@ -9,6 +9,7 @@ import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.ExpressionOperator.Root;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Order;
+import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
@@ -123,6 +124,9 @@ public final class Q {
                 .collect(Collectors.toList());
     }
 
+    public static <T> Order<T> orderBy(ExpressionHolder<T, ? extends Comparable<?>> expression, SortOrder order) {
+        return new OrderImpl<>(expression.expression(), order);
+    }
 
     public static <T> Predicate<T> not(ExpressionHolder<T, Boolean> lt) {
         Expression expression = Expressions.operate(lt.expression(), NOT);
