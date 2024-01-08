@@ -91,7 +91,7 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
   <description>sql dsl for java</description>
-  <url>https://github.com/AlittleHuang/sql-genie/tree/2.3.x</url>
+  <url>https://github.com/genie-cloud/sql-genie</url>
 
   <scm>
     <connection>https://github.com/genie-cloud/sql-genie.git</connection>
