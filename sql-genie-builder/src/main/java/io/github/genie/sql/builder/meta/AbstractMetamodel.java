@@ -35,7 +35,7 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     @Override
     public EntityType getEntity(Class<?> entityType) {
-        return entityTypes.computeIfAbsent(entityType, this::createEntityType);
+        return entityTypes.computeIfAbsent(entityType, type -> createEntityType(type, null));
     }
 
     @Override
@@ -50,6 +50,7 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected Projection createProjection(Class<?> baseType, Class<?> projectionType) {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
+        ProjectionImpl result = new ProjectionImpl(baseType, list);
         if (projectionType.isInterface()) {
             Method[] methods = projectionType.getMethods();
             for (Method method : methods) {
@@ -66,7 +67,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 }
             }
         } else {
-            List<Attribute> fields = getAllFields(projectionType);
+            List<Attribute> fields = getAllFields(projectionType, result);
             for (Attribute field : fields) {
                 Attribute baseField = entity.getAttribute(field.name());
                 if (field.javaType() == baseField.javaType()) {
@@ -75,7 +76,7 @@ public abstract class AbstractMetamodel implements Metamodel {
             }
         }
         list.trimToSize();
-        return new ProjectionImpl(list);
+        return result;
     }
 
     protected abstract String getTableName(Class<?> javaType);
@@ -96,13 +97,14 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected abstract String getColumnName(Attribute field);
 
-    protected EntityTypeImpl createEntityType(Class<?> entityType) {
+    protected EntityTypeImpl createEntityType(Class<?> entityType, Type owner) {
         EntityTypeImpl result = new EntityTypeImpl();
         result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
         result.attributeMap(map);
         result.tableName(getTableName(entityType));
-        List<Attribute> allFields = getAllFields(entityType);
+        result.setOwner(owner);
+        List<Attribute> allFields = getAllFields(entityType, result);
         boolean hasVersion = false;
         for (Attribute field : allFields) {
             if (map.containsKey(field.name())) {
@@ -128,13 +130,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(field);
                 ato.joinName(getJoinColumnName(field));
                 ato.referencedColumnName(getReferencedColumnName(field));
-                ato.referencedSupplier(() -> {
-                    EntityTypeImpl res = createEntityType(field.javaType());
-                    for (Map.Entry<String, Attribute> e : res.attributeMap().entrySet()) {
-                        setOwner(e.getValue(), ato);
-                    }
-                    return res;
-                });
+                ato.referencedSupplier(() -> createEntityType(field.javaType(), ato));
                 attribute = ato;
             } else {
                 log.warn("ignored attribute " + field.field());
@@ -180,7 +176,7 @@ public abstract class AbstractMetamodel implements Metamodel {
         }
     }
 
-    protected List<Attribute> getAllFields(Class<?> type) {
+    protected List<Attribute> getAllFields(Class<?> type, Type owner) {
         Field[] fields = type.getDeclaredFields();
         Map<Field, Attribute> map = new HashMap<>();
         try {
@@ -198,7 +194,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 }
                 Method getter = descriptor.getReadMethod();
                 Method setter = descriptor.getWriteMethod();
-                Attribute value = newAttribute(field, getter, setter);
+                Attribute value = newAttribute(field, getter, setter, owner);
                 if (isTransient(value)) {
                     continue;
                 }
@@ -212,18 +208,19 @@ public abstract class AbstractMetamodel implements Metamodel {
             if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
                 continue;
             }
-            map.computeIfAbsent(field, k -> newAttribute(field, null, null));
+            map.computeIfAbsent(field, k -> newAttribute(field, null, null, owner));
         }
         return new ArrayList<>(map.values());
     }
 
-    protected Attribute newAttribute(Field field, Method getter, Method setter) {
+    protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
         AttributeImpl value = new AttributeImpl();
         String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
         value.name(name);
         value.getter(getter);
         value.setter(setter);
         value.field(field);
+        value.setOwner(owner);
         value.javaType(getter != null ? getter.getReturnType() : field.getType());
         return value;
     }

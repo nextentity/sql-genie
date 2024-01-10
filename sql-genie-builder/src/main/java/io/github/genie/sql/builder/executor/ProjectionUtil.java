@@ -3,7 +3,6 @@ package io.github.genie.sql.builder.executor;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
-import io.github.genie.sql.builder.meta.Type;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
@@ -29,34 +28,22 @@ public class ProjectionUtil {
         Object row = newInstance(resultType);
         int column = 0;
         for (Attribute attribute : attributes) {
-            int deep = 0;
-            Type cur = attribute;
-            while (cur != null) {
-                deep++;
-                cur = cur.owner();
-            }
-            Attribute[] attrs = new Attribute[deep - 1];
-            cur = attribute;
-            for (int i = attrs.length - 1; i >= 0; i--) {
-                attrs[i] = (Attribute) cur;
-                cur = cur.owner();
-            }
+            List<? extends Attribute> joins = attribute.referencedAttribute();
             Class<?> fieldType = attribute.javaType();
             Object value = extractor.apply(column++, fieldType);
-            if (value == null && attrs.length > 1) {
+            if (value == null && !joins.isEmpty()) {
                 continue;
             }
-            Object obj = row;
-            for (int i = 0; i < attrs.length - 1; i++) {
-                Attribute attr = attrs[i];
-                Object tmp = attr.get(obj);
-                if (tmp == null) {
-                    tmp = newInstance(attr.javaType());
-                    attr.set(obj, tmp);
+            Object entity = row;
+            for (Attribute joinAttr : joins) {
+                Object join = joinAttr.get(entity);
+                if (join == null) {
+                    join = newInstance(joinAttr.javaType());
+                    joinAttr.set(entity, join);
                 }
-                obj = tmp;
+                entity = join;
             }
-            attribute.set(obj, value);
+            attribute.set(entity, value);
         }
         return TypeCastUtil.unsafeCast(row);
     }

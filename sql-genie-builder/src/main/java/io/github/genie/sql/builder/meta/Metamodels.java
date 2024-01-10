@@ -1,5 +1,6 @@
 package io.github.genie.sql.builder.meta;
 
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -28,6 +29,8 @@ public class Metamodels {
         protected Method getter;
         protected Method setter;
         protected Field field;
+        @Getter(value = AccessLevel.PRIVATE, lazy = true)
+        private final List<? extends Attribute> referenced = Attribute.super.referencedAttribute();
 
         @Override
         public void setOwner(Type owner) {
@@ -39,6 +42,10 @@ public class Metamodels {
             return name();
         }
 
+        @Override
+        public List<? extends Attribute> referencedAttribute() {
+            return referenced();
+        }
     }
 
     @Data
@@ -69,9 +76,9 @@ public class Metamodels {
         @Override
         public String toString() {
             return "EntityType{" +
-                   ", tableName='" + tableName + '\'' +
-                   ", javaType=" + javaType().getName() +
-                   '}';
+                    ", tableName='" + tableName + '\'' +
+                    ", javaType=" + javaType().getName() +
+                    '}';
         }
     }
 
@@ -127,6 +134,13 @@ public class Metamodels {
     @Data
     @Accessors(fluent = true)
     static final class ProjectionImpl implements Projection {
+        private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
+
+        @Override
+        public Type owner() {
+            return null;
+        }
+
     }
 }

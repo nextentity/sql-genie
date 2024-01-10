@@ -1,10 +1,14 @@
 package io.github.genie.sql.builder.meta;
 
+import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Attribute extends Type {
 
@@ -40,6 +44,14 @@ public interface Attribute extends Type {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanReflectiveException(e);
         }
+    }
+
+    default List<? extends Attribute> referencedAttribute() {
+        //noinspection SimplifyStreamApiCallChains
+        return Stream.iterate(owner(), Type::hasOwner, Type::owner)
+                .filter(it -> it instanceof Attribute)
+                .map(TypeCastUtil::<Attribute>unsafeCast)
+                .collect(Collectors.toUnmodifiableList());
     }
 
 }

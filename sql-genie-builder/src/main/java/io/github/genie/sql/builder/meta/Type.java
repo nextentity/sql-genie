@@ -6,4 +6,8 @@ public interface Type {
 
     Class<?> javaType();
 
+    default boolean hasOwner() {
+        return owner() != null;
+    }
+
 }
