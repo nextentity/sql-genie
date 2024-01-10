@@ -6,6 +6,7 @@ import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 public class ReflectUtil {
@@ -39,6 +40,10 @@ public class ReflectUtil {
                 }
             }
         }
+    }
+
+    public static Object invokeDefaultMethod(Object proxy, Method method, Object[] args) throws Throwable {
+        return InvocationHandler.invokeDefault(proxy, method, args);
     }
 
 }

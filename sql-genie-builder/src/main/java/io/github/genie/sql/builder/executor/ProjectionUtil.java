@@ -3,6 +3,7 @@ package io.github.genie.sql.builder.executor;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.ReflectUtil;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
@@ -138,7 +139,7 @@ public class ProjectionUtil {
                 return method.invoke(this, args);
             }
             if (method.isDefault()) {
-                return InvocationHandler.invokeDefault(proxy, method, args);
+                return ReflectUtil.invokeDefaultMethod(proxy, method, args);
             }
             throw new AbstractMethodError(method.toString());
         }
