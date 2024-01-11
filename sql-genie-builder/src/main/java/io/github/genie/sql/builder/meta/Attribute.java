@@ -1,6 +1,5 @@
 package io.github.genie.sql.builder.meta;
 
-import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 
 import java.lang.reflect.Field;
@@ -10,8 +9,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public interface Attribute extends Type {
 
@@ -26,10 +23,10 @@ public interface Attribute extends Type {
     default Object get(Object entity) {
         try {
             Method getter = getter();
-            if (getter != null) {
+            if (getter != null && ReflectUtil.isAccessible(getter, entity)) {
                 return getter.invoke(entity);
             } else {
-                return field().get(entity);
+                return ReflectUtil.getFieldValue(field(), entity);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanReflectiveException(e);
@@ -39,10 +36,10 @@ public interface Attribute extends Type {
     default void set(Object entity, Object value) {
         try {
             Method setter = setter();
-            if (setter != null) {
+            if (setter != null && ReflectUtil.isAccessible(setter, entity)) {
                 setter.invoke(entity, value);
             } else {
-                field().set(entity, value);
+                ReflectUtil.setFieldValue(field(), entity, value);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanReflectiveException(e);

@@ -4,6 +4,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Version;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -37,6 +39,10 @@ public class User {
     private User parentUser;
 
     private boolean valid;
+
+    @Version
+    @Getter(AccessLevel.PRIVATE)
+    private int optLock;
 
     @Override
     public boolean equals(Object o) {
