@@ -37,7 +37,7 @@ public class JpaMetamodel extends AbstractMetamodel {
         return tableName;
     }
 
-    private static String camelbackToUnderline(String simpleName) {
+    protected String camelbackToUnderline(String simpleName) {
         return simpleName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
@@ -93,7 +93,7 @@ public class JpaMetamodel extends AbstractMetamodel {
         return false;
     }
 
-    private static boolean isSupportVersion(Class<?> type) {
+    protected boolean isSupportVersion(Class<?> type) {
         return type == long.class || type == Long.class || type == Integer.class || type == int.class;
     }
 
@@ -125,14 +125,14 @@ public class JpaMetamodel extends AbstractMetamodel {
         return unwrapSymbol(columnName);
     }
 
-    private static String unwrapSymbol(String symbol) {
-        if (symbol.startsWith("`") && symbol.endsWith("`")) {
+    protected String unwrapSymbol(String symbol) {
+        while (symbol.startsWith("`") && symbol.endsWith("`")) {
             symbol = symbol.substring(1, symbol.length() - 1);
         }
         return symbol;
     }
 
-    private String getColumnNameByAnnotation(Attribute field) {
+    protected String getColumnNameByAnnotation(Attribute field) {
         Column column = getAnnotation(field, Column.class);
         if (column != null && !column.name().isEmpty()) {
             return column.name();
