@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
@@ -20,11 +21,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
@@ -177,46 +180,44 @@ public abstract class AbstractMetamodel implements Metamodel {
     }
 
     protected List<Attribute> getAllFields(Class<?> type, Type owner) {
-        Field[] fields = type.getDeclaredFields();
-        Map<Field, Attribute> map = new HashMap<>();
+        Map<String, PropertyDescriptor> map = new HashMap<>();
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(type);
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
             for (PropertyDescriptor descriptor : propertyDescriptors) {
-                String propertyName = descriptor.getName();
-                Field field = ReflectUtil.getDeclaredField(type, propertyName);
-                if (field == null) {
-                    continue;
+                Field field = ReflectUtil.getDeclaredField(type, descriptor.getName());
+                if (field != null) {
+                    map.put(field.getName(), descriptor);
                 }
-                int modifiers = field.getModifiers();
-                if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
-                    continue;
-                }
-                Method getter = descriptor.getReadMethod();
-                Method setter = descriptor.getWriteMethod();
-                Attribute value = newAttribute(field, getter, setter, owner);
-                if (isTransient(value)) {
-                    continue;
-                }
-                map.put(field, value);
             }
-        } catch (Exception e) {
+        } catch (IntrospectionException e) {
             throw new BeanReflectiveException(e);
         }
-        for (Field field : fields) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
-                continue;
-            }
-            map.computeIfAbsent(field, k -> newAttribute(field, null, null, owner));
+        return Arrays.stream(type.getDeclaredFields())
+                .filter(this::isMappedField)
+                .map(field -> newAttribute(owner, field, map.get(field.getName())))
+                .filter(attribute -> !isTransient(attribute))
+                .collect(Collectors.toList());
+    }
+
+    private Attribute newAttribute(Type owner, Field field, PropertyDescriptor descriptor) {
+        Method getter, setter;
+        if (descriptor != null) {
+            getter = descriptor.getReadMethod();
+            setter = descriptor.getWriteMethod();
+        } else {
+            getter = setter = null;
         }
-        return new ArrayList<>(map.values());
+        return newAttribute(field, getter, setter, owner);
+    }
+
+    protected boolean isMappedField(Field field) {
+        return !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers());
     }
 
     protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
         AttributeImpl value = new AttributeImpl();
-        String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
-        value.name(name);
+        value.name(field.getName());
         value.getter(getter);
         value.setter(setter);
         value.field(field);
