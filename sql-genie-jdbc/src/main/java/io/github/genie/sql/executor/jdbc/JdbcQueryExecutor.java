@@ -33,15 +33,12 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
     @NotNull
     public <R> List<R> getList(@NotNull QueryStructure queryStructure) {
         PreparedSql sql = sqlBuilder.build(queryStructure, metamodel);
+        printSql(sql);
         try {
             return connectionProvider.execute(connection -> {
                 // noinspection SqlSourceToSinkFlow
                 try (PreparedStatement statement = connection.prepareStatement(sql.sql())) {
                     JdbcUtil.setParam(statement, sql.args());
-                    if (log.isDebugEnabled()) {
-                        log.debug("SQL: {}", sql.sql());
-                        log.debug("ARGS: {}", sql.args());
-                    }
                     try (ResultSet resultSet = statement.executeQuery()) {
                         return resolveResult(queryStructure, sql, resultSet);
                     }
@@ -49,6 +46,13 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
             });
         } catch (SQLException e) {
             throw new SqlExecuteException(e);
+        }
+    }
+
+    private static void printSql(PreparedSql sql) {
+        log.debug("SQL: {}", sql.sql());
+        if (!sql.args().isEmpty()) {
+            log.debug("ARGS: {}", sql.args());
         }
     }
 
