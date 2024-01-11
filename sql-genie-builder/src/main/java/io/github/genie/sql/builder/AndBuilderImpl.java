@@ -12,6 +12,7 @@ import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
 import io.github.genie.sql.api.Query.Having;
+import io.github.genie.sql.api.Query.OrderOperator;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.Context;
@@ -100,6 +101,11 @@ class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
     @Override
     public Collector<U> orderBy(List<? extends Order<T>> orders) {
         return getQueryBuilder().orderBy(orders);
+    }
+
+    @Override
+    public OrderOperator<T, U> orderBy(Collection<Path<T, Comparable<?>>> paths) {
+        return getQueryBuilder().orderBy(paths);
     }
 
     @Override

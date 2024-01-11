@@ -19,6 +19,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static io.github.genie.sql.api.Order.SortOrder.*;
+
 public interface Query {
 
     <T> Select<T> from(Class<T> type);
@@ -180,6 +182,32 @@ public interface Query {
             return orderBy(Lists.of(order1, order2, order3));
         }
 
+        OrderOperator<T, U> orderBy(Collection<Path<T, Comparable<?>>> paths);
+
+        default OrderOperator<T, U> orderBy(Path<T, Comparable<?>> path) {
+            return orderBy(Lists.of(path));
+        }
+
+        default OrderOperator<T, U> orderBy(Path<T, Comparable<?>> p1, Path<T, Comparable<?>> p2) {
+            return orderBy(Lists.of(p1, p2));
+        }
+
+        default OrderOperator<T, U> orderBy(Path<T, Comparable<?>> p1, Path<T, Comparable<?>> p2, Path<T, Comparable<?>> p3) {
+            return orderBy(Lists.of(p1, p2, p3));
+        }
+
+    }
+
+    interface OrderOperator<T, U> extends OrderBy<T, U> {
+        default OrderBy<T, U> asc() {
+            return sort(ASC);
+        }
+
+        default OrderBy<T, U> desc() {
+            return sort(DESC);
+        }
+
+        OrderBy<T, U> sort(Order.SortOrder order);
     }
 
     interface Collector<T> {

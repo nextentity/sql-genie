@@ -22,6 +22,7 @@ import io.github.genie.sql.api.Query.Collector;
 import io.github.genie.sql.api.Query.GroupBy;
 import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.Query.OrderBy;
+import io.github.genie.sql.api.Query.OrderOperator;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.SliceQueryStructure;
 import io.github.genie.sql.api.Query.Where0;
@@ -83,8 +84,19 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public Collector<U> orderBy(List<? extends Order<T>> orders) {
+        return addOrderBy(orders);
+    }
+
+    @Override
+    public OrderOperator<T, U> orderBy(Collection<Path<T, Comparable<?>>> paths) {
+        return new OrderOperatorImpl<>(this, paths);
+    }
+
+    QueryConditionBuilder<T, U> addOrderBy(List<? extends Order<T>> orders) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.orderBy = orders;
+        structure.orderBy = structure.orderBy == null
+                ? orders
+                : Util.concat(structure.orderBy, orders);
         return update(structure);
     }
 

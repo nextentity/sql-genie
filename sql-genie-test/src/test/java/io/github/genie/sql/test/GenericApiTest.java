@@ -504,6 +504,13 @@ public abstract class GenericApiTest {
         assertEquals(list, sorted);
 
         list = userQuery
+                .orderBy(User::getUsername)
+                .orderBy(User::getRandomNumber).desc()
+                .orderBy(User::getId).asc()
+                .getList();
+        assertEquals(list, sorted);
+
+        list = userQuery
                 .orderBy(asc(User::getUsername, User::getRandomNumber, User::getId))
                 .getList();
 
@@ -522,7 +529,7 @@ public abstract class GenericApiTest {
         assertEquals(list, sorted);
 
         list = userQuery
-                .orderBy(asc(User::getTime))
+                .orderBy(User::getTime)
                 .getList();
         sorted = new ArrayList<>(allUsers);
         sorted.sort(Comparator.comparing(User::getTime));

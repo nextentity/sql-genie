@@ -17,6 +17,7 @@ import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -102,11 +103,16 @@ public final class Q {
     }
 
     public static <T> Order<T> desc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(Expressions.of(path), DESC);
+        return orderBy(path, DESC);
     }
 
     public static <T> Order<T> asc(Path<T, ? extends Comparable<?>> path) {
-        return new OrderImpl<>(Expressions.of(path), ASC);
+        return orderBy(path, ASC);
+    }
+
+    @NotNull
+    public static <T> Order<T> orderBy(Path<T, ? extends Comparable<?>> path, SortOrder sortOrder) {
+        return new OrderImpl<>(Expressions.of(path), sortOrder);
     }
 
     @SafeVarargs
