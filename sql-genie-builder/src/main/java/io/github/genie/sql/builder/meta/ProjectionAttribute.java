@@ -2,8 +2,8 @@ package io.github.genie.sql.builder.meta;
 
 public interface ProjectionAttribute {
 
-    Attribute field();
+    Attribute projectionAttribute();
 
-    Attribute baseField();
+    Attribute entityAttribute();
 
 }

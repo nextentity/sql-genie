@@ -409,26 +409,28 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         }
 
         public AndConnector<T> and(ExpressionHolder<T, Boolean> value) {
-            Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.AND, value.expression());
+            Expression operand = expression();
+            Expression expression = Expressions.operate(operand, Operator.AND, value.expression());
             return new AndConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, AndConnectorImpl::new));
         }
 
         public OrConnector<T> or(ExpressionHolder<T, Boolean> value) {
-            Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.OR, value.expression());
+            Expression operand = expression();
+            Expression expression = Expressions.operate(operand, Operator.OR, value.expression());
             return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
         public AndConnector<T> and(List<ExpressionHolder<T, Boolean>> expressions) {
-            Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.AND, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            Expression operand = expression();
+            Expression expression = Expressions.operate(operand, Operator.AND, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
             return new AndConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, AndConnectorImpl::new));
         }
 
         public OrConnector<T> or(List<ExpressionHolder<T, Boolean>> expressions) {
-            Expression mt = expression();
-            Expression expression = Expressions.operate(mt, Operator.OR, expressions.stream().map(ExpressionHolder::expression).collect(Collectors.toList()));
+            Expression operand = expression();
+            Expression expression = Expressions.operate(operand, Operator.OR, expressions.stream()
+                    .map(ExpressionHolder::expression)
+                    .collect(Collectors.toList()));
             return new OrConnectorImpl<>(new Context<>(Lists.of(), TRUE, expression, OrConnectorImpl::new));
         }
 
@@ -520,8 +522,8 @@ class DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {
         @Override
         public Predicate<T> not() {
             Expression expression = expression();
-            Expression m = Expressions.operate(expression, Operator.NOT);
-            return new PredicateOpsImpl<>(new Context<>(Lists.of(), TRUE, m, PredicateOpsImpl::new));
+            Expression right = Expressions.operate(expression, Operator.NOT);
+            return new PredicateOpsImpl<>(new Context<>(Lists.of(), TRUE, right, PredicateOpsImpl::new));
         }
 
     }

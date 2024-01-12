@@ -15,26 +15,26 @@ import java.util.function.Supplier;
 
 public class Metamodels {
 
-    public interface AbstractType extends Type {
-        void setOwner(Type owner);
-    }
-
     @Data
     @Accessors(fluent = true)
-    public static class AttributeImpl implements Attribute, AbstractType {
+    public static class AttributeImpl implements Attribute {
 
-        protected Class<?> javaType;
-        protected Type owner;
-        protected String name;
-        protected Method getter;
-        protected Method setter;
-        protected Field field;
+        private Class<?> javaType;
+        private Type owner;
+        private String name;
+        private Method getter;
+        private Method setter;
+        private Field field;
         @Getter(value = AccessLevel.PRIVATE, lazy = true)
         private final List<? extends Attribute> referenced = Attribute.super.referencedAttribute();
 
-        @Override
-        public void setOwner(Type owner) {
+        public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
+            this.javaType = javaType;
             this.owner = owner;
+            this.name = name;
+            this.getter = getter;
+            this.setter = setter;
+            this.field = field;
         }
 
         @Override
@@ -50,7 +50,7 @@ public class Metamodels {
 
     @Data
     @Accessors(fluent = true)
-    public static class EntityTypeImpl implements EntityType, AbstractType {
+    public static class EntityTypeImpl implements EntityType {
 
         private Class<?> javaType;
         private Type owner;
@@ -61,11 +61,6 @@ public class Metamodels {
 
         public Collection<Attribute> attributes() {
             return attributeMap.values();
-        }
-
-        @Override
-        public void setOwner(Type owner) {
-            this.owner = owner;
         }
 
         @Override
@@ -84,27 +79,16 @@ public class Metamodels {
 
     @Data
     @Accessors(fluent = true)
-    public static class BasicAttributeImpl implements BasicAttribute, AbstractType {
+    public static class BasicAttributeImpl implements BasicAttribute {
         @Delegate
-        private Attribute attribute;
-        private String columnName;
-        private boolean hasVersion;
-
-        public BasicAttributeImpl(Attribute attribute, String columnName, boolean hasVersion) {
-            this.attribute = attribute;
-            this.columnName = columnName;
-            this.hasVersion = hasVersion;
-        }
-
-        @Override
-        public void setOwner(Type owner) {
-            ((AttributeImpl) attribute).setOwner(owner);
-        }
+        private final Attribute attribute;
+        private final String columnName;
+        private final boolean hasVersion;
     }
 
     @Data
     @Accessors(fluent = true)
-    public static class AnyToOneAttributeImpl implements AnyToOneAttribute, AbstractType {
+    public static class AnyToOneAttributeImpl implements AnyToOneAttribute {
         @Delegate
         private Attribute attribute;
         private String joinName;
@@ -117,18 +101,13 @@ public class Metamodels {
         public AnyToOneAttributeImpl(Attribute attribute) {
             this.attribute = attribute;
         }
-
-        @Override
-        public void setOwner(Type owner) {
-            ((AttributeImpl) attribute).setOwner(owner);
-        }
     }
 
     @Data
     @Accessors(fluent = true)
     static final class ProjectionAttributeImpl implements ProjectionAttribute {
-        private final Attribute baseField;
-        private final Attribute field;
+        private final Attribute entityAttribute;
+        private final Attribute projectionAttribute;
     }
 
     @Data

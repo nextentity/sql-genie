@@ -73,12 +73,12 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 List<ProjectionAttribute> fields = projection.attributes();
                 List<Column> columns = fields.stream()
                         .map(projectionField -> {
-                            String fieldName = projectionField.baseField().name();
+                            String fieldName = projectionField.entityAttribute().name();
                             return Expressions.column(fieldName);
                         })
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
+                List<Attribute> list = fields.stream().map(ProjectionAttribute::projectionAttribute).collect(Collectors.toList());
                 if (resultType.isInterface()) {
                     return objectsList.stream()
                             .<T>map(it -> ProjectionUtil.getInterfaceResult(getArrayValueExtractor(it), list, resultType))

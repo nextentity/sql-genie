@@ -148,14 +148,14 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 Projection projection = mappers
                         .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
                 for (ProjectionAttribute attr : projection.attributes()) {
-                    if (!(attr.baseField() instanceof BasicAttribute)) {
+                    if (!(attr.entityAttribute() instanceof BasicAttribute)) {
                         continue;
                     }
-                    BasicAttribute column = (BasicAttribute) attr.baseField();
+                    BasicAttribute column = (BasicAttribute) attr.entityAttribute();
 
                     Column columns = Expressions.column(column.name());
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(attr.field());
+                    selectedAttributes.add(attr.projectionAttribute());
                 }
             }
         }

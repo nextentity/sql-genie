@@ -2,7 +2,6 @@ package io.github.genie.sql.builder.meta;
 
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.meta.Metamodels.AbstractType;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
@@ -43,9 +42,7 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     @Override
     public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
-        List<Class<?>> key = new ArrayList<>(2);
-        key.add(baseType);
-        key.add(projectionType);
+        List<Class<?>> key = Arrays.asList(baseType, projectionType);
         return projections.computeIfAbsent(key, k -> createProjection(baseType, projectionType));
     }
 
@@ -61,10 +58,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                     String name = Util.getPropertyName(method.getName());
                     Attribute baseField = entity.getAttribute(name);
                     if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
-                        AttributeImpl attribute = new AttributeImpl();
-                        attribute.getter(method);
-                        attribute.name(name);
-                        attribute.javaType(method.getReturnType());
+                        Attribute attribute = newAttribute(null, method, null, null);
                         list.add(new ProjectionAttributeImpl(baseField, attribute));
                     }
                 }
@@ -106,7 +100,7 @@ public abstract class AbstractMetamodel implements Metamodel {
         Map<String, Attribute> map = new HashMap<>();
         result.attributeMap(map);
         result.tableName(getTableName(entityType));
-        result.setOwner(owner);
+        result.owner(owner);
         List<Attribute> allFields = getAllFields(entityType, result);
         boolean hasVersion = false;
         for (Attribute field : allFields) {
@@ -144,9 +138,7 @@ public abstract class AbstractMetamodel implements Metamodel {
             if (isMarkedId || result.id() == null && "id".equals(field.name())) {
                 result.id(attribute);
             }
-
             map.put(attribute.name(), attribute);
-            setOwner(attribute, result);
         }
         setAnyToOneAttributeColumnName(map);
         return result;
@@ -169,14 +161,6 @@ public abstract class AbstractMetamodel implements Metamodel {
         return join instanceof BasicAttribute
                 ? ((BasicAttribute) join).columnName()
                 : joinName;
-    }
-
-    private void setOwner(Attribute attribute, Type owner) {
-        if (attribute instanceof AbstractType) {
-            ((AbstractType) attribute).setOwner(owner);
-        } else {
-            throw new IllegalArgumentException();
-        }
     }
 
     protected List<Attribute> getAllFields(Class<?> type, Type owner) {
@@ -216,14 +200,9 @@ public abstract class AbstractMetamodel implements Metamodel {
     }
 
     protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
-        AttributeImpl value = new AttributeImpl();
-        value.name(field.getName());
-        value.getter(getter);
-        value.setter(setter);
-        value.field(field);
-        value.setOwner(owner);
-        value.javaType(getter != null ? getter.getReturnType() : field.getType());
-        return value;
+        Class<?> javaType = getter != null ? getter.getReturnType() : field.getType();
+        String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
+        return new AttributeImpl(javaType, owner, name, getter, setter, field);
     }
 
     protected <T extends Annotation> T getAnnotation(Attribute field, Class<T> annotationClass) {
