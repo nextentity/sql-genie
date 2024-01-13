@@ -3,13 +3,13 @@ package io.github.genie.sql.api;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.PredicateAndOperator;
-import io.github.genie.sql.api.ExpressionOperator.PredicateOrOperator;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+
+import java.util.List;
 
 public interface ExpressionBuilder<T> {
 
@@ -44,10 +44,6 @@ public interface ExpressionBuilder<T> {
         Order<T> asc();
 
         Order<T> desc();
-    }
-
-    interface OperableBoolean<T> extends OperableComparable<T, Boolean>, PredicateAndOperator<T>, PredicateOrOperator<T> {
-        OperableBoolean<T> not();
     }
 
     interface OperablePath<T, U> extends PathOperator<T, U, OperableBoolean<T>>, OperableExpression<T, U> {
@@ -126,5 +122,43 @@ public interface ExpressionBuilder<T> {
         <R extends Number & Comparable<R>> OperableNumber<T, R> min();
     }
 
+    interface OperableBoolean<T> extends OperableComparable<T, Boolean>, OperableAnd<T>, OperableOr<T> {
+        OperableBoolean<T> not();
+    }
 
+    interface OperableOr<T> {
+
+        <R> OperablePath<T, R> or(Path<T, R> path);
+
+        <R extends Comparable<R>> OperableComparable<T, R> or(ComparablePath<T, R> path);
+
+        <R extends Number & Comparable<R>> OperableNumber<T, R> or(NumberPath<T, R> path);
+
+        OperableOr<T> or(BooleanPath<T> path);
+
+        OperableString<T> or(StringPath<T> path);
+
+        OperableOr<T> or(ExpressionHolder<T, Boolean> expression);
+
+        OperableOr<T> or(List<ExpressionHolder<T, Boolean>> expressions);
+
+    }
+
+    interface OperableAnd<T> {
+
+        <R> OperablePath<T, R> and(Path<T, R> path);
+
+        <R extends Comparable<R>> OperableComparable<T, R> and(ComparablePath<T, R> path);
+
+        <R extends Number & Comparable<R>> OperableNumber<T, R> and(NumberPath<T, R> path);
+
+        OperableAnd<T> and(BooleanPath<T> path);
+
+        OperableString<T> and(StringPath<T> path);
+
+        OperableAnd<T> and(ExpressionHolder<T, Boolean> expression);
+
+        OperableAnd<T> and(List<ExpressionHolder<T, Boolean>> expressions);
+
+    }
 }

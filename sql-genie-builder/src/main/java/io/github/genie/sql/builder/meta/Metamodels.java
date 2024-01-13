@@ -115,6 +115,7 @@ public class Metamodels {
     static final class ProjectionImpl implements Projection {
         private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
+        private final EntityType entityType;
 
         @Override
         public Type owner() {

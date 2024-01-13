@@ -41,16 +41,16 @@ public abstract class AbstractMetamodel implements Metamodel {
     }
 
     @Override
-    public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
-        List<Class<?>> key = Arrays.asList(baseType, projectionType);
-        return projections.computeIfAbsent(key, k -> createProjection(baseType, projectionType));
+    public Projection getProjection(Class<?> entityType, Class<?> projectionType) {
+        List<Class<?>> key = Arrays.asList(entityType, projectionType);
+        return projections.computeIfAbsent(key, k -> createProjection(entityType, projectionType));
     }
 
     @NotNull
     protected Projection createProjection(Class<?> baseType, Class<?> projectionType) {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
-        ProjectionImpl result = new ProjectionImpl(baseType, list);
+        ProjectionImpl result = new ProjectionImpl(projectionType, list, entity);
         if (projectionType.isInterface()) {
             Method[] methods = projectionType.getMethods();
             for (Method method : methods) {

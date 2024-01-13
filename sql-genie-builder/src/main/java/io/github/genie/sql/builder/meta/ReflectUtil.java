@@ -1,6 +1,8 @@
 package io.github.genie.sql.builder.meta;
 
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.beans.BeanInfo;
 import java.beans.Introspector;
@@ -11,7 +13,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 public class ReflectUtil {
-    public static Field getDeclaredField(Class<?> clazz, String name) {
+    @Nullable
+    public static Field getDeclaredField(@NotNull Class<?> clazz, String name) {
         try {
             return clazz.getDeclaredField(name);
         } catch (NoSuchFieldException e) {
