@@ -3,8 +3,7 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query.Fetch;
 import io.github.genie.sql.api.Query.Select;
@@ -32,10 +31,10 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         super(queryExecutor, type, structurePostProcessor);
     }
 
-    public Where0<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions) {
+    public Where0<T, T> fetch(List<ColumnHolder<T, ?>> expressions) {
         QueryStructureImpl structure = queryStructure.copy();
         List<Column> list = new ArrayList<>(expressions.size());
-        for (PathOperator<T, ?, Predicate<T>> expression : expressions) {
+        for (ColumnHolder<T, ?> expression : expressions) {
             Expression expr = expression.expression();
             if (expr instanceof Column) {
                 Column column = (Column) expr;

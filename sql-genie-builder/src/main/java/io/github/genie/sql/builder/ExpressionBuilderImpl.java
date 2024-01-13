@@ -438,7 +438,7 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         private <R> Column getPath(Path<U, R> path) {
-            if (operation instanceof Column) {
+            if (operand instanceof Column) {
                 return Expressions.concat((Column) operand, path);
             }
             throw new IllegalStateException();

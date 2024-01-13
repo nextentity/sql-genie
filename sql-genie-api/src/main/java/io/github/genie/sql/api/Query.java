@@ -1,5 +1,6 @@
 package io.github.genie.sql.api;
 
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
@@ -82,7 +83,7 @@ public interface Query {
 
     interface Fetch<T> extends Where<T, T> {
 
-        Where<T, T> fetch(List<PathOperator<T, ?, Predicate<T>>> expressions);
+        Where<T, T> fetch(List<ColumnHolder<T, ?>> expressions);
 
         Where<T, T> fetch(Collection<Path<T, ?>> paths);
 

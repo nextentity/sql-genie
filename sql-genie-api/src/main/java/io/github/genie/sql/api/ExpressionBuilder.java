@@ -1,5 +1,6 @@
 package io.github.genie.sql.api;
 
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
@@ -46,7 +47,7 @@ public interface ExpressionBuilder<T> {
         Order<T> desc();
     }
 
-    interface OperablePath<T, U> extends PathOperator<T, U, OperableBoolean<T>>, OperableExpression<T, U> {
+    interface OperablePath<T, U> extends PathOperator<T, U, OperableBoolean<T>>, OperableExpression<T, U>, ColumnHolder<T, U> {
         @Override
         <R> OperablePath<T, R> get(Path<U, R> path);
 
@@ -126,7 +127,7 @@ public interface ExpressionBuilder<T> {
         OperableBoolean<T> not();
     }
 
-    interface OperableOr<T> {
+    interface OperableOr<T> extends OperableComparable<T, Boolean> {
 
         <R> OperablePath<T, R> or(Path<T, R> path);
 

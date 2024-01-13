@@ -1,13 +1,14 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.ExpressionBuilder.OperableBoolean;
+import io.github.genie.sql.api.ExpressionBuilder.OperableComparable;
+import io.github.genie.sql.api.ExpressionBuilder.OperableNumber;
+import io.github.genie.sql.api.ExpressionBuilder.OperablePath;
+import io.github.genie.sql.api.ExpressionBuilder.OperableString;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
-import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.Predicate;
-import io.github.genie.sql.api.ExpressionOperator.Root;
-import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Path;
@@ -15,7 +16,6 @@ import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
-import io.github.genie.sql.builder.DefaultExpressionOperator.RootImpl;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,54 +31,48 @@ import static io.github.genie.sql.api.Order.SortOrder.DESC;
 
 public final class Q {
 
-    public static <T> Root<T> of() {
-        return new RootImpl<>();
+    public static <T> ExpressionBuilder<T> of() {
+        return new ExpressionBuilderImpl<>();
     }
 
-    public static <T, U> PathOperator<T, U, Predicate<T>> get(Path<T, U> path) {
+    public static <T, U> OperablePath<T, U> get(Path<T, U> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T> StringOperator<T, Predicate<T>> get(StringPath<T> path) {
+    public static <T> OperableString<T> get(StringPath<T> path) {
         return Q.<T>of().get(path);
     }
 
     public static <T, U extends Number & Comparable<U>>
-    NumberOperator<T, U, Predicate<T>> get(NumberPath<T, U> path) {
+    OperableNumber<T, U> get(NumberPath<T, U> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T, V extends Comparable<V>>
-    ComparableOperator<T, V, Predicate<T>> get(ComparablePath<T, V> path) {
+    public static <T, V extends Comparable<V>> OperableComparable<T, V> get(ComparablePath<T, V> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T> Predicate<T> get(BooleanPath<T> path) {
+    public static <T> OperableBoolean<T> get(BooleanPath<T> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T, E extends Number & Comparable<E>>
-    NumberOperator<T, E, Predicate<T>> min(NumberPath<T, E> path) {
+    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> min(NumberPath<T, E> path) {
         return get(path).min();
     }
 
-    public static <T, V extends Number & Comparable<V>>
-    NumberOperator<T, V, Predicate<T>> max(NumberPath<T, V> path) {
+    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> max(NumberPath<T, E> path) {
         return get(path).max();
     }
 
-    public static <T, E extends Number & Comparable<E>>
-    NumberOperator<T, E, Predicate<T>> sum(NumberPath<T, E> path) {
+    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> sum(NumberPath<T, E> path) {
         return get(path).sum();
     }
 
-    public static <T, E extends Number & Comparable<E>>
-    NumberOperator<T, E, Predicate<T>> avg(NumberPath<T, E> path) {
+    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> avg(NumberPath<T, E> path) {
         return get(path).avg();
     }
 
-    public static <T>
-    NumberOperator<T, Integer, Predicate<T>> count(Path<T, ?> path) {
+    public static <T> OperableNumber<T, Integer> count(Path<T, ?> path) {
         return get(path).count();
     }
 

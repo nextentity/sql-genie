@@ -3,9 +3,9 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder.OperablePath;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
@@ -93,9 +93,9 @@ public interface Expressions {
         return new OperationMeta(l, o, r);
     }
 
-    static <T> List<PathOperator<T, ?, Predicate<T>>> toExpressionList(Collection<Path<T, ?>> paths) {
+    static <T> List<ColumnHolder<T, ?>> toExpressionList(Collection<Path<T, ?>> paths) {
         return paths.stream()
-                .<PathOperator<T, ?, Predicate<T>>>map(Q::get)
+                .<OperablePath<T, ?>>map(Q::get)
                 .collect(Collectors.toList());
     }
 
