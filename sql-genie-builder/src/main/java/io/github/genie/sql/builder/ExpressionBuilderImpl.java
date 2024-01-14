@@ -1,11 +1,15 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.EntityRoot;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Operation;
+import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
+import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
+import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.Lists;
-import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
@@ -14,7 +18,20 @@ import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.api.TypedExpression;
+import io.github.genie.sql.api.TypedExpression.BooleanExpression;
+import io.github.genie.sql.api.TypedExpression.ComparableExpression;
+import io.github.genie.sql.api.TypedExpression.NumberExpression;
+import io.github.genie.sql.api.TypedExpression.PathExpression;
+import io.github.genie.sql.api.TypedExpression.Predicate;
+import io.github.genie.sql.api.TypedExpression.StringExpression;
+import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -22,58 +39,52 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
+public class ExpressionBuilderImpl<T> implements EntityRoot<T> {
+
+    private static final ExpressionBuilderImpl<?> INSTANCE = new ExpressionBuilderImpl<>();
+
+    public static <T> EntityRoot<T> of() {
+        return TypeCastUtil.cast(INSTANCE);
+    }
+
+    protected ExpressionBuilderImpl() {
+    }
+
     @Override
-    public <U> OperablePath<T, U> get(Path<T, U> path) {
+    public <U> ExpressionHolder<T, U> of(U value) {
+        return ExpressionHolders.of(value);
+    }
+
+    @Override
+    public <U> PathExpression<T, U> get(Path<T, U> path) {
         return new OperablePathImpl<>((Operation) null, Expressions.of(path));
     }
 
     @Override
-    public OperableString<T> get(StringPath<T> path) {
+    public StringExpression<T> get(StringPath<T> path) {
         return new OperableStringImpl<>((Operation) null, Expressions.of(path));
     }
 
     @Override
-    public <U extends Number & Comparable<U>> OperableNumber<T, U> get(NumberPath<T, U> path) {
+    public <U extends Number & Comparable<U>> NumberExpression<T, U> get(NumberPath<T, U> path) {
         return new OperableNumberImpl<>((Operation) null, Expressions.of(path));
     }
 
     @Override
-    public <U extends Comparable<U>> OperableComparable<T, U> get(ComparablePath<T, U> path) {
+    public <U extends Comparable<U>> ComparableExpression<T, U> get(ComparablePath<T, U> path) {
         return new OperableComparableImpl<>((Operation) null, Expressions.of(path));
     }
 
     @Override
-    public OperableBoolean<T> get(BooleanPath<T> path) {
+    public BooleanExpression<T> get(BooleanPath<T> path) {
         return new OperableBooleanImpl<>((Operation) null, Expressions.of(path));
     }
 
-    @Override
-    public <U extends Number & Comparable<U>> OperableNumber<T, U> min(NumberPath<T, U> path) {
-        return get(path).min();
+    static <T> BooleanExpression<T> ofBooleanExpression(Expression expression) {
+        return new OperableBooleanImpl<>((Operation) null, expression);
     }
 
-    @Override
-    public <U extends Number & Comparable<U>> OperableNumber<T, U> max(NumberPath<T, U> path) {
-        return get(path).max();
-    }
-
-    @Override
-    public <U extends Number & Comparable<U>> OperableNumber<T, U> sum(NumberPath<T, U> path) {
-        return get(path).sum();
-    }
-
-    @Override
-    public <U extends Number & Comparable<U>> OperableNumber<T, U> avg(NumberPath<T, U> path) {
-        return get(path).avg();
-    }
-
-    @Override
-    public OperableNumber<T, Integer> count(Path<T, ?> path) {
-        return get(path).count();
-    }
-
-    private static class OperableExpressionImpl<T, U> implements OperableExpression<T, U> {
+    private static class OperableExpressionImpl<T, U> implements TypedExpression<T, U> {
         protected final Operation operation;
         protected final Expression operand;
 
@@ -102,52 +113,52 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableBoolean<T> eq(U value) {
+        public BooleanExpression<T> eq(U value) {
             return eq(ExpressionHolders.of(value));
         }
 
         @Override
-        public OperableBoolean<T> eq(ExpressionHolder<T, U> value) {
+        public BooleanExpression<T> eq(ExpressionHolder<T, U> value) {
             Expression operate = operate(Operator.EQ, value);
             return new OperableBooleanImpl<>(this, operate);
         }
 
         @Override
-        public OperableBoolean<T> ne(U value) {
+        public BooleanExpression<T> ne(U value) {
             return ne(ExpressionHolders.of(value));
         }
 
         @Override
-        public OperableBoolean<T> ne(ExpressionHolder<T, U> value) {
+        public BooleanExpression<T> ne(ExpressionHolder<T, U> value) {
             Expression operate = operate(Operator.NE, value);
             return new OperableBooleanImpl<>(this, operate);
         }
 
         @SafeVarargs
         @Override
-        public final OperableBoolean<T> in(U... values) {
+        public final BooleanExpression<T> in(U... values) {
             return in(ExpressionHolders.of(values));
         }
 
         @Override
-        public OperableBoolean<T> in(@NotNull List<? extends ExpressionHolder<T, U>> values) {
+        public BooleanExpression<T> in(@NotNull List<? extends ExpressionHolder<T, U>> values) {
             Expression operate = operate(Operator.IN, values);
             return new OperableBooleanImpl<>(this, operate);
         }
 
         @Override
-        public OperableBoolean<T> in(@NotNull Collection<? extends U> values) {
+        public BooleanExpression<T> in(@NotNull Collection<? extends U> values) {
             return in(ExpressionHolders.of(values));
         }
 
         @SafeVarargs
         @Override
-        public final OperableBoolean<T> notIn(U... values) {
+        public final BooleanExpression<T> notIn(U... values) {
             return notIn(ExpressionHolders.of(values));
         }
 
         @Override
-        public OperableBoolean<T> notIn(@NotNull List<? extends ExpressionHolder<T, U>> values) {
+        public BooleanExpression<T> notIn(@NotNull List<? extends ExpressionHolder<T, U>> values) {
             List<Expression> expressions = values.stream()
                     .map(ExpressionHolder::expression)
                     .collect(Collectors.toList());
@@ -157,26 +168,31 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableBoolean<T> notIn(@NotNull Collection<? extends U> values) {
+        public BooleanExpression<T> notIn(@NotNull Collection<? extends U> values) {
             return notIn(ExpressionHolders.of(values));
         }
 
         @Override
-        public OperableBoolean<T> isNull() {
+        public BooleanExpression<T> isNull() {
             Expression operate = Expressions.operate(operand, Operator.IS_NULL);
             return new OperableBooleanImpl<>(this, operate);
         }
 
         @Override
-        public OperableNumber<T, Integer> count() {
+        public NumberExpression<T, Integer> count() {
             Expression operate = Expressions.operate(operand, Operator.COUNT);
             return new OperableNumberImpl<>(this, operate);
         }
 
         @Override
-        public OperableBoolean<T> isNotNull() {
+        public BooleanExpression<T> isNotNull() {
             Expression operate = Expressions.operate(operand, Operator.IS_NOT_NULL);
             return new OperableBooleanImpl<>(this, operate);
+        }
+
+        @Override
+        public EntityRoot<T> root() {
+            return ExpressionBuilderImpl.of();
         }
 
         @Override
@@ -216,7 +232,7 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
 
     private static class OperableComparableImpl<T, U extends Comparable<U>>
             extends OperableExpressionImpl<T, U>
-            implements OperableComparable<T, U> {
+            implements ComparableExpression<T, U> {
 
         public OperableComparableImpl(OperableExpressionImpl<?, ?> origin, Expression operand) {
             super(origin, operand);
@@ -227,85 +243,35 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableBoolean<T> ge(U value) {
-            return ge(ExpressionHolders.of(value));
-        }
-
-        @Override
-        public OperableBoolean<T> gt(U value) {
-            return gt(ExpressionHolders.of(value));
-        }
-
-        @Override
-        public OperableBoolean<T> le(U value) {
-            return le(ExpressionHolders.of(value));
-        }
-
-        @Override
-        public OperableBoolean<T> lt(U value) {
-            return lt(ExpressionHolders.of(value));
-        }
-
-        @Override
-        public OperableBoolean<T> ge(ExpressionHolder<T, U> expression) {
+        public BooleanExpression<T> ge(ExpressionHolder<T, U> expression) {
             return new OperableBooleanImpl<>(this, operate(Operator.GE, expression));
         }
 
         @Override
-        public OperableBoolean<T> gt(ExpressionHolder<T, U> expression) {
+        public BooleanExpression<T> gt(ExpressionHolder<T, U> expression) {
             return new OperableBooleanImpl<>(this, operate(Operator.GT, expression));
         }
 
         @Override
-        public OperableBoolean<T> le(ExpressionHolder<T, U> expression) {
+        public BooleanExpression<T> le(ExpressionHolder<T, U> expression) {
             return new OperableBooleanImpl<>(this, operate(Operator.LE, expression));
         }
 
         @Override
-        public OperableBoolean<T> lt(ExpressionHolder<T, U> expression) {
+        public BooleanExpression<T> lt(ExpressionHolder<T, U> expression) {
             return new OperableBooleanImpl<>(this, operate(Operator.LT, expression));
         }
 
         @Override
-        public OperableBoolean<T> between(U l, U r) {
-            return between(ExpressionHolders.of(l), ExpressionHolders.of(r));
-        }
-
-        @Override
-        public OperableBoolean<T> notBetween(U l, U r) {
-            return notBetween(ExpressionHolders.of(l), ExpressionHolders.of(r));
-        }
-
-        @Override
-        public OperableBoolean<T> between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
+        public BooleanExpression<T> between(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
             return new OperableBooleanImpl<>(this, operate(Operator.BETWEEN, List.of(l, r)));
         }
 
         @Override
-        public OperableBoolean<T> between(ExpressionHolder<T, U> l, U r) {
-            return between(l, ExpressionHolders.of(r));
-        }
-
-        @Override
-        public OperableBoolean<T> between(U l, ExpressionHolder<T, U> r) {
-            return between(ExpressionHolders.of(l), r);
-        }
-
-        @Override
-        public OperableBoolean<T> notBetween(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
+        public BooleanExpression<T> notBetween(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
             Expression operate = operate(Operator.BETWEEN, List.of(l, ExpressionHolders.of(r)));
             operate = Expressions.operate(operate, Operator.NOT);
             return new OperableBooleanImpl<>(this, operate);
-        }
-
-        @Override
-        public OperableBoolean<T> notBetween(ExpressionHolder<T, U> l, U r) {
-            return notBetween(l, ExpressionHolders.of(r));
-        }
-
-        @Override
-        public OperableBoolean<T> notBetween(U l, ExpressionHolder<T, U> r) {
-            return notBetween(ExpressionHolders.of(l), r);
         }
 
         @Override
@@ -317,11 +283,12 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         public Order<T> desc() {
             return new OrderImpl<>(operand, SortOrder.DESC);
         }
+
     }
 
     private static class OperableBooleanImpl<T>
             extends OperableComparableImpl<T, Boolean>
-            implements OperableBoolean<T> {
+            implements BooleanExpression<T> {
 
         public OperableBooleanImpl(OperableExpressionImpl<?, ?> origin, Expression operand) {
             super(origin, operand);
@@ -332,42 +299,64 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableBoolean<T> not() {
+        public BooleanExpression<T> not() {
             return new OperableBooleanImpl<>(this, Expressions.operate(operand, Operator.NOT));
         }
 
         @Override
-        public <R> OperablePath<T, R> or(Path<T, R> path) {
-            return new OperablePathImpl<>(or(), Expressions.of(path));
+        public <R> PathOperator<T, R, OrOperator<T>> or(Path<T, R> path) {
+            PathExpression<T, R> expression = new OperablePathImpl<>(or(), Expressions.of(path));
+            return new PathOperatorImpl<>(expression, this::newOrOperator);
+        }
+
+        @NotNull
+        OrOperator<T> newOrOperator(TypedExpression<?, ?> expression) {
+            if (expression instanceof OrOperator) {
+                return TypeCastUtil.unsafeCast(expression);
+            }
+            OperableExpressionImpl<?, ?> expr = (OperableExpressionImpl<?, ?>) expression;
+            return new OperableBooleanImpl<>(expr.operation, expr.operand);
+        }
+
+        @NotNull
+        AndOperator<T> newAndOperator(TypedExpression<?, ?> expression) {
+            if (expression instanceof AndOperator) {
+                return TypeCastUtil.unsafeCast(expression);
+            }
+            OperableExpressionImpl<?, ?> expr = (OperableExpressionImpl<?, ?>) expression;
+            return new OperableBooleanImpl<>(expr.operation, expr.operand);
         }
 
         @Override
-        public <R extends Comparable<R>> OperableComparable<T, R> or(ComparablePath<T, R> path) {
-            return new OperableComparableImpl<>(or(), Expressions.of(path));
+        public <R extends Comparable<R>> ComparableOperator<T, R, OrOperator<T>> or(ComparablePath<T, R> path) {
+            ComparableExpression<T, R> expression = new OperableComparableImpl<>(or(), Expressions.of(path));
+            return new ComparableOperatorImpl<>(expression, this::newOrOperator);
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> or(NumberPath<T, R> path) {
-            return new OperableNumberImpl<>(or(), Expressions.of(path));
+        public <R extends Number & Comparable<R>> NumberOperator<T, R, OrOperator<T>> or(NumberPath<T, R> path) {
+            NumberExpression<T, R> expression = new OperableNumberImpl<>(or(), Expressions.of(path));
+            return new NumberOperatorImpl<>(expression, this::newOrOperator);
         }
 
         @Override
-        public OperableOr<T> or(BooleanPath<T> path) {
+        public OrOperator<T> or(BooleanPath<T> path) {
             return new OperableBooleanImpl<>(or(), Expressions.of(path));
         }
 
         @Override
-        public OperableString<T> or(StringPath<T> path) {
-            return new OperableStringImpl<>(or(), Expressions.of(path));
+        public StringOperator<T, ? extends OrOperator<T>> or(StringPath<T> path) {
+            StringExpression<T> expression = new OperableStringImpl<>(or(), Expressions.of(path));
+            return new StringOperatorImpl<>(expression, this::newOrOperator);
         }
 
         @Override
-        public OperableOr<T> or(ExpressionHolder<T, Boolean> expression) {
+        public OrOperator<T> or(ExpressionHolder<T, Boolean> expression) {
             return new OperableBooleanImpl<>(or(), expression.expression());
         }
 
         @Override
-        public OperableOr<T> or(List<ExpressionHolder<T, Boolean>> expressions) {
+        public OrOperator<T> or(List<? extends ExpressionHolder<T, Boolean>> expressions) {
             if (expressions.isEmpty()) {
                 return this;
             }
@@ -381,53 +370,84 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public <R> OperablePath<T, R> and(Path<T, R> path) {
-            return new OperablePathImpl<>(and(), Expressions.of(path));
+        public <R> PathOperator<T, R, AndOperator<T>> and(Path<T, R> path) {
+            PathExpression<T, R> expression = new OperablePathImpl<>(and(), Expressions.of(path));
+            return new PathOperatorImpl<>(expression, this::newAndOperator);
         }
 
         @Override
-        public <R extends Comparable<R>> OperableComparable<T, R> and(ComparablePath<T, R> path) {
-            return new OperableComparableImpl<>(and(), Expressions.of(path));
+        public <R extends Comparable<R>> ComparableOperator<T, R, AndOperator<T>> and(ComparablePath<T, R> path) {
+            ComparableExpression<T, R> expression = new OperableComparableImpl<>(and(), Expressions.of(path));
+            return new ComparableOperatorImpl<>(expression, this::newAndOperator);
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> and(NumberPath<T, R> path) {
-            return new OperableNumberImpl<>(and(), Expressions.of(path));
+        public <R extends Number & Comparable<R>> NumberOperator<T, R, AndOperator<T>> and(NumberPath<T, R> path) {
+            NumberExpression<T, R> expression = new OperableNumberImpl<>(and(), Expressions.of(path));
+            return new NumberOperatorImpl<>(expression, this::newAndOperator);
         }
 
         @Override
-        public OperableAnd<T> and(BooleanPath<T> path) {
-            return new OperableBooleanImpl<>(and(), Expressions.of(path));
-        }
-
-        @Override
-        public OperableString<T> and(StringPath<T> path) {
-            return new OperableStringImpl<>(and(), Expressions.of(path));
-        }
-
-        @Override
-        public OperableAnd<T> and(ExpressionHolder<T, Boolean> expression) {
+        public AndOperator<T> and(BooleanPath<T> path) {
+            BooleanExpression<T> expression = new OperableBooleanImpl<>(and(), Expressions.of(path));
             return new OperableBooleanImpl<>(and(), expression.expression());
         }
 
         @Override
-        public OperableAnd<T> and(List<ExpressionHolder<T, Boolean>> expressions) {
-            if (expressions.isEmpty()) {
-                return this;
+        public StringOperator<T, AndOperator<T>> and(StringPath<T> path) {
+            StringExpression<T> expression = new OperableStringImpl<>(and(), Expressions.of(path));
+            return new StringOperatorImpl<>(expression, this::newAndOperator);
+        }
+
+        @Override
+        public AndOperator<T> and(ExpressionHolder<T, Boolean> expression) {
+            return new OperableBooleanImpl<>(and(), expression.expression());
+        }
+
+        @Override
+        public AndOperator<T> and(List<? extends ExpressionHolder<T, Boolean>> expressions) {
+            BooleanExpression<T> expr = this;
+            if (!expressions.isEmpty()) {
+                List<Expression> sub = expressions
+                        .subList(0, expressions.size() - 1)
+                        .stream().map(ExpressionHolder::expression)
+                        .collect(Collectors.toList());
+                Operation operation = (Operation) Expressions.operate(and(), Operator.AND, sub);
+                Expression last = expressions.get(expressions.size() - 1).expression();
+                expr = new OperableBooleanImpl<>(operation, last);
             }
-            List<Expression> sub = expressions
-                    .subList(0, expressions.size() - 1)
-                    .stream().map(ExpressionHolder::expression)
-                    .collect(Collectors.toList());
-            Operation operation = (Operation) Expressions.operate(and(), Operator.AND, sub);
-            Expression last = expressions.get(expressions.size() - 1).expression();
-            return new OperableBooleanImpl<>(operation, last);
+            return expr;
+        }
+
+        @Override
+        public Predicate<T> then() {
+            return new PredicateImpl<>(expression());
+        }
+    }
+
+    @Data
+    @Accessors(fluent = true)
+    private static class PredicateImpl<T> implements Predicate<T> {
+        private final Expression expression;
+
+        private PredicateImpl(Expression expression) {
+            this.expression = expression;
+        }
+
+        @Override
+        public Predicate<T> not() {
+            return new PredicateImpl<>(Expressions.operate(expression, Operator.NOT));
+        }
+
+        @Override
+        public Expression expression() {
+            return expression;
         }
     }
 
     private static class OperablePathImpl<T, U>
             extends OperableExpressionImpl<T, U>
-            implements OperablePath<T, U> {
+            implements PathExpression<T, U> {
 
         public OperablePathImpl(OperableExpressionImpl<?, ?> origin, Expression operand) {
             super(origin, operand);
@@ -445,27 +465,27 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public <R> OperablePath<T, R> get(Path<U, R> path) {
+        public <R> PathExpression<T, R> get(Path<U, R> path) {
             return new OperablePathImpl<>(this, getPath(path));
         }
 
         @Override
-        public OperableString<T> get(StringPath<U> path) {
+        public StringExpression<T> get(StringPath<U> path) {
             return new OperableStringImpl<>(this, getPath(path));
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> get(NumberPath<U, R> path) {
+        public <R extends Number & Comparable<R>> NumberExpression<T, R> get(NumberPath<U, R> path) {
             return new OperableNumberImpl<>(this, getPath(path));
         }
 
         @Override
-        public <R extends Comparable<R>> OperableComparable<T, R> get(ComparablePath<U, R> path) {
+        public <R extends Comparable<R>> ComparableExpression<T, R> get(ComparablePath<U, R> path) {
             return new OperableComparableImpl<>(this, getPath(path));
         }
 
         @Override
-        public OperableBoolean<T> get(BooleanPath<U> path) {
+        public BooleanExpression<T> get(BooleanPath<U> path) {
             return new OperableBooleanImpl<>(this, getPath(path));
         }
     }
@@ -473,7 +493,7 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
 
     private static class OperableStringImpl<T>
             extends OperableComparableImpl<T, String>
-            implements OperableString<T> {
+            implements StringExpression<T> {
 
         public OperableStringImpl(OperableExpressionImpl<?, ?> origin, Expression operand) {
             super(origin, operand);
@@ -484,53 +504,53 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableBoolean<T> like(String value) {
+        public BooleanExpression<T> like(String value) {
             return new OperableBooleanImpl<>(this, operate(Operator.LIKE, value));
         }
 
         @Override
-        public OperableBoolean<T> notLike(String value) {
+        public BooleanExpression<T> notLike(String value) {
             Expression operate = operate(Operator.LIKE, value);
             operate = Expressions.operate(operate, Operator.NOT);
             return new OperableBooleanImpl<>(this, operate);
         }
 
         @Override
-        public OperableString<T> lower() {
+        public StringExpression<T> lower() {
             return new OperableStringImpl<>(this, operate(Operator.LOWER, Lists.of()));
         }
 
         @Override
-        public OperableString<T> upper() {
+        public StringExpression<T> upper() {
             return new OperableStringImpl<>(this, operate(Operator.UPPER, Lists.of()));
         }
 
         @Override
-        public OperableString<T> substring(int a, int b) {
+        public StringExpression<T> substring(int a, int b) {
             List<ExpressionHolder<T, ?>> expressions =
                     Lists.of(ExpressionHolders.of(a), ExpressionHolders.of(b));
             return new OperableStringImpl<>(this, operate(Operator.SUBSTRING, expressions));
         }
 
         @Override
-        public OperableString<T> substring(int a) {
+        public StringExpression<T> substring(int a) {
             return new OperableStringImpl<>(this, operate(Operator.SUBSTRING, a));
         }
 
         @Override
-        public OperableString<T> trim() {
+        public StringExpression<T> trim() {
             return new OperableStringImpl<>(this, operate(Operator.TRIM, Lists.of()));
         }
 
         @Override
-        public OperableNumber<T, Integer> length() {
+        public NumberExpression<T, Integer> length() {
             return new OperableNumberImpl<>(this, operate(Operator.LENGTH, Lists.of()));
         }
     }
 
     private static class OperableNumberImpl<T, U extends Number & Comparable<U>>
             extends OperableComparableImpl<T, U>
-            implements OperableNumber<T, U> {
+            implements NumberExpression<T, U> {
 
         public OperableNumberImpl(OperableExpressionImpl<?, ?> origin, Expression operand) {
             super(origin, operand);
@@ -541,72 +561,47 @@ public class ExpressionBuilderImpl<T> implements ExpressionBuilder<T> {
         }
 
         @Override
-        public OperableNumber<T, U> add(U value) {
-            return add(ExpressionHolders.of(value));
+        public NumberExpression<T, U> add(ExpressionHolder<T, U> expression) {
+            return new OperableNumberImpl<>(this, operate(Operator.ADD, expression));
         }
 
         @Override
-        public OperableNumber<T, U> subtract(U value) {
-            return subtract(ExpressionHolders.of(value));
+        public NumberExpression<T, U> subtract(ExpressionHolder<T, U> expression) {
+            return new OperableNumberImpl<>(this, operate(Operator.SUBTRACT, expression));
         }
 
         @Override
-        public OperableNumber<T, U> multiply(U value) {
-            return multiply(ExpressionHolders.of(value));
+        public NumberExpression<T, U> multiply(ExpressionHolder<T, U> expression) {
+            return new OperableNumberImpl<>(this, operate(Operator.MULTIPLY, expression));
         }
 
         @Override
-        public OperableNumber<T, U> divide(U value) {
-            return divide(ExpressionHolders.of(value));
+        public NumberExpression<T, U> divide(ExpressionHolder<T, U> expression) {
+            return new OperableNumberImpl<>(this, operate(Operator.DIVIDE, expression));
         }
 
         @Override
-        public OperableNumber<T, U> mod(U value) {
-            return mod(ExpressionHolders.of(value));
+        public NumberExpression<T, U> mod(ExpressionHolder<T, U> expression) {
+            return new OperableNumberImpl<>(this, operate(Operator.MOD, expression));
         }
 
         @Override
-        public OperableNumber<T, U> add(ExpressionHolder<T, U> value) {
-            return new OperableNumberImpl<>(this, operate(Operator.ADD, value));
-        }
-
-        @Override
-        public OperableNumber<T, U> subtract(ExpressionHolder<T, U> value) {
-            return new OperableNumberImpl<>(this, operate(Operator.SUBTRACT, value));
-        }
-
-        @Override
-        public OperableNumber<T, U> multiply(ExpressionHolder<T, U> value) {
-            return new OperableNumberImpl<>(this, operate(Operator.MULTIPLY, value));
-        }
-
-        @Override
-        public OperableNumber<T, U> divide(ExpressionHolder<T, U> value) {
-            return new OperableNumberImpl<>(this, operate(Operator.DIVIDE, value));
-        }
-
-        @Override
-        public OperableNumber<T, U> mod(ExpressionHolder<T, U> value) {
-            return new OperableNumberImpl<>(this, operate(Operator.MOD, value));
-        }
-
-        @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> sum() {
+        public NumberExpression<T, U> sum() {
             return new OperableNumberImpl<>(this, operate(Operator.SUM, Lists.of()));
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> avg() {
+        public <R extends Number & Comparable<R>> NumberExpression<T, R> avg() {
             return new OperableNumberImpl<>(this, operate(Operator.AVG, Lists.of()));
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> max() {
+        public NumberExpression<T, U> max() {
             return new OperableNumberImpl<>(this, operate(Operator.MAX, Lists.of()));
         }
 
         @Override
-        public <R extends Number & Comparable<R>> OperableNumber<T, R> min() {
+        public NumberExpression<T, U> min() {
             return new OperableNumberImpl<>(this, operate(Operator.MIN, Lists.of()));
         }
     }

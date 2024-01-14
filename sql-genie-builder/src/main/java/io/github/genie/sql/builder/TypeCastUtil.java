@@ -20,4 +20,7 @@ public class TypeCastUtil {
         return (T) object;
     }
 
+    public static <T> ExpressionBuilderImpl<T> cast(ExpressionBuilderImpl<?> builder) {
+        return unsafeCast(builder);
+    }
 }

@@ -1,4 +1,4 @@
-package io.github.genie.sql.test;
+package io.github.genie.sql;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import lombok.Data;

@@ -1,10 +1,10 @@
-package io.github.genie.sql.test;
+package io.github.genie.sql;
 
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.meta.JpaMetamodel;
-import io.github.genie.sql.test.entity.User;
+import io.github.genie.sql.entity.User;
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;

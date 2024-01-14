@@ -4,7 +4,6 @@ import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
@@ -20,7 +19,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static io.github.genie.sql.api.Order.SortOrder.*;
+import static io.github.genie.sql.api.Order.SortOrder.ASC;
+import static io.github.genie.sql.api.Order.SortOrder.DESC;
 
 public interface Query {
 

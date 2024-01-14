@@ -1,7 +1,7 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.From.SubQuery;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Order;

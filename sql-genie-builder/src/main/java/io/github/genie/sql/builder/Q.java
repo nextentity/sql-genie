@@ -1,14 +1,8 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder;
-import io.github.genie.sql.api.ExpressionBuilder.OperableBoolean;
-import io.github.genie.sql.api.ExpressionBuilder.OperableComparable;
-import io.github.genie.sql.api.ExpressionBuilder.OperableNumber;
-import io.github.genie.sql.api.ExpressionBuilder.OperablePath;
-import io.github.genie.sql.api.ExpressionBuilder.OperableString;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.EntityRoot;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Path;
@@ -16,6 +10,11 @@ import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.api.TypedExpression.BooleanExpression;
+import io.github.genie.sql.api.TypedExpression.ComparableExpression;
+import io.github.genie.sql.api.TypedExpression.NumberExpression;
+import io.github.genie.sql.api.TypedExpression.PathExpression;
+import io.github.genie.sql.api.TypedExpression.StringExpression;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,72 +27,73 @@ import static io.github.genie.sql.api.Operator.NOT;
 import static io.github.genie.sql.api.Operator.OR;
 import static io.github.genie.sql.api.Order.SortOrder.ASC;
 import static io.github.genie.sql.api.Order.SortOrder.DESC;
+import static io.github.genie.sql.builder.ExpressionBuilderImpl.ofBooleanExpression;
 
 public final class Q {
 
-    public static <T> ExpressionBuilder<T> of() {
-        return new ExpressionBuilderImpl<>();
+    public static <T> EntityRoot<T> of() {
+        return ExpressionBuilderImpl.of();
     }
 
-    public static <T, U> OperablePath<T, U> get(Path<T, U> path) {
+    public static <T, U> PathExpression<T, U> get(Path<T, U> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T> OperableString<T> get(StringPath<T> path) {
+    public static <T> StringExpression<T> get(StringPath<T> path) {
         return Q.<T>of().get(path);
     }
 
     public static <T, U extends Number & Comparable<U>>
-    OperableNumber<T, U> get(NumberPath<T, U> path) {
+    NumberExpression<T, U> get(NumberPath<T, U> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T, V extends Comparable<V>> OperableComparable<T, V> get(ComparablePath<T, V> path) {
+    public static <T, V extends Comparable<V>> ComparableExpression<T, V> get(ComparablePath<T, V> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T> OperableBoolean<T> get(BooleanPath<T> path) {
+    public static <T> BooleanExpression<T> get(BooleanPath<T> path) {
         return Q.<T>of().get(path);
     }
 
-    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> min(NumberPath<T, E> path) {
-        return get(path).min();
+    public static <T, E extends Number & Comparable<E>> NumberExpression<T, E> min(NumberPath<T, E> path) {
+        return Q.<T>of().min(path);
     }
 
-    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> max(NumberPath<T, E> path) {
-        return get(path).max();
+    public static <T, E extends Number & Comparable<E>> NumberExpression<T, E> max(NumberPath<T, E> path) {
+        return Q.<T>of().max(path);
     }
 
-    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> sum(NumberPath<T, E> path) {
-        return get(path).sum();
+    public static <T, E extends Number & Comparable<E>> NumberExpression<T, E> sum(NumberPath<T, E> path) {
+        return Q.<T>of().sum(path);
     }
 
-    public static <T, E extends Number & Comparable<E>> OperableNumber<T, E> avg(NumberPath<T, E> path) {
-        return get(path).avg();
+    public static <T, E extends Number & Comparable<E>> NumberExpression<T, E> avg(NumberPath<T, E> path) {
+        return Q.<T>of().avg(path);
     }
 
-    public static <T> OperableNumber<T, Integer> count(Path<T, ?> path) {
-        return get(path).count();
+    public static <T> NumberExpression<T, Integer> count(Path<T, ?> path) {
+        return Q.<T>of().count(path);
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> and(ExpressionHolder<T, Boolean> predicate,
-                                       ExpressionHolder<T, Boolean>... predicates) {
+    public static <T> BooleanExpression<T> and(ExpressionHolder<T, Boolean> predicate,
+                                               ExpressionHolder<T, Boolean>... predicates) {
         List<Expression> metas = Arrays.stream(predicates)
                 .map(ExpressionHolder::expression)
                 .collect(Collectors.toList());
         Expression expression = Expressions.operate(predicate.expression(), AND, metas);
-        return DefaultExpressionOperator.ofBoolOps(expression);
+        return ofBooleanExpression(expression);
     }
 
     @SafeVarargs
-    public static <T> Predicate<T> or(ExpressionHolder<T, Boolean> predicate,
-                                      ExpressionHolder<T, Boolean>... predicates) {
+    public static <T> BooleanExpression<T> or(ExpressionHolder<T, Boolean> predicate,
+                                              ExpressionHolder<T, Boolean>... predicates) {
         List<Expression> metas = Arrays.stream(predicates)
                 .map(ExpressionHolder::expression)
                 .collect(Collectors.toList());
         Expression expression = Expressions.operate(predicate.expression(), OR, metas);
-        return DefaultExpressionOperator.ofBoolOps(expression);
+        return ofBooleanExpression(expression);
     }
 
     public static <T> Order<T> desc(Path<T, ? extends Comparable<?>> path) {
@@ -127,9 +127,9 @@ public final class Q {
         return new OrderImpl<>(expression.expression(), order);
     }
 
-    public static <T> Predicate<T> not(ExpressionHolder<T, Boolean> lt) {
+    public static <T> BooleanExpression<T> not(ExpressionHolder<T, Boolean> lt) {
         Expression expression = Expressions.operate(lt.expression(), NOT);
-        return DefaultExpressionOperator.ofBoolOps(expression);
+        return ofBooleanExpression(expression);
     }
 
     private Q() {

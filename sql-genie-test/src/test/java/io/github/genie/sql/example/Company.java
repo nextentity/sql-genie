@@ -1,4 +1,4 @@
-package io.github.genie.sql.test.example;
+package io.github.genie.sql.example;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

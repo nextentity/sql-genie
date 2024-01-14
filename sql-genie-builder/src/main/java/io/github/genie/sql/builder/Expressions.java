@@ -3,13 +3,13 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionBuilder.OperablePath;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Path;
+import io.github.genie.sql.api.TypedExpression.PathExpression;
 import io.github.genie.sql.builder.QueryStructures.ColumnMeta;
 import io.github.genie.sql.builder.QueryStructures.ConstantMeta;
 import io.github.genie.sql.builder.QueryStructures.OperationMeta;
@@ -95,7 +95,7 @@ public interface Expressions {
 
     static <T> List<ColumnHolder<T, ?>> toExpressionList(Collection<Path<T, ?>> paths) {
         return paths.stream()
-                .<OperablePath<T, ?>>map(Q::get)
+                .<PathExpression<T, ?>>map(Q::get)
                 .collect(Collectors.toList());
     }
 

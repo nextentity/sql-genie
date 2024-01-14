@@ -1,12 +1,12 @@
-package io.github.genie.sql.test.example;
+package io.github.genie.sql.example;
 
+import io.github.genie.sql.DataSourceConfig;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.builder.Q;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.meta.JpaMetamodel;
-import io.github.genie.sql.test.DataSourceConfig;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;

@@ -1,4 +1,4 @@
-package io.github.genie.sql.test.entity;
+package io.github.genie.sql.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

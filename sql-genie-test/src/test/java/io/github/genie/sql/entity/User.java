@@ -1,4 +1,4 @@
-package io.github.genie.sql.test.entity;
+package io.github.genie.sql.entity;
 
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;

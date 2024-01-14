@@ -1,12 +1,9 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
-import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.StringOperator;
+import io.github.genie.sql.api.EntityRoot;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
@@ -19,21 +16,27 @@ import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
+import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.Query.GroupBy;
 import io.github.genie.sql.api.Query.Having;
+import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.Query.OrderBy;
 import io.github.genie.sql.api.Query.OrderOperator;
+import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.SliceQueryStructure;
+import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Query.Where0;
 import io.github.genie.sql.api.QueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.Context;
-import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
+import io.github.genie.sql.api.TypedExpression;
+import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
+import io.github.genie.sql.builder.QueryBuilder.AndBuilderImpl;
 import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
 import io.github.genie.sql.builder.QueryStructures.SingleColumnSelect;
@@ -268,35 +271,41 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     @Override
     public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
-    }
-
-    @NotNull
-    protected AndBuilder0<T, U> newChanAndBuilder(Context<AndBuilder0<T, U>> context) {
-        return new AndBuilderImpl<>(QueryConditionBuilder.this, context);
+        return new NumberOperatorImpl<>(root().get(path), this::newAndBuilder);
     }
 
     @Override
     public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new ComparableOperatorImpl<>(root().get(path), this::newAndBuilder);
+    }
+
+    @NotNull
+    private AndBuilderImpl<T, U> newAndBuilder(TypedExpression<?, ?> expression) {
+        return new AndBuilderImpl<>(QueryConditionBuilder.this, TypeCastUtil.unsafeCast(expression));
     }
 
     @Override
     public StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new StringOperatorImpl<>(root().get(path), this::newAndBuilder);
     }
 
     @Override
     public AndBuilder0<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new AndBuilderImpl<>(this, root().get(path));
+    }
+
+    public EntityRoot<T> root() {
+        return ExpressionBuilderImpl.of();
     }
 
     @Override
     public <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+        return new PathOperatorImpl<>(root().get(path), this::newAndBuilder);
     }
 
     QueryStructureImpl queryStructure() {
         return queryStructure;
     }
+
+
 }

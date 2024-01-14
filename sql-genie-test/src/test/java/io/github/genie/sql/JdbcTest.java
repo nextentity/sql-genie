@@ -1,4 +1,4 @@
-package io.github.genie.sql.test;
+package io.github.genie.sql;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.api.Query;
@@ -8,7 +8,7 @@ import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
 import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.meta.JpaMetamodel;
-import io.github.genie.sql.test.entity.User;
+import io.github.genie.sql.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

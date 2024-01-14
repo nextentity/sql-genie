@@ -1,8 +1,8 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
@@ -27,7 +27,6 @@ import io.github.genie.sql.builder.meta.ProjectionAttribute;
 import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
-import lombok.Data;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -613,7 +612,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     public static final class PreparedSqlImpl implements PreparedSql {
         private final String sql;

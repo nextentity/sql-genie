@@ -1,4 +1,4 @@
-package io.github.genie.sql.test;
+package io.github.genie.sql;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;

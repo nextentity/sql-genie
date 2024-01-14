@@ -1,8 +1,8 @@
 package io.github.genie.sql.executor.jpa;
 
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.builder.Expressions;

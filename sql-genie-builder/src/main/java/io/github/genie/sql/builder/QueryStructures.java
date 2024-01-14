@@ -1,8 +1,8 @@
 package io.github.genie.sql.builder;
 
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
@@ -17,7 +17,6 @@ import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.api.Slice;
-import lombok.Data;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -140,19 +139,19 @@ final class QueryStructures {
 
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class FromEntity implements Entity {
         private final Class<?> type;
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class FromSubQuery implements SubQuery {
         private final QueryStructure queryStructure;
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class OrderImpl<T> implements Order<T> {
         private final Expression expression;
@@ -168,7 +167,7 @@ final class QueryStructures {
         }
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class SelectClauseImpl implements Selection {
         private final Class<?> resultType;
@@ -180,7 +179,7 @@ final class QueryStructures {
 
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class MultiColumnSelect implements MultiColumn {
         private final List<? extends Expression> columns;
@@ -192,7 +191,7 @@ final class QueryStructures {
 
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class SingleColumnSelect implements SingleColumn {
         private final Class<?> resultType;
@@ -209,7 +208,7 @@ final class QueryStructures {
         }
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class SliceImpl<T> implements Slice<T> {
         private final List<T> data;
@@ -218,7 +217,7 @@ final class QueryStructures {
         private final int limit;
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class ConstantMeta implements Constant {
         private final Object value;
@@ -229,7 +228,7 @@ final class QueryStructures {
         }
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class OperationMeta implements Operation {
         private final Expression operand;
@@ -243,7 +242,7 @@ final class QueryStructures {
 
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     static final class ColumnMeta implements Column {
         private final List<String> paths;

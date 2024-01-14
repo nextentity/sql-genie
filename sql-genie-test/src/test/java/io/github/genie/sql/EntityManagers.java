@@ -1,4 +1,4 @@
-package io.github.genie.sql.test;
+package io.github.genie.sql;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;

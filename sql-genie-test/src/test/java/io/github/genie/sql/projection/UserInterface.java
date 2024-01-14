@@ -1,4 +1,4 @@
-package io.github.genie.sql.test.projection;
+package io.github.genie.sql.projection;
 
 import java.util.HashMap;
 import java.util.Map;

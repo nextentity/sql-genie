@@ -18,8 +18,8 @@ public interface ExpressionHolders {
         return of(Expressions.of(value));
     }
 
-    static <T, U> List<ExpressionHolder<T, U>> of(U[] value) {
-        return Arrays.stream(value)
+    static <T, U> List<ExpressionHolder<T, U>> of(U[] values) {
+        return Arrays.stream(values)
                 .map(ExpressionHolders::<T, U>of)
                 .collect(Collectors.toList());
     }
