@@ -7,6 +7,8 @@ public interface Selection extends Serializable {
 
     Class<?> resultType();
 
+    boolean distinct();
+
     interface MultiColumn extends Selection {
         List<? extends Expression> columns();
 

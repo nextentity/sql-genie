@@ -1,8 +1,8 @@
 package io.github.genie.sql.executor.jdbc;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
@@ -44,6 +44,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     public static final String FOR_UPDATE = " for update";
     public static final String FOR_UPDATE_NOWAIT = " for update nowait";
     public static final String SELECT = "select ";
+    public static final String DISTINCT = "distinct ";
     public static final String FROM = "from ";
     public static final String WHERE = " where ";
     public static final String HAVING = " having ";
@@ -108,22 +109,24 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         private void doBuilder() {
-            buildProjectionPaths();
-            sql.append(SELECT);
-            appendSelects();
-            appendFetchPath();
+            appendSelect();
             appendFrom();
             int joinIndex = sql.length();
             appendWhere();
             appendGroupBy();
             appendOrderBy();
             appendHaving();
-            appendOffsetAndLimit();
             insertJoin(joinIndex);
+            appendOffsetAndLimit();
             appendLockModeType(queryStructure.lockType());
         }
 
-        private void buildProjectionPaths() {
+        private void initializeSelectedExpressions() {
+            appendSelectedExpressions();
+            appendFetchExpressions();
+        }
+
+        private void appendSelectedExpressions() {
             Selection selected = queryStructure.select();
             if (selected instanceof SingleColumn) {
                 SingleColumn singleColumn = (SingleColumn) selected;
@@ -163,7 +166,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             return offset == null ? -1 : offset;
         }
 
-        private void appendSelects() {
+        private void appendSelect() {
+            initializeSelectedExpressions();
+            sql.append(SELECT);
+            if (queryStructure.select().distinct()) {
+                sql.append(DISTINCT);
+            }
             String join = NONE_DELIMITER;
             for (Expression expression : selectedExpressions) {
                 sql.append(join);
@@ -179,7 +187,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
         }
 
-        protected void appendFetchPath() {
+        protected void appendFetchExpressions() {
             List<? extends Column> fetchClause = queryStructure.fetch();
             if (fetchClause != null) {
                 for (Column fetch : fetchClause) {
@@ -194,10 +202,10 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                             continue;
                         }
                         BasicAttribute attr = (BasicAttribute) field;
-                        sql.append(",");
                         Column column = Expressions.concat(fetch, attr.name());
-                        appendPaths(column);
-                        appendSelectAlias();
+//                        sql.append(",");
+//                        appendPaths(column);
+//                        appendSelectAlias();
                         selectedExpressions.add(column);
                         selectedAttributes.add(field);
                     }

@@ -1,13 +1,13 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
@@ -72,37 +72,75 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         return fetch(Expressions.toExpressionList(paths));
     }
 
+    @Override
+    public <R> Where0<T, R> selectDistinct(Class<R> projectionType) {
+        return select(true, projectionType);
+    }
+
+    @Override
     public <R> Where0<T, R> select(Class<R> projectionType) {
+        return select(false, projectionType);
+    }
+
+    public <R> Where0<T, R> select(boolean distinct, Class<R> projectionType) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.select = new SelectClauseImpl(projectionType);
+        structure.select = new SelectClauseImpl(projectionType, distinct);
         return update(structure);
     }
 
+    public <R> Where0<T, R> selectDistinct(Path<T, ? extends R> path) {
+        return select(true, path);
+    }
+
     public <R> Where0<T, R> select(Path<T, ? extends R> path) {
+        return select(false, path);
+    }
+
+    public <R> Where0<T, R> select(boolean distinct, Path<T, ? extends R> path) {
         QueryStructureImpl structure = queryStructure.copy();
         Expression paths = Expressions.of(path);
         Class<?> type = getType(path);
-        structure.select = new SingleColumnSelect(type, paths);
+        structure.select = new SingleColumnSelect(type, paths, distinct);
         return update(structure);
+    }
+
+    public Where0<T, Object[]> selectDistinct(Collection<Path<T, ?>> paths) {
+        return selectDistinct(Expressions.toExpressionList(paths));
     }
 
     public Where0<T, Object[]> select(Collection<Path<T, ?>> paths) {
         return select(Expressions.toExpressionList(paths));
     }
 
+    public Where0<T, Object[]> selectDistinct(List<? extends ExpressionHolder<T, ?>> expressions) {
+        return select(true, expressions);
+    }
+
     public Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
+        return select(false, expressions);
+    }
+
+    public Where0<T, Object[]> select(boolean distinct, List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl structure = queryStructure.copy();
         structure.select = new MultiColumnSelect(expressions.stream()
                 .map(ExpressionHolder::expression)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()), distinct);
         return update(structure);
     }
 
+    public <R> Where0<T, R> selectDistinct(ExpressionHolder<T, R> paths) {
+        return select(true, paths);
+    }
+
     public <R> Where0<T, R> select(ExpressionHolder<T, R> paths) {
+        return select(false, paths);
+    }
+
+    public <R> Where0<T, R> select(boolean distinct, ExpressionHolder<T, R> paths) {
         QueryStructureImpl structure = queryStructure.copy();
         Expression expression = paths.expression();
         Class<?> type = Object.class;
-        structure.select = new SingleColumnSelect(type, expression);
+        structure.select = new SingleColumnSelect(type, expression, distinct);
         return update(structure);
     }
 

@@ -1,8 +1,8 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
@@ -57,7 +57,7 @@ final class QueryStructures {
 
         public QueryStructureImpl(Class<?> from) {
             this.from = new FromEntity(from);
-            this.select = new SelectClauseImpl(from);
+            this.select = new SelectClauseImpl(from, false);
         }
 
         protected QueryStructureImpl copy() {
@@ -157,10 +157,6 @@ final class QueryStructures {
         private final Expression expression;
         private final SortOrder order;
 
-        public static <T> OrderImpl<T> of(ExpressionHolder<T, ?> holder, SortOrder order) {
-            return new OrderImpl<>(holder.expression(), order);
-        }
-
         @Override
         public String toString() {
             return expression + " " + order;
@@ -171,6 +167,7 @@ final class QueryStructures {
     @Accessors(fluent = true)
     static final class SelectClauseImpl implements Selection {
         private final Class<?> resultType;
+        private final boolean distinct;
 
         @Override
         public String toString() {
@@ -183,6 +180,7 @@ final class QueryStructures {
     @Accessors(fluent = true)
     static final class MultiColumnSelect implements MultiColumn {
         private final List<? extends Expression> columns;
+        private final boolean distinct;
 
         @Override
         public String toString() {
@@ -196,11 +194,7 @@ final class QueryStructures {
     static final class SingleColumnSelect implements SingleColumn {
         private final Class<?> resultType;
         private final Expression column;
-
-        SingleColumnSelect(Class<?> resultType, Expression column) {
-            this.resultType = resultType;
-            this.column = column;
-        }
+        private final boolean distinct;
 
         @Override
         public String toString() {

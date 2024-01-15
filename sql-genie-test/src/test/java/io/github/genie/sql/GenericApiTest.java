@@ -414,16 +414,25 @@ public abstract class GenericApiTest {
 
     @Test
     public void testSelect() {
-        List<Object[]> qList = new ArrayList<>(userQuery
+        List<List<Object>> qList = map(userQuery
                 .select(User::getRandomNumber, User::getUsername)
                 .getList());
 
-        List<Object[]> fList = allUsers.stream()
+        List<List<Object>> fList = map(allUsers.stream()
                 .map(it -> new Object[]{it.getRandomNumber(), it.getUsername()})
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
-        assertEqualsArrayList(qList, fList);
+        assertEquals(qList, fList);
 
+        qList = map(userQuery
+                .selectDistinct(User::getRandomNumber, User::getUsername)
+                .getList());
+        fList = fList.stream().distinct().collect(Collectors.toList());
+        assertEquals(qList, fList);
+    }
+
+    List<List<Object>> map(List<Object[]> list) {
+        return list.stream().map(Arrays::asList).collect(Collectors.toList());
     }
 
     @Test

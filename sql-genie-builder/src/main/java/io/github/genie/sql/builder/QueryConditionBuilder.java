@@ -1,9 +1,13 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionHolder;
+import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
+import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
+import io.github.genie.sql.api.ExpressionOperator.PathOperator;
+import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Operation;
@@ -16,16 +20,12 @@ import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
-import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.Query.GroupBy;
 import io.github.genie.sql.api.Query.Having;
-import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.Query.OrderBy;
 import io.github.genie.sql.api.Query.OrderOperator;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.SliceQueryStructure;
-import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Query.Where0;
 import io.github.genie.sql.api.QueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
@@ -50,10 +50,10 @@ import java.util.stream.Collectors;
 public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, AbstractCollector<U> {
 
     static final SingleColumnSelect SELECT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.TRUE);
+            new SingleColumnSelect(Integer.class, Expressions.TRUE, false);
 
     static final SingleColumnSelect COUNT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT));
+            new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
 
     final QueryExecutor queryExecutor;
     final QueryStructureImpl queryStructure;
@@ -115,7 +115,9 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         QueryStructureImpl structure = queryStructure.copy();
         structure.lockType = LockModeType.NONE;
         structure.orderBy = Lists.of();
-        if (requiredCountSubQuery(queryStructure)) {
+        if (queryStructure.select().distinct()) {
+            return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
+        } else if (requiredCountSubQuery(queryStructure)) {
             structure.select = COUNT_ANY;
             return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else if (queryStructure.groupBy() != null && !queryStructure.groupBy().isEmpty()) {

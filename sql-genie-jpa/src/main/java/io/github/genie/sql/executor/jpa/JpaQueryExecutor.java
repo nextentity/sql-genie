@@ -230,6 +230,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected List<?> getResultList() {
+            setDistinct(structure.select());
             setWhere(structure.where());
             setGroupBy(structure.groupBy());
             setOrderBy(structure.orderBy());
@@ -248,6 +249,10 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 objectsQuery.setLockMode(lockModeType);
             }
             return objectsQuery.getResultList();
+        }
+
+        private void setDistinct(Selection select) {
+            query.distinct(select.distinct());
         }
 
         protected abstract TypedQuery<?> getTypedQuery();

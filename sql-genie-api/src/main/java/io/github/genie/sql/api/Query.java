@@ -79,6 +79,57 @@ public interface Query {
             return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
         }
 
+        <R> Where<T, R> selectDistinct(Class<R> projectionType);
+
+        Where0<T, Object[]> selectDistinct(List<? extends ExpressionHolder<T, ?>> paths);
+
+        <R> Where0<T, R> selectDistinct(ExpressionHolder<T, R> expression);
+
+        <R> Where0<T, R> selectDistinct(Path<T, ? extends R> path);
+
+        Where0<T, Object[]> selectDistinct(Collection<Path<T, ?>> paths);
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1) {
+            return selectDistinct(Lists.of(p0, p1));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
+            return selectDistinct(Lists.of(p0, p1, p2));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                                   Path<T, ?> p5) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                                   Path<T, ?> p5, Path<T, ?> p6) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
+        }
+
+        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
+                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
+            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+        }
+
     }
 
     interface Fetch<T> extends Where<T, T> {
