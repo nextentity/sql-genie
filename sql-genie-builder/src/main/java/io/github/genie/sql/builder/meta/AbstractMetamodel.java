@@ -21,7 +21,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,6 +95,8 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected abstract boolean isAnyToOne(Attribute field);
 
     protected abstract String getColumnName(Attribute field);
+
+    protected abstract Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass);
 
     protected EntityTypeImpl createEntityType(Class<?> entityType, Type owner) {
         EntityTypeImpl result = new EntityTypeImpl();
@@ -177,11 +181,34 @@ public abstract class AbstractMetamodel implements Metamodel {
         } catch (IntrospectionException e) {
             throw new BeanReflectiveException(e);
         }
-        return Arrays.stream(type.getDeclaredFields())
+        return getDeclaredFields(type).stream()
                 .filter(this::isMappedField)
                 .map(field -> newAttribute(owner, field, map.get(field.getName())))
                 .filter(attribute -> !isTransient(attribute))
                 .collect(Collectors.toList());
+    }
+
+    protected Collection<Field> getDeclaredFields(Class<?> clazz) {
+        Map<String, Field> map = new LinkedHashMap<>();
+        for (Field field : clazz.getDeclaredFields()) {
+            map.putIfAbsent(field.getName(), field);
+        }
+        getSuperClassDeclaredFields(clazz, clazz, map);
+        return map.values();
+    }
+
+    protected void getSuperClassDeclaredFields(Class<?> baseClass, Class<?> clazz, Map<String, Field> map) {
+        if (clazz == null) {
+            return;
+        }
+        Field[] superClassField = getSuperClassField(baseClass, clazz);
+        if (superClassField != null) {
+            for (Field field : superClassField) {
+                map.putIfAbsent(field.getName(), field);
+            }
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        getSuperClassDeclaredFields(baseClass, superclass, map);
     }
 
     private Attribute newAttribute(Type owner, Field field, PropertyDescriptor descriptor) {

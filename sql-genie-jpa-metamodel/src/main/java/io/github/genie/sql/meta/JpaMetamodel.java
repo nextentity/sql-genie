@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -16,6 +17,7 @@ import jakarta.persistence.Version;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
@@ -123,6 +125,16 @@ public class JpaMetamodel extends AbstractMetamodel {
             columnName = camelbackToUnderline(field.name());
         }
         return unwrapSymbol(columnName);
+    }
+
+    @Override
+    protected Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass) {
+        MappedSuperclass mappedSuperclass = superClass.getAnnotation(MappedSuperclass.class);
+        if (mappedSuperclass != null) {
+            return superClass.getFields();
+        } else {
+            return new Field[0];
+        }
     }
 
     protected String unwrapSymbol(String symbol) {
