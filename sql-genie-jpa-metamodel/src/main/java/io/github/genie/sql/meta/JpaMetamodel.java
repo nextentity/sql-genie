@@ -131,7 +131,7 @@ public class JpaMetamodel extends AbstractMetamodel {
     protected Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass) {
         MappedSuperclass mappedSuperclass = superClass.getAnnotation(MappedSuperclass.class);
         if (mappedSuperclass != null) {
-            return superClass.getFields();
+            return superClass.getDeclaredFields();
         } else {
             return new Field[0];
         }

@@ -193,7 +193,7 @@ public abstract class AbstractMetamodel implements Metamodel {
         for (Field field : clazz.getDeclaredFields()) {
             map.putIfAbsent(field.getName(), field);
         }
-        getSuperClassDeclaredFields(clazz, clazz, map);
+        getSuperClassDeclaredFields(clazz, clazz.getSuperclass(), map);
         return map.values();
     }
 
