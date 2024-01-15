@@ -15,12 +15,13 @@ public class TypeCastUtil {
         return unsafeCast(expression);
     }
 
+    public static <T> EntityRootImpl<T> cast(EntityRootImpl<?> builder) {
+        return unsafeCast(builder);
+    }
+
     public static <T> T unsafeCast(Object object) {
         // noinspection unchecked
         return (T) object;
     }
 
-    public static <T> ExpressionBuilderImpl<T> cast(ExpressionBuilderImpl<?> builder) {
-        return unsafeCast(builder);
-    }
 }

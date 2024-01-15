@@ -295,7 +295,7 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     public EntityRoot<T> root() {
-        return ExpressionBuilderImpl.of();
+        return EntityRootImpl.of();
     }
 
     @Override

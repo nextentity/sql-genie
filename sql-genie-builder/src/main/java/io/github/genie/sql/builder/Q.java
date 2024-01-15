@@ -27,12 +27,12 @@ import static io.github.genie.sql.api.Operator.NOT;
 import static io.github.genie.sql.api.Operator.OR;
 import static io.github.genie.sql.api.Order.SortOrder.ASC;
 import static io.github.genie.sql.api.Order.SortOrder.DESC;
-import static io.github.genie.sql.builder.ExpressionBuilderImpl.ofBooleanExpression;
+import static io.github.genie.sql.builder.EntityRootImpl.ofBooleanExpression;
 
 public final class Q {
 
     public static <T> EntityRoot<T> of() {
-        return ExpressionBuilderImpl.of();
+        return EntityRootImpl.of();
     }
 
     public static <T, U> PathExpression<T, U> get(Path<T, U> path) {

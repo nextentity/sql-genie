@@ -1,11 +1,12 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.TypeCastUtil;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.FetchParent;
 import jakarta.persistence.criteria.From;
@@ -19,8 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.github.genie.sql.builder.TypeCastUtil.unsafeCast;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class ExpressionBuilder {
@@ -281,6 +280,10 @@ public class ExpressionBuilder {
 
     public static <T> jakarta.persistence.criteria.Expression<T> cast(jakarta.persistence.criteria.Expression<?> expression) {
         return unsafeCast(expression);
+    }
+
+    public static <T> T unsafeCast(Object o) {
+        return TypeCastUtil.unsafeCast(o);
     }
 
     protected Path<?> getPath(Column expression) {
