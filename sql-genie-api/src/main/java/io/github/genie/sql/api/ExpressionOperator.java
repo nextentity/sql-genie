@@ -36,7 +36,7 @@ public interface ExpressionOperator<T, U, B> {
 
     B isNull();
 
-    NumberOperator<T, Integer, B> count();
+    NumberOperator<T, Long, B> count();
 
     B isNotNull();
 

@@ -1,6 +1,6 @@
 package io.github.genie.sql.builder.meta;
 
-import lombok.AccessLevel;
+import io.github.genie.sql.api.Column;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -25,8 +25,10 @@ public class Metamodels {
         private Method getter;
         private Method setter;
         private Field field;
-        @Getter(value = AccessLevel.PRIVATE, lazy = true)
-        private final List<? extends Attribute> referenced = Attribute.super.referencedAttributes();
+        @Getter(lazy = true)
+        private final List<? extends Attribute> referencedAttributes = Attribute.super.referencedAttributes();
+        @Getter(lazy = true)
+        private final Column column = Attribute.super.column();
 
         public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
             this.javaType = javaType;
@@ -42,10 +44,7 @@ public class Metamodels {
             return name();
         }
 
-        @Override
-        public List<? extends Attribute> referencedAttributes() {
-            return referenced();
-        }
+
     }
 
     @Data

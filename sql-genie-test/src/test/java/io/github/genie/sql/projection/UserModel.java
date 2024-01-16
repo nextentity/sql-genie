@@ -29,6 +29,9 @@ public class UserModel implements UserInterface {
         username = user.getUsername();
         pid = user.getPid();
         valid = user.isValid();
+        if (user.getParentUser() != null) {
+            parentUsername = user.getParentUser().getUsername();
+        }
 
     }
 }

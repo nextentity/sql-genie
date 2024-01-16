@@ -104,10 +104,10 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public int count() {
+    public long count() {
         QueryStructure structure = buildCountData();
         structure = structurePostProcessor.preCountQuery(this, structure);
-        return queryExecutor.<Number>getList(structure).get(0).intValue();
+        return queryExecutor.<Number>getList(structure).get(0).longValue();
     }
 
     @NotNull

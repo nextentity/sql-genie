@@ -1,5 +1,7 @@
 package io.github.genie.sql.builder.meta;
 
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 
 import java.lang.reflect.Field;
@@ -9,6 +11,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Attribute extends Type {
 
@@ -57,6 +60,14 @@ public interface Attribute extends Type {
         } while (cur.hasOwner());
         //noinspection Java9CollectionFactory
         return Collections.unmodifiableList(new ArrayList<>(attributes));
+    }
+
+    default Column column() {
+        List<? extends Attribute> attributes = referencedAttributes();
+        List<String> paths = attributes.stream()
+                .map(Attribute::name)
+                .collect(Collectors.toList());
+        return Expressions.column(paths);
     }
 
 }

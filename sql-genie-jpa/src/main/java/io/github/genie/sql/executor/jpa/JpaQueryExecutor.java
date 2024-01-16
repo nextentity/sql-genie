@@ -14,6 +14,7 @@ import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
+import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
@@ -72,10 +73,8 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                         .getProjection(queryStructure.from().type(), resultType);
                 Collection<? extends ProjectionAttribute> fields = projection.attributes();
                 List<Column> columns = fields.stream()
-                        .map(projectionField -> {
-                            String fieldName = projectionField.entityAttribute().name();
-                            return Expressions.column(fieldName);
-                        })
+                        .map(ProjectionAttribute::entityAttribute)
+                        .map(Attribute::column)
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
                 if (resultType.isInterface()) {
@@ -216,7 +215,8 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                     for (int i = 0; i < paths.size(); i++) {
                         Fetch<?, ?> cur = fetch;
                         String stringPath = paths.get(i);
-                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(subPaths(paths, i + 1), k -> {
+                        Column sub = subPaths(paths, i + 1);
+                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(sub, k -> {
                             if (cur == null) {
                                 return root.fetch(stringPath, JoinType.LEFT);
                             } else {
@@ -230,10 +230,10 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
 
         protected List<?> getResultList() {
             setDistinct(structure.select());
+            setFetch(structure.fetch());
             setWhere(structure.where());
             setGroupBy(structure.groupBy());
             setOrderBy(structure.orderBy());
-            setFetch(structure.fetch());
             TypedQuery<?> objectsQuery = getTypedQuery();
             Integer offset = structure.offset();
             if (offset != null && offset > 0) {

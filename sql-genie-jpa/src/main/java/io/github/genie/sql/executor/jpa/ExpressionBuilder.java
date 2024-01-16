@@ -286,9 +286,9 @@ public class ExpressionBuilder {
         return TypeCastUtil.unsafeCast(o);
     }
 
-    protected Path<?> getPath(Column expression) {
+    protected Path<?> getPath(Column column) {
         From<?, ?> r = root;
-        List<String> paths = expression.paths();
+        List<String> paths = column.paths();
         int size = paths.size();
         for (int i = 0; i < size; i++) {
             String s = paths.get(i);
@@ -312,13 +312,13 @@ public class ExpressionBuilder {
         return Expressions.column(subPath);
     }
 
-    private Join<?, ?> join(Column offset) {
-        return (Join<?, ?>) fetched.compute(offset, (k, v) -> {
+    private Join<?, ?> join(Column column) {
+        return (Join<?, ?>) fetched.compute(column, (k, v) -> {
             if (v instanceof Join<?, ?>) {
                 return v;
             } else {
                 From<?, ?> r = root;
-                for (String s : offset.paths()) {
+                for (String s : column.paths()) {
                     r = r.join(s, JoinType.LEFT);
                 }
                 return r;

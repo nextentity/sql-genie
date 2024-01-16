@@ -1221,7 +1221,7 @@ public abstract class GenericApiTest {
         resultList = userQuery.where(get(User::getId).notIn()).getList();
         assertEquals(resultList, allUsers);
 
-        int count = userQuery.count();
+        long count = userQuery.count();
         assertEquals(count, allUsers.size());
 
         User first = userQuery.getFirst();

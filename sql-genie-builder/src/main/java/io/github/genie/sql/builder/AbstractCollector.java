@@ -12,7 +12,7 @@ public interface AbstractCollector<T> extends Collector<T> {
 
     @Override
     default Slice<T> slice(int offset, int limit) {
-        int count = count();
+        long count = count();
         if (count <= offset) {
             return new SliceImpl<>(Lists.of(), count, offset, limit);
         } else {
@@ -23,7 +23,7 @@ public interface AbstractCollector<T> extends Collector<T> {
 
     @Override
     default <R> R slice(Sliceable<T, R> sliceable) {
-        int count = count();
+        long count = count();
         if (count <= sliceable.offset()) {
             return sliceable.collect(Lists.of(), count);
         } else {

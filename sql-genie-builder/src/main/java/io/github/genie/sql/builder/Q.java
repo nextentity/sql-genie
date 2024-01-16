@@ -72,7 +72,7 @@ public final class Q {
         return Q.<T>of().avg(path);
     }
 
-    public static <T> NumberExpression<T, Integer> count(Path<T, ?> path) {
+    public static <T> NumberExpression<T, Long> count(Path<T, ?> path) {
         return Q.<T>of().count(path);
     }
 

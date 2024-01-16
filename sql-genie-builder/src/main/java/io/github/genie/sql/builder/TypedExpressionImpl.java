@@ -128,7 +128,7 @@ class TypedExpressionImpl<T, U> implements TypedExpression<T, U> {
     }
 
     @Override
-    public NumberExpression<T, Integer> count() {
+    public NumberExpression<T, Long> count() {
         Expression operate = Expressions.operate(operand, Operator.COUNT);
         return new NumberExpressionImpl<>(this, operate);
     }

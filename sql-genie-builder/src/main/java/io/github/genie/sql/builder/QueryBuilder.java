@@ -224,7 +224,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
 
         @Override
-        public int count() {
+        public long count() {
             return getQueryBuilder().count();
         }
 

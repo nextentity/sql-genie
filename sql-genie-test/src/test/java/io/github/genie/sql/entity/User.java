@@ -38,6 +38,20 @@ public class User extends EnableOptimisticLock {
 
     private boolean valid;
 
+    public User() {
+    }
+
+    public User(User user) {
+        id = user.getId();
+        randomNumber = user.getRandomNumber();
+        username = user.getUsername();
+        time = user.getTime();
+        pid = user.getPid();
+        timestamp = user.getTimestamp();
+        parentUser = user.getParentUser();
+        valid = user.isValid();
+    }
+
     public boolean isNew() {
         return false;
     }

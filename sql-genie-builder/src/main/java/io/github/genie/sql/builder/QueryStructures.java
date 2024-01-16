@@ -3,7 +3,6 @@ package io.github.genie.sql.builder;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
-import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.From;
 import io.github.genie.sql.api.From.Entity;
 import io.github.genie.sql.api.From.SubQuery;
@@ -17,6 +16,7 @@ import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.api.Slice;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -240,10 +240,12 @@ final class QueryStructures {
     @Accessors(fluent = true)
     static final class ColumnMeta implements Column {
         private final List<String> paths;
+        @Getter(lazy = true)
+        private final String identity = String.join(".", paths);
 
         @Override
         public String toString() {
-            return String.join(".", paths);
+            return identity();
         }
     }
 

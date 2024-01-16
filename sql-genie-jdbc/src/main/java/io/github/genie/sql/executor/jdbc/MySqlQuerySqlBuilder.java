@@ -154,17 +154,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     if (attr.entityAttribute() instanceof EntityType) {
                         continue;
                     }
-                    BasicAttribute attribute = (BasicAttribute) attr.entityAttribute();
-                    Column columns;
-                    List<? extends Attribute> attributes = attribute.referencedAttributes();
-                    if (!attributes.isEmpty()) {
-                        List<String> paths = attributes.stream()
-                                .map(Attribute::name)
-                                .collect(Collectors.toList());
-                        columns = Expressions.column(paths);
-                    } else {
-                        columns = Expressions.column(attribute.name());
-                    }
+                    Column columns = attr.entityAttribute().column();
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attr);
                 }

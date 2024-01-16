@@ -40,7 +40,7 @@ public interface EntityRoot<T> {
         return get(path).avg();
     }
 
-    default NumberExpression<T, Integer> count(Path<T, ?> path) {
+    default NumberExpression<T, Long> count(Path<T, ?> path) {
         return get(path).count();
     }
 

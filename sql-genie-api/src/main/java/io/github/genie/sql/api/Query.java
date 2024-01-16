@@ -136,6 +136,18 @@ public interface Query {
 
         Where<T, T> fetch(List<ColumnHolder<T, ?>> expressions);
 
+        default Where<T, T> fetch(ColumnHolder<T, ?> path) {
+            return fetch(Lists.of(path));
+        }
+
+        default Where<T, T> fetch(ColumnHolder<T, ?> p0, ColumnHolder<T, ?> p1) {
+            return fetch(Lists.of(p0, p1));
+        }
+
+        default Where<T, T> fetch(ColumnHolder<T, ?> p0, ColumnHolder<T, ?> p1, ColumnHolder<T, ?> p3) {
+            return fetch(Lists.of(p0, p1, p3));
+        }
+
         Where<T, T> fetch(Collection<Path<T, ?>> paths);
 
         default Where<T, T> fetch(Path<T, ?> path) {
@@ -264,7 +276,7 @@ public interface Query {
 
     interface Collector<T> {
 
-        int count();
+        long count();
 
         List<T> getList(int offset, int maxResult, LockModeType lockModeType);
 

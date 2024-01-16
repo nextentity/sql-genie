@@ -17,7 +17,7 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
 
     EntityRoot<T> root();
 
-    NumberExpression<T, Integer> count();
+    NumberExpression<T, Long> count();
 
     BooleanExpression<T> eq(U value);
 

@@ -50,7 +50,7 @@ public class OrderOperatorImpl<T, U> implements OrderOperator<T, U> {
     }
 
     @Override
-    public int count() {
+    public long count() {
         return asc().count();
     }
 
