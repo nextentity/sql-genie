@@ -205,14 +205,13 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         continue;
                     }
                     AnyToOneAttribute am = (AnyToOneAttribute) attribute;
-                    for (Attribute field : am.attributes()) {
-                        if (!(field instanceof BasicAttribute)) {
+                    for (Attribute attr : am.attributes()) {
+                        if (!(attr instanceof BasicAttribute)) {
                             continue;
                         }
-                        BasicAttribute attr = (BasicAttribute) field;
                         Column column = Expressions.concat(fetch, attr.name());
                         selectedExpressions.add(column);
-                        selectedAttributes.add(field);
+                        selectedAttributes.add(attr);
                     }
                 }
             }

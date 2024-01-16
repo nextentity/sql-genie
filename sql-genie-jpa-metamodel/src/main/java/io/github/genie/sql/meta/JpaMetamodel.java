@@ -56,14 +56,14 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isMarkedId(Attribute field) {
-        Id id = getAnnotation(field, Id.class);
+    protected boolean isMarkedId(Attribute attribute) {
+        Id id = getAnnotation(attribute, Id.class);
         return id != null;
     }
 
     @Override
-    protected String getReferencedColumnName(Attribute field) {
-        JoinColumn annotation = getAnnotation(field, JoinColumn.class);
+    protected String getReferencedColumnName(Attribute attribute) {
+        JoinColumn annotation = getAnnotation(attribute, JoinColumn.class);
         String referencedColumnName = null;
         if (annotation != null) {
             referencedColumnName = annotation.referencedColumnName();
@@ -72,8 +72,8 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected String getJoinColumnName(Attribute field) {
-        JoinColumn annotation = getAnnotation(field, JoinColumn.class);
+    protected String getJoinColumnName(Attribute attribute) {
+        JoinColumn annotation = getAnnotation(attribute, JoinColumn.class);
         String joinColumnName = null;
         if (annotation != null) {
             joinColumnName = annotation.name();
@@ -82,10 +82,10 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isVersionField(Attribute field) {
-        Version version = getAnnotation(field, Version.class);
+    protected boolean isVersionField(Attribute attribute) {
+        Version version = getAnnotation(attribute, Version.class);
         if (version != null) {
-            Class<?> type = field.javaType();
+            Class<?> type = attribute.javaType();
             if (isSupportVersion(type)) {
                 return true;
             } else {
@@ -100,14 +100,14 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isTransient(Attribute field) {
-        return field == null || getAnnotation(field, Transient.class) != null;
+    protected boolean isTransient(Attribute attribute) {
+        return attribute == null || getAnnotation(attribute, Transient.class) != null;
     }
 
     @Override
-    protected boolean isBasicField(Attribute field) {
+    protected boolean isBasicField(Attribute attribute) {
         for (Class<? extends Annotation> type : JOIN_ANNOTATIONS) {
-            if (getAnnotation(field, type) != null) {
+            if (getAnnotation(attribute, type) != null) {
                 return false;
             }
         }
@@ -115,14 +115,14 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isAnyToOne(Attribute field) {
-        return getAnnotation(field, ManyToOne.class) != null || getAnnotation(field, OneToOne.class) != null;
+    protected boolean isAnyToOne(Attribute attribute) {
+        return getAnnotation(attribute, ManyToOne.class) != null || getAnnotation(attribute, OneToOne.class) != null;
     }
 
-    protected String getColumnName(Attribute field) {
-        String columnName = getColumnNameByAnnotation(field);
+    protected String getColumnName(Attribute attribute) {
+        String columnName = getColumnNameByAnnotation(attribute);
         if (columnName == null) {
-            columnName = camelbackToUnderline(field.name());
+            columnName = camelbackToUnderline(attribute.name());
         }
         return unwrapSymbol(columnName);
     }
@@ -144,8 +144,8 @@ public class JpaMetamodel extends AbstractMetamodel {
         return symbol;
     }
 
-    protected String getColumnNameByAnnotation(Attribute field) {
-        Column column = getAnnotation(field, Column.class);
+    protected String getColumnNameByAnnotation(Attribute attribute) {
+        Column column = getAnnotation(attribute, Column.class);
         if (column != null && !column.name().isEmpty()) {
             return column.name();
         }

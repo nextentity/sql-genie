@@ -102,21 +102,21 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected abstract String getTableName(Class<?> javaType);
 
-    protected abstract boolean isMarkedId(Attribute field);
+    protected abstract boolean isMarkedId(Attribute attribute);
 
-    protected abstract String getReferencedColumnName(Attribute field);
+    protected abstract String getReferencedColumnName(Attribute attribute);
 
-    protected abstract String getJoinColumnName(Attribute field);
+    protected abstract String getJoinColumnName(Attribute attribute);
 
-    protected abstract boolean isVersionField(Attribute field);
+    protected abstract boolean isVersionField(Attribute attribute);
 
-    protected abstract boolean isTransient(Attribute field);
+    protected abstract boolean isTransient(Attribute attribute);
 
-    protected abstract boolean isBasicField(Attribute field);
+    protected abstract boolean isBasicField(Attribute attribute);
 
-    protected abstract boolean isAnyToOne(Attribute field);
+    protected abstract boolean isAnyToOne(Attribute attribute);
 
-    protected abstract String getColumnName(Attribute field);
+    protected abstract String getColumnName(Attribute attribute);
 
     protected abstract Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass);
 
@@ -129,42 +129,42 @@ public abstract class AbstractMetamodel implements Metamodel {
         result.owner(owner);
         List<Attribute> allFields = getAttributes(entityType, result);
         boolean hasVersion = false;
-        for (Attribute field : allFields) {
-            if (map.containsKey(field.name())) {
+        for (Attribute attr : allFields) {
+            if (map.containsKey(attr.name())) {
                 throw new IllegalStateException("Duplicate key");
             }
-            if (isTransient(field)) {
+            if (isTransient(attr)) {
                 continue;
             }
 
             Attribute attribute;
-            if (isBasicField(field)) {
+            if (isBasicField(attr)) {
                 boolean versionColumn = false;
-                if (isVersionField(field)) {
+                if (isVersionField(attr)) {
                     if (hasVersion) {
-                        log.warn("duplicate attributes: " + field.name() + ", ignored");
+                        log.warn("duplicate attributes: " + attr.name() + ", ignored");
                     } else {
                         versionColumn = hasVersion = true;
                     }
                 }
-                attribute = new BasicAttributeImpl(field, getColumnName(field), versionColumn);
+                attribute = new BasicAttributeImpl(attr, getColumnName(attr), versionColumn);
                 if (versionColumn) {
                     result.version(attribute);
                 }
 
-            } else if (isAnyToOne(field)) {
-                AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(field);
-                ato.joinName(getJoinColumnName(field));
-                ato.referencedColumnName(getReferencedColumnName(field));
-                ato.referencedSupplier(() -> createEntityType(field.javaType(), ato));
+            } else if (isAnyToOne(attr)) {
+                AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(attr);
+                ato.joinName(getJoinColumnName(attr));
+                ato.referencedColumnName(getReferencedColumnName(attr));
+                ato.referencedSupplier(() -> createEntityType(attr.javaType(), ato));
                 attribute = ato;
             } else {
-                log.warn("ignored attribute " + field.field());
+                log.warn("ignored attribute " + attr.field());
                 continue;
             }
 
             boolean isMarkedId = isMarkedId(attribute);
-            if (isMarkedId || result.id() == null && "id".equals(field.name())) {
+            if (isMarkedId || result.id() == null && "id".equals(attr.name())) {
                 result.id(attribute);
             }
             map.put(attribute.name(), attribute);
@@ -265,13 +265,13 @@ public abstract class AbstractMetamodel implements Metamodel {
         return new AttributeImpl(javaType, owner, name, getter, setter, field);
     }
 
-    protected <T extends Annotation> T getAnnotation(Attribute field, Class<T> annotationClass) {
+    protected <T extends Annotation> T getAnnotation(Attribute attribute, Class<T> annotationClass) {
         T column = null;
-        if (field.field() != null) {
-            column = field.field().getAnnotation(annotationClass);
+        if (attribute.field() != null) {
+            column = attribute.field().getAnnotation(annotationClass);
         }
         if (column == null) {
-            Method getter = field.getter();
+            Method getter = attribute.getter();
             if (getter != null) {
                 column = getter.getAnnotation(annotationClass);
             }
