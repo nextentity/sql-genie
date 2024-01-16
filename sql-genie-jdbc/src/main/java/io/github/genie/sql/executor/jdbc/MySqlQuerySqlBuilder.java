@@ -203,9 +203,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         }
                         BasicAttribute attr = (BasicAttribute) field;
                         Column column = Expressions.concat(fetch, attr.name());
-//                        sql.append(",");
-//                        appendPaths(column);
-//                        appendSelectAlias();
                         selectedExpressions.add(column);
                         selectedAttributes.add(field);
                     }
