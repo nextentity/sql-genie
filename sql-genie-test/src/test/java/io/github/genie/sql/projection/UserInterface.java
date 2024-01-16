@@ -1,5 +1,7 @@
 package io.github.genie.sql.projection;
 
+import io.github.genie.sql.builder.meta.EntityAttribute;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +16,9 @@ public interface UserInterface {
     Integer getPid();
 
     boolean isValid();
+
+    @EntityAttribute("parentUser.username")
+    String getParentUsername();
 
     default Map<String, Object> asMap() {
         HashMap<String, Object> map = new HashMap<>();

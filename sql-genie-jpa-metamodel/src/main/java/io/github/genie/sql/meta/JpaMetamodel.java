@@ -101,7 +101,7 @@ public class JpaMetamodel extends AbstractMetamodel {
 
     @Override
     protected boolean isTransient(Attribute field) {
-        return getAnnotation(field, Transient.class) != null;
+        return field == null || getAnnotation(field, Transient.class) != null;
     }
 
     @Override

@@ -22,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,30 +53,48 @@ public abstract class AbstractMetamodel implements Metamodel {
     protected Projection createProjection(Class<?> baseType, Class<?> projectionType) {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
-        ProjectionImpl result = new ProjectionImpl(projectionType, list, entity);
-        if (projectionType.isInterface()) {
-            Method[] methods = projectionType.getMethods();
-            for (Method method : methods) {
-                if (method.getParameterCount() == 0) {
-                    String name = Util.getPropertyName(method.getName());
-                    Attribute baseField = entity.getAttribute(name);
-                    if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
-                        Attribute attribute = newAttribute(null, method, null, null);
-                        list.add(new ProjectionAttributeImpl(baseField, attribute));
-                    }
-                }
-            }
-        } else {
-            List<Attribute> fields = getAllFields(projectionType, result);
-            for (Attribute field : fields) {
-                Attribute baseField = entity.getAttribute(field.name());
-                if (field.javaType() == baseField.javaType()) {
-                    list.add(new ProjectionAttributeImpl(baseField, field));
-                }
+        List<ProjectionAttribute> immutable = Collections.unmodifiableList(list);
+        ProjectionImpl result = new ProjectionImpl(projectionType, immutable, entity, null);
+        List<Attribute> attributes = projectionType.isInterface()
+                ? getInterfaceAttributes(projectionType, result)
+                : getAttributes(projectionType, result);
+        for (Attribute attribute : attributes) {
+            Attribute entityAttribute = getEntityAttribute(attribute, entity);
+            if (entityAttribute != null && attribute.javaType() == entityAttribute.javaType()) {
+                list.add(new ProjectionAttributeImpl(attribute, entityAttribute));
             }
         }
         list.trimToSize();
         return result;
+    }
+
+    protected Attribute getEntityAttribute(Attribute attribute, EntityType entity) {
+        EntityAttribute entityAttribute = getAnnotation(attribute, EntityAttribute.class);
+        if (entityAttribute == null || entityAttribute.value().isEmpty()) {
+            return entity.getAttribute(attribute.name());
+        }
+        String value = entityAttribute.value();
+        String[] split = value.split("\\.");
+        Type cur = entity;
+        for (String s : split) {
+            if (cur instanceof EntityType) {
+                cur = ((EntityType) cur).getAttribute(s);
+            } else {
+                throw new IllegalStateException("entity attribute " + value + " not exist");
+            }
+        }
+        if (cur instanceof BasicAttribute) {
+            return (Attribute) cur;
+        } else {
+            throw new IllegalStateException("entity attribute " + value + " not exist");
+        }
+    }
+
+    @NotNull
+    private List<Attribute> getInterfaceAttributes(Class<?> clazz, Type owner) {
+        return Arrays.stream(clazz.getMethods())
+                .map(it -> newAttribute(null, it, null, owner))
+                .collect(Collectors.toList());
     }
 
     protected abstract String getTableName(Class<?> javaType);
@@ -102,14 +121,17 @@ public abstract class AbstractMetamodel implements Metamodel {
         EntityTypeImpl result = new EntityTypeImpl();
         result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
-        result.attributeMap(map);
+        result.attributeMap(Collections.unmodifiableMap(map));
         result.tableName(getTableName(entityType));
         result.owner(owner);
-        List<Attribute> allFields = getAllFields(entityType, result);
+        List<Attribute> allFields = getAttributes(entityType, result);
         boolean hasVersion = false;
         for (Attribute field : allFields) {
             if (map.containsKey(field.name())) {
                 throw new IllegalStateException("Duplicate key");
+            }
+            if (isTransient(field)) {
+                continue;
             }
 
             Attribute attribute;
@@ -167,7 +189,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 : joinName;
     }
 
-    protected List<Attribute> getAllFields(Class<?> type, Type owner) {
+    protected List<Attribute> getAttributes(Class<?> type, Type owner) {
         Map<String, PropertyDescriptor> map = new HashMap<>();
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(type);
@@ -181,20 +203,29 @@ public abstract class AbstractMetamodel implements Metamodel {
         } catch (IntrospectionException e) {
             throw new BeanReflectiveException(e);
         }
-        return getDeclaredFields(type).stream()
-                .filter(this::isMappedField)
-                .map(field -> newAttribute(owner, field, map.get(field.getName())))
-                .filter(attribute -> !isTransient(attribute))
+        List<Attribute> attributes = getDeclaredFields(type).stream()
+                .map(field -> newAttribute(owner, field, map.remove(field.getName())))
                 .collect(Collectors.toList());
+        map.values().stream()
+                .map(descriptor -> newAttribute(owner, null, descriptor))
+                .forEach(attributes::add);
+        return attributes;
     }
 
     protected Collection<Field> getDeclaredFields(Class<?> clazz) {
         Map<String, Field> map = new LinkedHashMap<>();
-        for (Field field : clazz.getDeclaredFields()) {
-            map.putIfAbsent(field.getName(), field);
-        }
+        Field[] fields = clazz.getDeclaredFields();
+        putFieldsIfAbsent(map, fields);
         getSuperClassDeclaredFields(clazz, clazz.getSuperclass(), map);
         return map.values();
+    }
+
+    protected void putFieldsIfAbsent(Map<String, Field> map, Field[] fields) {
+        for (Field field : fields) {
+            if (filterDeclaredField(field)) {
+                map.putIfAbsent(field.getName(), field);
+            }
+        }
     }
 
     protected void getSuperClassDeclaredFields(Class<?> baseClass, Class<?> clazz, Map<String, Field> map) {
@@ -203,9 +234,7 @@ public abstract class AbstractMetamodel implements Metamodel {
         }
         Field[] superClassField = getSuperClassField(baseClass, clazz);
         if (superClassField != null) {
-            for (Field field : superClassField) {
-                map.putIfAbsent(field.getName(), field);
-            }
+            putFieldsIfAbsent(map, superClassField);
         }
         Class<?> superclass = clazz.getSuperclass();
         getSuperClassDeclaredFields(baseClass, superclass, map);
@@ -222,8 +251,9 @@ public abstract class AbstractMetamodel implements Metamodel {
         return newAttribute(field, getter, setter, owner);
     }
 
-    protected boolean isMappedField(Field field) {
-        return !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers());
+    protected boolean filterDeclaredField(@NotNull Field field) {
+        int modifiers = field.getModifiers();
+        return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers) && !Modifier.isFinal(modifiers);
     }
 
     protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
@@ -233,7 +263,10 @@ public abstract class AbstractMetamodel implements Metamodel {
     }
 
     protected <T extends Annotation> T getAnnotation(Attribute field, Class<T> annotationClass) {
-        T column = field.field().getAnnotation(annotationClass);
+        T column = null;
+        if (field.field() != null) {
+            column = field.field().getAnnotation(annotationClass);
+        }
         if (column == null) {
             Method getter = field.getter();
             if (getter != null) {

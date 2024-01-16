@@ -4,6 +4,7 @@ import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.ReflectUtil;
+import io.github.genie.sql.builder.meta.Schema;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
@@ -15,6 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,29 +26,32 @@ public class ProjectionUtil {
 
     @NotNull
     public static <R> R getBeanResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                      @NotNull List<? extends Attribute> attributes,
+                                      @NotNull Collection<? extends Attribute> attributes,
                                       Class<?> resultType) {
-        Object row = newInstance(resultType);
+        Object result = newInstance(resultType);
         int column = 0;
         for (Attribute attribute : attributes) {
-            List<? extends Attribute> joins = attribute.referencedAttribute();
+            List<? extends Attribute> joins = attribute.referencedAttributes();
             Class<?> fieldType = attribute.javaType();
             Object value = extractor.apply(column++, fieldType);
-            if (value == null && !joins.isEmpty()) {
+            if (value == null) {
                 continue;
             }
-            Object entity = row;
-            for (Attribute joinAttr : joins) {
-                Object join = joinAttr.get(entity);
-                if (join == null) {
-                    join = newInstance(joinAttr.javaType());
-                    joinAttr.set(entity, join);
+            Object cur = result;
+            for (Attribute attr : joins) {
+                if (attr instanceof Schema) {
+                    Object entity = attr.get(cur);
+                    if (entity == null) {
+                        entity = newInstance(attr.javaType());
+                        attr.set(cur, entity);
+                    }
+                    cur = entity;
+                } else {
+                    attr.set(cur, value);
                 }
-                entity = join;
             }
-            attribute.set(entity, value);
         }
-        return TypeCastUtil.unsafeCast(row);
+        return TypeCastUtil.unsafeCast(result);
     }
 
     @NotNull
@@ -60,7 +65,7 @@ public class ProjectionUtil {
 
     @NotNull
     public static <R> R getRecordResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                        @NotNull List<? extends Attribute> fields,
+                                        @NotNull Collection<? extends Attribute> fields,
                                         Class<?> resultType) {
         Map<String, Object> map = new HashMap<>();
         int i = 0;
@@ -93,7 +98,7 @@ public class ProjectionUtil {
     }
 
     public static <R> R getInterfaceResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                           List<? extends Attribute> fields,
+                                           Collection<? extends Attribute> fields,
                                            Class<?> resultType) {
         Map<Method, Object> map = new HashMap<>();
         int i = 0;
@@ -107,7 +112,7 @@ public class ProjectionUtil {
     }
 
     @NotNull
-    public static Object newProxyInstance(List<? extends Attribute> fields, @NotNull Class<?> resultType, Map<Method, Object> map) {
+    public static Object newProxyInstance(Collection<? extends Attribute> fields, @NotNull Class<?> resultType, Map<Method, Object> map) {
         ClassLoader classLoader = resultType.getClassLoader();
         Class<?>[] interfaces = {resultType};
         return Proxy.newProxyInstance(classLoader, interfaces, new Handler(fields, resultType, map));
@@ -117,7 +122,7 @@ public class ProjectionUtil {
     @Accessors(fluent = true)
     private static class Handler implements InvocationHandler {
         private static final Method EQUALS = getEqualsMethod();
-        private final List<? extends Attribute> fields;
+        private final Collection<? extends Attribute> fields;
         private final Class<?> resultType;
         private final Map<Method, Object> data;
 

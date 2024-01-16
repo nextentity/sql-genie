@@ -46,15 +46,15 @@ public interface Attribute extends Type {
         }
     }
 
-    default List<? extends Attribute> referencedAttribute() {
-        Type owner = this;
+    default List<? extends Attribute> referencedAttributes() {
+        Type cur = this;
         ArrayDeque<Attribute> attributes = new ArrayDeque<>(2);
-        while (owner.hasOwner()) {
-            owner = owner.owner();
-            if (owner instanceof Attribute) {
-                attributes.addFirst((Attribute) owner);
+        do {
+            if (cur instanceof Attribute) {
+                attributes.addFirst((Attribute) cur);
             }
-        }
+            cur = cur.owner();
+        } while (cur.hasOwner());
         //noinspection Java9CollectionFactory
         return Collections.unmodifiableList(new ArrayList<>(attributes));
     }

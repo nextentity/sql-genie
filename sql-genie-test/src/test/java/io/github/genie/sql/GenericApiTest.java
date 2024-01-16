@@ -66,11 +66,11 @@ public abstract class GenericApiTest {
 
     protected static final String username = "Jeremy Keynes";
 
-    private static List<User> allUsers;
+    protected static List<User> allUsers;
 
-    private final Select<User> userQuery;
+    protected final Select<User> userQuery;
 
-    private static final MysqlDataSource dataSource = new DataSourceConfig().getMysqlDataSource();
+    protected static final MysqlDataSource dataSource = new DataSourceConfig().getMysqlDataSource();
 
     static {
 
@@ -1240,11 +1240,16 @@ public abstract class GenericApiTest {
         assertTrue(userQuery.exist(allUsers.size() - 1));
         assertFalse(userQuery.exist(allUsers.size()));
 
-        List<UserModel> userModels = userQuery.select(UserModel.class)
-                .getList();
+        List<UserModel> userModels = userQuery.select(UserModel.class).getList();
+
 
         List<Map<String, Object>> l0 = allUsers.stream()
                 .map(UserModel::new)
+                .map(UserInterface::asMap)
+                .collect(Collectors.toList());
+
+        List<Map<String, Object>> l1 = userQuery.select(UserInterface.class).getList()
+                .stream()
                 .map(UserInterface::asMap)
                 .collect(Collectors.toList());
 
@@ -1252,7 +1257,7 @@ public abstract class GenericApiTest {
                 .map(UserInterface::asMap)
                 .collect(Collectors.toList());
 
-        // assertEquals(l0, l1);
+        assertEquals(l0, l1);
         assertEquals(l0, l2);
 
     }

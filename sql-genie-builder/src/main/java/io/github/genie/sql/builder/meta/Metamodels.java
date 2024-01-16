@@ -26,7 +26,7 @@ public class Metamodels {
         private Method setter;
         private Field field;
         @Getter(value = AccessLevel.PRIVATE, lazy = true)
-        private final List<? extends Attribute> referenced = Attribute.super.referencedAttribute();
+        private final List<? extends Attribute> referenced = Attribute.super.referencedAttributes();
 
         public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
             this.javaType = javaType;
@@ -43,7 +43,7 @@ public class Metamodels {
         }
 
         @Override
-        public List<? extends Attribute> referencedAttribute() {
+        public List<? extends Attribute> referencedAttributes() {
             return referenced();
         }
     }
@@ -95,6 +95,7 @@ public class Metamodels {
         private String joinColumnName;
         private String referencedColumnName;
         private Supplier<EntityType> referencedSupplier;
+        @Delegate
         @Getter(lazy = true)
         private final EntityType referenced = referencedSupplier.get();
 
@@ -106,8 +107,9 @@ public class Metamodels {
     @Data
     @Accessors(fluent = true)
     static final class ProjectionAttributeImpl implements ProjectionAttribute {
+        @Delegate
+        private final Attribute attribute;
         private final Attribute entityAttribute;
-        private final Attribute projectionAttribute;
     }
 
     @Data
@@ -116,10 +118,11 @@ public class Metamodels {
         private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
         private final EntityType entityType;
+        private final Type owner;
 
         @Override
         public Type owner() {
-            return null;
+            return owner;
         }
 
     }

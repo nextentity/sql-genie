@@ -1,5 +1,6 @@
 package io.github.genie.sql.projection;
 
+import io.github.genie.sql.builder.meta.EntityAttribute;
 import io.github.genie.sql.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,9 @@ public class UserModel implements UserInterface {
     private Integer pid;
 
     private boolean valid;
+
+    @EntityAttribute("parentUser.username")
+    private String parentUsername;
 
     public UserModel(User user) {
 

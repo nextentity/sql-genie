@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
@@ -150,14 +151,22 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 Projection projection = mappers
                         .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
                 for (ProjectionAttribute attr : projection.attributes()) {
-                    if (!(attr.entityAttribute() instanceof BasicAttribute)) {
+                    if (attr.entityAttribute() instanceof EntityType) {
                         continue;
                     }
-                    BasicAttribute column = (BasicAttribute) attr.entityAttribute();
-
-                    Column columns = Expressions.column(column.name());
+                    BasicAttribute attribute = (BasicAttribute) attr.entityAttribute();
+                    Column columns;
+                    List<? extends Attribute> attributes = attribute.referencedAttributes();
+                    if (!attributes.isEmpty()) {
+                        List<String> paths = attributes.stream()
+                                .map(Attribute::name)
+                                .collect(Collectors.toList());
+                        columns = Expressions.column(paths);
+                    } else {
+                        columns = Expressions.column(attribute.name());
+                    }
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(attr.projectionAttribute());
+                    selectedAttributes.add(attr);
                 }
             }
         }
@@ -196,8 +205,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                         continue;
                     }
                     AnyToOneAttribute am = (AnyToOneAttribute) attribute;
-                    EntityType entityTypeInfo = am.referenced();
-                    for (Attribute field : entityTypeInfo.attributes()) {
+                    for (Attribute field : am.attributes()) {
                         if (!(field instanceof BasicAttribute)) {
                             continue;
                         }
@@ -428,7 +436,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 case IS_NOT_NULL: {
                     appendBlank();
                     if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
+                            > operator.priority()) {
                         sql.append('(');
                         appendExpression(args, leftOperand);
                         sql.append(')');
@@ -550,10 +558,6 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         protected Attribute getAttribute(Column path) {
             Type schema = entity;
             for (String s : path.paths()) {
-                if (schema instanceof AnyToOneAttribute) {
-                    AnyToOneAttribute associationProperty = (AnyToOneAttribute) schema;
-                    schema = associationProperty.referenced();
-                }
                 if (schema instanceof EntityType) {
                     EntityType ts = (EntityType) schema;
                     schema = ts.getAttribute(s);
