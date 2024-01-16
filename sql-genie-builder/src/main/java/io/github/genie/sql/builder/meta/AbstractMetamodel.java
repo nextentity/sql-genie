@@ -84,6 +84,9 @@ public abstract class AbstractMetamodel implements Metamodel {
             }
         }
         if (cur instanceof BasicAttribute) {
+            if (attribute.javaType() != cur.javaType()) {
+                throw new IllegalStateException("entity attribute " + value + " type mismatch");
+            }
             return (Attribute) cur;
         } else {
             throw new IllegalStateException("entity attribute " + value + " not exist");
