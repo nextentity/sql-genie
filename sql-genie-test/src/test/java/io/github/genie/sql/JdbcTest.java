@@ -131,11 +131,6 @@ public class JdbcTest {
     }
 
     @Test
-    void testOffset() {
-        apiTest.testOffset();
-    }
-
-    @Test
     void testResultBuilder() {
         apiTest.testResultBuilder();
     }

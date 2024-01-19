@@ -118,11 +118,6 @@ public class JpaTest {
     }
 
     @Test
-    void testOffset() {
-        apiTest.testOffset();
-    }
-
-    @Test
     void testResultBuilder() {
         apiTest.testResultBuilder();
     }

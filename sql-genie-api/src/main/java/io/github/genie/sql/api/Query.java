@@ -327,9 +327,9 @@ public interface Query {
             return list.isEmpty() ? null : list.get(0);
         }
 
-        default List<T> getList(int offset) {
-            return getList(offset, -1);
-        }
+//        default List<T> getList(int offset) {
+//            return getList(offset, -1);
+//        }
 
         default List<T> getList() {
             return getList(-1, -1);
