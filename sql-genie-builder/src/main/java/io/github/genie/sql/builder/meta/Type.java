@@ -6,8 +6,13 @@ public interface Type {
 
     Class<?> javaType();
 
+    String name();
+
     default boolean hasOwner() {
         return owner() != null;
+    }
+    default int layer() {
+        return hasOwner() ? owner().layer() + 1 : 0;
     }
 
 }

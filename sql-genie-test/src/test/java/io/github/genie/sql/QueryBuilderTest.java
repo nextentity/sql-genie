@@ -8,6 +8,7 @@ import io.github.genie.sql.api.Query.Where;
 import io.github.genie.sql.api.TypedExpression.BooleanExpression;
 import io.github.genie.sql.builder.Q;
 import io.github.genie.sql.entity.User;
+import io.github.genie.sql.projection.IUser;
 import io.github.genie.sql.projection.UserInterface;
 import io.github.genie.sql.projection.UserModel;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
 
 import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class QueryBuilderTest {
 
@@ -35,6 +37,16 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void select(Select<User> userQuery) {
+
+        IUser first1 = userQuery.select(IUser.class).getFirst(20);
+        System.out.println(first1);
+        User first3 = userQuery.fetch(User::getParentUser).getFirst(20);
+        System.out.println(first3);
+        System.out.println(first3.getParentUser());
+        IUser.U first2 = userQuery.select(IUser.U.class).getFirst(20);
+        System.out.println(first2);
+
+
         User first = userQuery.select(User.class).getFirst();
         assertEquals(first, users().get(0));
 
@@ -102,33 +114,34 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void fetch(Select<User> userQuery) {
-        User user = userQuery.fetch(User::getParentUser)
-                .where(User::getPid).isNotNull()
-                .getFirst();
+        List<User> users = userQuery.fetch(User::getParentUser).getList();
 
-        User parentUser = user.getParentUser();
-        for (User u : users()) {
-            if (u.getParentUser() != null) {
-                assertEquals(parentUser, u.getParentUser());
-                break;
+        assertEquals(users, users());
+        for (int i = 0; i < users().size(); i++) {
+            User a = users.get(i);
+            User b = users().get(i);
+            if (b.getParentUser() != null) {
+                assertEquals(b.getParentUser(), a.getParentUser());
             }
         }
 
-        user = userQuery.fetch(Q.get(User::getParentUser).get(User::getParentUser))
-                .where(User::getParentUser).get(User::getPid).isNotNull()
-                .getFirst();
+        users = userQuery.fetch(Q.get(User::getParentUser).get(User::getParentUser))
+                .getList();
 
-        parentUser = user.getParentUser().getParentUser();
-        for (User u : users()) {
-            User p = u.getParentUser();
-            if (p != null) {
-                p = p.getParentUser();
-                if (p != null) {
-                    assertEquals(parentUser, p);
-                    break;
+        assertEquals(users, users());
+        for (int i = 0; i < users().size(); i++) {
+            User a = users.get(i);
+            User b = users().get(i);
+            if (b.getParentUser() != null) {
+                b = b.getParentUser();
+                a = a.getParentUser();
+                assertNotNull(a);
+                if (b.getParentUser() != null) {
+                    assertEquals(b.getParentUser(), a.getParentUser());
                 }
             }
         }
+
     }
 
     @ParameterizedTest
@@ -210,9 +223,7 @@ class QueryBuilderTest {
     @ArgumentsSource(UserDaoProvider.class)
     void where(Select<User> userQuery) {
         Checker<User, Where<User, User>> check = new Checker<>(users(), userQuery);
-        for (Checker<User, OrderBy<User, User>> checker : testWhere(check)) {
-            checker.check();
-        }
+        testWhere(check);
     }
 
     private List<Checker<User, OrderBy<User, User>>> testWhere(Checker<User, Where<User, User>> check) {
@@ -224,82 +235,82 @@ class QueryBuilderTest {
                 .where(get(User::getParentUser).get(User::getUsername).eq(username));
         Stream<User> stream = newStream(check)
                 .filter(user -> user.getParentUser() != null && username.equals(user.getParentUser().getUsername()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         stream = newStream(check)
                 .filter(user -> user.getParentUser() != null && !username.equals(user.getParentUser().getUsername()));
         collector = userQuery
                 .where(get(User::getParentUser).get(User::getUsername).ne(username));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery
                 .where(get(User::getUsername).ne(username));
         stream = newStream(check)
                 .filter(user -> !username.equals(user.getUsername()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery
                 .where(get(User::getUsername).ne(username));
         stream = newStream(check)
                 .filter(user -> !username.equals(user.getUsername()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery
                 .where(get(User::getUsername).ne(username));
         stream = newStream(check)
                 .filter(user -> !username.equals(user.getUsername()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
 
         BooleanExpression<User> isValid = get(User::isValid);
         collector = userQuery.where(isValid);
         stream = users().stream().filter(User::isValid);
 
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).eq(2));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() == 2);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getPid).ne(2));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getPid() != null && user.getPid() != 2);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).in(1, 2, 3));
         stream = newStream(check).filter(User::isValid).filter(user -> Arrays.asList(1, 2, 3).contains(user.getRandomNumber()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).notIn(1, 2, 3));
         stream = newStream(check).filter(User::isValid).filter(user -> !Arrays.asList(1, 2, 3).contains(user.getRandomNumber()));
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getPid).isNull());
         stream = newStream(check).filter(User::isValid).filter(user -> user.getPid() == null);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).ge(10));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() >= 10);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).gt(10));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() > 10);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).le(10));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() <= 10);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).lt(10));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() < 10);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).between(10, 15));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() >= 10 && user.getRandomNumber() <= 15);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).notBetween(10, 15));
         stream = newStream(check).filter(User::isValid).filter(user -> user.getRandomNumber() < 10 || user.getRandomNumber() > 15);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid
                 .and(User::getRandomNumber).notBetween(10, 15)
@@ -308,36 +319,41 @@ class QueryBuilderTest {
         stream = newStream(check).filter(User::isValid).filter(user ->
                 !(user.getRandomNumber() >= 10 && user.getRandomNumber() <= 15)
                         && user.getId() % 3 == 0);
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).ge(get(User::getPid)));
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() >= user.getPid());
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).gt(get(User::getPid)));
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() > user.getPid());
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).le(get(User::getPid)));
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() <= user.getPid());
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber).lt(get(User::getPid)));
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() < user.getPid());
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
         collector = userQuery.where(isValid.and(User::getRandomNumber)
                 .between(get(User::getRandomNumber), get(User::getPid)));
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() >= user.getRandomNumber() && user.getRandomNumber() <= user.getPid());
-        result.add(new Checker<>(stream, collector));
+        addTestCaseAndCheck(result, new Checker<>(stream, collector));
 
 
         return result;
+    }
+
+    private static <T, U extends Query.Collector<T>> void addTestCaseAndCheck(List<Checker<T, U>> result, Checker<T, U> checker) {
+        result.add(checker);
+        checker.check();
     }
 
     private static <T> Stream<T> newStream(Checker<T, ?> check) {
@@ -375,16 +391,16 @@ class QueryBuilderTest {
     }
 
 
-    static class Checker<T, Q extends Query.Collector<T>> {
+    static class Checker<T, U extends Query.Collector<T>> {
         List<T> result;
 
-        Q collector;
+        U collector;
 
-        Checker(Stream<T> result, Q collector) {
+        Checker(Stream<T> result, U collector) {
             this(result.collect(Collectors.toList()), collector);
         }
 
-        Checker(List<T> result, Q collector) {
+        Checker(List<T> result, U collector) {
             this.result = result;
             this.collector = collector;
         }

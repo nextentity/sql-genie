@@ -1,7 +1,7 @@
 package io.github.genie.sql.executor.jpa;
 
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.From.SubQuery;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Order;
@@ -13,7 +13,6 @@ import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
@@ -34,6 +33,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+
+import static io.github.genie.sql.builder.executor.ProjectionUtil.newProjectionResult;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class JpaQueryExecutor implements AbstractQueryExecutor {
@@ -71,25 +72,15 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             } else {
                 Projection projection = metamodel
                         .getProjection(queryStructure.from().type(), resultType);
-                Collection<? extends ProjectionAttribute> fields = projection.attributes();
-                List<Column> columns = fields.stream()
+                Collection<? extends ProjectionAttribute> attributes = projection.attributes();
+                List<Column> columns = attributes.stream()
                         .map(ProjectionAttribute::entityAttribute)
                         .map(Attribute::column)
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                if (resultType.isInterface()) {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getArrayValueExtractor(it), fields, resultType))
-                            .collect(Collectors.toList());
-                } else if (resultType.isRecord()) {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getRecordResult(getArrayValueExtractor(it), fields, resultType))
-                            .collect(Collectors.toList());
-                } else {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getBeanResult(getArrayValueExtractor(it), fields, resultType))
-                            .collect(Collectors.toList());
-                }
+                return objectsList.stream()
+                        .<T>map(it -> newProjectionResult(getArrayValueExtractor(it), attributes, resultType))
+                        .collect(Collectors.toList());
             }
         }
     }

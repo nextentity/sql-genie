@@ -1,8 +1,10 @@
 package io.github.genie.sql.builder.meta;
 
 import io.github.genie.sql.api.Column;
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 
@@ -15,7 +17,8 @@ import java.util.function.Supplier;
 
 public class Metamodels {
 
-    @Data
+    @Getter
+    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public static class AttributeImpl implements Attribute {
 
@@ -29,6 +32,8 @@ public class Metamodels {
         private final List<? extends Attribute> referencedAttributes = Attribute.super.referencedAttributes();
         @Getter(lazy = true)
         private final Column column = Attribute.super.column();
+        @Getter(lazy = true)
+        private final int layer = Attribute.super.layer();
 
         public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
             this.javaType = javaType;
@@ -41,15 +46,22 @@ public class Metamodels {
 
         @Override
         public String toString() {
-            return name();
+            if (owner != null
+                    && !(owner instanceof RootEntity)
+                    && !(owner instanceof RootProjection)) {
+                return owner + "." + name;
+            }
+            return name;
         }
 
 
     }
 
-    @Data
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
     @Accessors(fluent = true)
-    public static class EntityTypeImpl implements EntityType {
+    public static class RootEntity implements EntityType {
 
         private Class<?> javaType;
         private Type owner;
@@ -69,23 +81,38 @@ public class Metamodels {
 
         @Override
         public String toString() {
-            return "EntityType{" +
-                    ", tableName='" + tableName + '\'' +
-                    ", javaType=" + javaType().getName() +
-                    '}';
+            return "Entity{" + javaType.getSimpleName() + "}";
+        }
+
+        @Override
+        public String name() {
+            return javaType.getSimpleName();
+        }
+
+        @Override
+        public int layer() {
+            return 0;
         }
     }
 
-    @Data
+    @Getter
+    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public static class BasicAttributeImpl implements BasicAttribute {
         @Delegate
         private final Attribute attribute;
         private final String columnName;
         private final boolean hasVersion;
+
+        @Override
+        public String toString() {
+            return attribute.toString();
+        }
     }
 
-    @Data
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public static class AnyToOneAttributeImpl implements AnyToOneAttribute {
         @Delegate
@@ -101,19 +128,31 @@ public class Metamodels {
         public AnyToOneAttributeImpl(Attribute attribute) {
             this.attribute = attribute;
         }
+
+        @Override
+        public String toString() {
+            return attribute.toString();
+        }
     }
 
-    @Data
+    @Getter
+    @RequiredArgsConstructor
     @Accessors(fluent = true)
     static final class ProjectionAttributeImpl implements ProjectionAttribute {
         @Delegate
         private final Attribute attribute;
         private final Attribute entityAttribute;
+
+        @Override
+        public String toString() {
+            return attribute.toString();
+        }
     }
 
-    @Data
+    @Getter
+    @AllArgsConstructor
     @Accessors(fluent = true)
-    static final class ProjectionImpl implements Projection {
+    static final class RootProjection implements Projection {
         private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
         private final EntityType entityType;
@@ -124,5 +163,19 @@ public class Metamodels {
             return owner;
         }
 
+        @Override
+        public String name() {
+            return javaType.getSimpleName();
+        }
+
+        @Override
+        public int layer() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return javaType.getSimpleName();
+        }
     }
 }

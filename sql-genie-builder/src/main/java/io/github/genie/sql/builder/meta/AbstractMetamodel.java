@@ -5,9 +5,9 @@ import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
-import io.github.genie.sql.builder.meta.Metamodels.EntityTypeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionAttributeImpl;
-import io.github.genie.sql.builder.meta.Metamodels.ProjectionImpl;
+import io.github.genie.sql.builder.meta.Metamodels.RootEntity;
+import io.github.genie.sql.builder.meta.Metamodels.RootProjection;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,6 +19,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,24 +55,63 @@ public abstract class AbstractMetamodel implements Metamodel {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
         List<ProjectionAttribute> immutable = Collections.unmodifiableList(list);
-        ProjectionImpl result = new ProjectionImpl(projectionType, immutable, entity, null);
-        List<Attribute> attributes = projectionType.isInterface()
-                ? getInterfaceAttributes(projectionType, result)
-                : getAttributes(projectionType, result);
-        for (Attribute attribute : attributes) {
-            Attribute entityAttribute = getEntityAttribute(attribute, entity);
-            if (entityAttribute != null && attribute.javaType() == entityAttribute.javaType()) {
-                list.add(new ProjectionAttributeImpl(attribute, entityAttribute));
-            }
-        }
+        RootProjection result = new RootProjection(projectionType, immutable, entity, null);
+        getProjectionAttributes(projectionType, result, entity, list, 0, 2);
         list.trimToSize();
         return result;
     }
 
+    private void getProjectionAttributes(Class<?> projectionType,
+                                         Type owner,
+                                         EntityType entity,
+                                         ArrayList<ProjectionAttribute> list,
+                                         int deep,
+                                         int maxDeep) {
+        if (deep == maxDeep) {
+            return;
+        }
+        List<Attribute> attributes = getProjectionAttributes(projectionType, owner);
+        for (Attribute attribute : attributes) {
+            Attribute entityAttribute = getEntityAttribute(attribute, entity);
+            if (entityAttribute == null) {
+                continue;
+            }
+            if (entityAttribute instanceof EntityType) {
+                getProjectionAttributes(attribute.javaType(), attribute,
+                        (EntityType) entityAttribute, list, deep + 1, maxDeep);
+            } else if (attribute.javaType() == entityAttribute.javaType()) {
+                list.add(new ProjectionAttributeImpl(attribute, entityAttribute));
+            }
+        }
+    }
+
+    private List<Attribute> getProjectionAttributes(Class<?> projectionType, Type owner) {
+        if (projectionType.isInterface()) {
+            return getInterfaceAttributes(projectionType, owner);
+        } else if (projectionType.isRecord()) {
+            return getRecordAttributes(projectionType, owner);
+        }
+        return getBeanAttributes(projectionType, owner);
+    }
+
+    private List<Attribute> getRecordAttributes(Class<?> projectionType, Type owner) {
+        RecordComponent[] components = projectionType.getRecordComponents();
+        return Arrays.stream(components)
+                .map(it -> newAttribute(null, it.getAccessor(), null, owner))
+                .collect(Collectors.toList());
+    }
+
     protected Attribute getEntityAttribute(Attribute attribute, EntityType entity) {
+        Attribute entityAttribute = getEntityAttributeByAnnotation(attribute, entity);
+        return entityAttribute == null
+                ? entity.getAttribute(attribute.name())
+                : entityAttribute;
+    }
+
+    private Attribute getEntityAttributeByAnnotation(Attribute attribute, EntityType entity) {
         EntityAttribute entityAttribute = getAnnotation(attribute, EntityAttribute.class);
         if (entityAttribute == null || entityAttribute.value().isEmpty()) {
-            return entity.getAttribute(attribute.name());
+            return null;
         }
         String value = entityAttribute.value();
         String[] split = value.split("\\.");
@@ -120,16 +160,16 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected abstract Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass);
 
-    protected EntityTypeImpl createEntityType(Class<?> entityType, Type owner) {
-        EntityTypeImpl result = new EntityTypeImpl();
+    protected RootEntity createEntityType(Class<?> entityType, Type owner) {
+        RootEntity result = new RootEntity();
         result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
         result.attributeMap(Collections.unmodifiableMap(map));
         result.tableName(getTableName(entityType));
         result.owner(owner);
-        List<Attribute> allFields = getAttributes(entityType, result);
+        List<Attribute> attributes = getBeanAttributes(entityType, owner == null ? result : owner);
         boolean hasVersion = false;
-        for (Attribute attr : allFields) {
+        for (Attribute attr : attributes) {
             if (map.containsKey(attr.name())) {
                 throw new IllegalStateException("Duplicate key");
             }
@@ -192,7 +232,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 : joinName;
     }
 
-    protected List<Attribute> getAttributes(Class<?> type, Type owner) {
+    protected List<Attribute> getBeanAttributes(Class<?> type, Type owner) {
         Map<String, PropertyDescriptor> map = new HashMap<>();
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(type);

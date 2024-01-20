@@ -259,4 +259,9 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
 
     }
+
+    @Override
+    public String toString() {
+        return "QueryBuilder[" + queryExecutor.getClass().getSimpleName() + "]";
+    }
 }
