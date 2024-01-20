@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class QueryBuilderTest {
 
@@ -122,6 +123,8 @@ class QueryBuilderTest {
             User b = users().get(i);
             if (b.getParentUser() != null) {
                 assertEquals(b.getParentUser(), a.getParentUser());
+            } else {
+                assertNull(a.getParentUser());
             }
         }
 

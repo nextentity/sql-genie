@@ -30,26 +30,27 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
-@SuppressWarnings("PatternVariableCanBeUsed")
 public class ProjectionUtil {
 
-    static Map<Collection<? extends Attribute>, Map<Type, List<Type>>> schemas = new ConcurrentHashMap<>();
+    static Map<Collection<? extends Attribute>, Map<Type, List<Attribute>>> schemas = new ConcurrentHashMap<>();
 
     public static <R> R newProjectionResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                             Collection<? extends Attribute> attributes,
                                             Class<?> resultType) {
         Map<Type, Map<Type, Object>> schemaData = new HashMap<>();
-        Map<Type, List<Type>> schema = getSchema(attributes);
+        Map<Type, List<Attribute>> schema = getSchema(attributes);
         int i = 0;
         for (Attribute attribute : attributes) {
             Object value = extractor.apply(i++, attribute.javaType());
-            Map<Type, Object> m = schemaData.computeIfAbsent(attribute.owner(), __ -> new HashMap<>());
-            m.put(attribute, value);
+            if (value != null) {
+                Map<Type, Object> m = schemaData.computeIfAbsent(attribute.owner(), __ -> new HashMap<>());
+                m.put(attribute, value);
+            }
         }
         Object result = null;
-        for (Entry<Type, List<Type>> entry : schema.entrySet()) {
+        for (Entry<Type, List<Attribute>> entry : schema.entrySet()) {
             Type instanceType = entry.getKey();
-            List<Type> attrs = entry.getValue();
+            List<Attribute> attrs = entry.getValue();
             Map<Type, Object> data = schemaData.get(instanceType);
             if (instanceType.hasOwner()) {
                 if (instanceType instanceof Attribute) {
@@ -74,7 +75,7 @@ public class ProjectionUtil {
     }
 
     @Nullable
-    private static Object newInstance(Type key, List<Type> value, Map<Type, Object> data) {
+    private static Object newInstance(Type key, List<Attribute> value, Map<Type, Object> data) {
         if (data == null || data.isEmpty()) {
             return null;
         }
@@ -88,47 +89,50 @@ public class ProjectionUtil {
     }
 
     @NotNull
-    private static Map<Type, List<Type>> getSchema(Collection<? extends Attribute> attributes) {
+    private static Map<Type, List<Attribute>> getSchema(Collection<? extends Attribute> attributes) {
         return schemas.computeIfAbsent(attributes, ProjectionUtil::doGetSchema);
     }
 
-    private static Map<Type, List<Type>> doGetSchema(Collection<? extends Attribute> attributes) {
-        Map<Type, List<Type>> schema = new TreeMap<>(Comparator.comparingInt(Type::layer).reversed());
+    private static Map<Type, List<Attribute>> doGetSchema(Collection<? extends Attribute> attributes) {
+        Map<Type, List<Attribute>> schema = new TreeMap<>(Comparator.comparingInt(Type::layer).reversed());
         for (Attribute attribute : attributes) {
             setAttributes(attribute, schema);
         }
         return schema;
     }
 
-    private static void setAttributes(Type type, Map<Type, List<Type>> schema) {
+    private static void setAttributes(Type type, Map<Type, List<Attribute>> schema) {
         Type owner = type.owner();
         if (owner != null) {
-            List<Type> types = schema.get(owner);
+            List<Attribute> types = schema.get(owner);
             if (types == null) {
                 types = new ArrayList<>();
                 schema.put(owner, types);
                 setAttributes(owner, schema);
             }
-            schema.computeIfAbsent(owner, k -> new ArrayList<>()).add(type);
+            if (type instanceof Attribute) {
+                schema.computeIfAbsent(owner, k -> new ArrayList<>()).add((Attribute) type);
+            }
         }
     }
 
-    private static Object newBeanInstance(List<Type> attributes, Class<?> type, Map<Type, Object> data) {
+    private static Object newBeanInstance(List<Attribute> attributes, Class<?> type, Map<Type, Object> data) {
+        Object o = newInstance(type);
+        for (Attribute attribute : attributes) {
+            Object attrVal = data.get(attribute);
+            if (attrVal != null) {
+                attribute.set(o, attrVal);
+            }
+        }
+        return o;
+    }
+
+    @NotNull
+    private static Object newInstance(Class<?> type) {
         try {
             Constructor<?> constructor = type.getDeclaredConstructor();
-            Object o = constructor.newInstance();
-            for (Type v : attributes) {
-                if (v instanceof Attribute) {
-                    Attribute attribute = (Attribute) v;
-                    Object attrVal = data.get(attribute);
-                    if (attrVal != null) {
-                        attribute.set(o, attrVal);
-                    }
-                }
-            }
-            return o;
-        } catch (
-                ReflectiveOperationException e) {
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException e) {
             throw new BeanReflectiveException(e);
         }
     }
@@ -154,7 +158,7 @@ public class ProjectionUtil {
     }
 
     @NotNull
-    public static Object newInterfaceInstance(Collection<? extends Type> attributes,
+    public static Object newInterfaceInstance(Collection<? extends Attribute> attributes,
                                               @NotNull Class<?> resultType,
                                               Map<Type, Object> map) {
         ClassLoader classLoader = resultType.getClassLoader();
@@ -163,6 +167,12 @@ public class ProjectionUtil {
         for (Entry<Type, Object> entry : map.entrySet()) {
             if (entry.getKey() instanceof Attribute attribute && attribute.getter() != null) {
                 m.put(attribute.getter(), entry.getValue());
+            }
+        }
+        for (Attribute type : attributes) {
+            Method getter = type.getter();
+            if (getter != null) {
+                m.putIfAbsent(getter, null);
             }
         }
         return Proxy.newProxyInstance(classLoader, interfaces, new Handler(attributes, resultType, m));
