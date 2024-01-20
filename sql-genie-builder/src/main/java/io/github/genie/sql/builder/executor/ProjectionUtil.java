@@ -37,13 +37,13 @@ public class ProjectionUtil {
     public static <R> R newProjectionResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
                                             Collection<? extends Attribute> attributes,
                                             Class<?> resultType) {
-        Map<Type, Map<Type, Object>> schemaData = new HashMap<>();
+        Map<Type, Map<Attribute, Object>> schemaData = new HashMap<>();
         Map<Type, List<Attribute>> schema = getSchema(attributes);
         int i = 0;
         for (Attribute attribute : attributes) {
             Object value = extractor.apply(i++, attribute.javaType());
             if (value != null) {
-                Map<Type, Object> m = schemaData.computeIfAbsent(attribute.owner(), __ -> new HashMap<>());
+                Map<Attribute, Object> m = schemaData.computeIfAbsent(attribute.owner(), __ -> new HashMap<>());
                 m.put(attribute, value);
             }
         }
@@ -51,14 +51,14 @@ public class ProjectionUtil {
         for (Entry<Type, List<Attribute>> entry : schema.entrySet()) {
             Type instanceType = entry.getKey();
             List<Attribute> attrs = entry.getValue();
-            Map<Type, Object> data = schemaData.get(instanceType);
+            Map<Attribute, Object> data = schemaData.get(instanceType);
             if (instanceType.hasOwner()) {
                 if (instanceType instanceof Attribute) {
                     Type k = instanceType.owner();
-                    Map<Type, Object> ownerData = schemaData.computeIfAbsent(k, __ -> new HashMap<>());
+                    Map<Attribute, Object> ownerData = schemaData.computeIfAbsent(k, __ -> new HashMap<>());
                     Object o;
                     o = newInstance(instanceType, attrs, data);
-                    ownerData.put(instanceType, o);
+                    ownerData.put((Attribute) instanceType, o);
                 } else {
                     log.debug("ignored type: " + instanceType);
                 }
@@ -75,7 +75,7 @@ public class ProjectionUtil {
     }
 
     @Nullable
-    private static Object newInstance(Type key, List<Attribute> value, Map<Type, Object> data) {
+    private static Object newInstance(Type key, List<Attribute> value, Map<Attribute, Object> data) {
         if (data == null || data.isEmpty()) {
             return null;
         }
@@ -116,7 +116,7 @@ public class ProjectionUtil {
         }
     }
 
-    private static Object newBeanInstance(List<Attribute> attributes, Class<?> type, Map<Type, Object> data) {
+    private static Object newBeanInstance(List<Attribute> attributes, Class<?> type, Map<Attribute, Object> data) {
         Object o = newInstance(type);
         for (Attribute attribute : attributes) {
             Object attrVal = data.get(attribute);
@@ -137,7 +137,7 @@ public class ProjectionUtil {
         }
     }
 
-    private static Object newRecordInstance(Class<?> resultType, Map<Type, Object> data) {
+    private static Object newRecordInstance(Class<?> resultType, Map<Attribute, Object> data) {
         Map<String, Object> d = data.entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getKey().name(), Entry::getValue));
         try {
@@ -160,12 +160,13 @@ public class ProjectionUtil {
     @NotNull
     public static Object newInterfaceInstance(Collection<? extends Attribute> attributes,
                                               @NotNull Class<?> resultType,
-                                              Map<Type, Object> map) {
+                                              Map<Attribute, Object> map) {
         ClassLoader classLoader = resultType.getClassLoader();
         Class<?>[] interfaces = {resultType};
         Map<Method, Object> m = new HashMap<>();
-        for (Entry<Type, Object> entry : map.entrySet()) {
-            if (entry.getKey() instanceof Attribute attribute && attribute.getter() != null) {
+        for (Entry<Attribute, Object> entry : map.entrySet()) {
+            Attribute attribute = entry.getKey();
+            if (attribute != null && attribute.getter() != null) {
                 m.put(attribute.getter(), entry.getValue());
             }
         }
