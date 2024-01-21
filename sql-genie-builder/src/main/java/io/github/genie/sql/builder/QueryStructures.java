@@ -20,7 +20,9 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -239,13 +241,47 @@ final class QueryStructures {
     @lombok.Data
     @Accessors(fluent = true)
     static final class ColumnMeta implements Column {
-        private final List<String> paths;
+        private final String[] paths;
         @Getter(lazy = true)
         private final String identity = String.join(".", paths);
 
         @Override
         public String toString() {
             return identity();
+        }
+
+        @Override
+        public int size() {
+            return paths.length;
+        }
+
+        @Override
+        public String get(int i) {
+            return paths[i];
+        }
+
+        @Override
+        public Column get(String path) {
+            String[] strings = new String[size() + 1];
+            System.arraycopy(paths, 0, strings, 0, paths.length);
+            strings[size()] = path;
+            return new ColumnMeta(strings);
+        }
+
+        @Override
+        public Column parent() {
+            if (size() <= 1) {
+                return null;
+            }
+            String[] strings = new String[size() - 1];
+            System.arraycopy(paths, 0, strings, 0, strings.length);
+            return new ColumnMeta(strings);
+        }
+
+        @NotNull
+        @Override
+        public Iterator<String> iterator() {
+            return Arrays.stream(paths).iterator();
         }
     }
 

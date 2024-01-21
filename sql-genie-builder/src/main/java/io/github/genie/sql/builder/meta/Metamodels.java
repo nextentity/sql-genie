@@ -47,8 +47,8 @@ public class Metamodels {
         @Override
         public String toString() {
             if (owner != null
-                    && !(owner instanceof RootEntity)
-                    && !(owner instanceof RootProjection)) {
+                && !(owner instanceof RootEntity)
+                && !(owner instanceof RootProjection)) {
                 return owner + "." + name;
             }
             return name;
@@ -148,6 +148,26 @@ public class Metamodels {
             return attribute.toString();
         }
     }
+
+    @Getter
+    @RequiredArgsConstructor
+    @Accessors(fluent = true)
+    static final class AnyToOneProjectionAttributeImpl implements AnyToOneProjectionAttribute {
+        @Delegate
+        private final Attribute attribute;
+        private final Attribute entityAttribute;
+
+        @Override
+        public String toString() {
+            return attribute.toString();
+        }
+
+        @Override
+        public Collection<? extends Attribute> attributes() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
 
     @Getter
     @AllArgsConstructor

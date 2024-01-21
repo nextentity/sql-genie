@@ -49,7 +49,7 @@ public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
             }
             Class<?> resultType = selectClause.resultType();
             BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
-            return ProjectionUtil.newProjectionResult(extractor, attributes, resultType);
+            return ProjectionUtil.newInstance(extractor, attributes, resultType);
         }
     }
 

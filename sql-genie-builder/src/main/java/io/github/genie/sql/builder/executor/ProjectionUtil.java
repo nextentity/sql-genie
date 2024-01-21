@@ -10,21 +10,17 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -32,158 +28,239 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProjectionUtil {
 
-    static Map<Collection<? extends Attribute>, Map<Type, List<Attribute>>> schemas = new ConcurrentHashMap<>();
+    private static final Map<Collection<? extends Attribute>, Schema> SCHEMAS = new ConcurrentHashMap<>();
 
-    public static <R> R newProjectionResult(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                            Collection<? extends Attribute> attributes,
-                                            Class<?> resultType) {
-        Map<Type, Map<Attribute, Object>> schemaData = new HashMap<>();
-        Map<Type, List<Attribute>> schema = getSchema(attributes);
+    public static <R> R newInstance(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
+                                    Collection<? extends Attribute> attributes,
+                                    Class<?> resultType) {
+        Schema schema = getSchema(attributes);
+        if (schema.type.javaType() != resultType) {
+            throw new IllegalArgumentException();
+        }
+        return TypeCastUtil.unsafeCast(schema.extract(true, extractor));
+    }
+
+    public static Schema getSchema(Collection<? extends Attribute> attributes) {
+        return SCHEMAS.computeIfAbsent(attributes, ProjectionUtil::doGetSchema);
+    }
+
+    private static Schema doGetSchema(Collection<? extends Attribute> attributes) {
+        Map<Type, Property> map = new HashMap<>();
+        Schema result = null;
+        for (Attribute attribute : attributes) {
+            Type cur = attribute;
+            while (true) {
+                Property property = map.computeIfAbsent(cur, ProjectionUtil::newProperty);
+                cur = cur.owner();
+                if (cur == null) {
+                    if (result == null) {
+                        result = (Schema) property;
+                    } else if (result != property) {
+                        throw new IllegalArgumentException();
+                    }
+                    break;
+                }
+            }
+        }
+        if (result == null) {
+            throw new IllegalArgumentException();
+        }
         int i = 0;
         for (Attribute attribute : attributes) {
-            Object value = extractor.apply(i++, attribute.javaType());
-            if (value != null) {
-                Map<Attribute, Object> m = schemaData.computeIfAbsent(attribute.owner(), __ -> new HashMap<>());
-                m.put(attribute, value);
+            BaseProperty property = (BaseProperty) map.get(attribute);
+            property.index = i++;
+        }
+        Map<Type, List<Entry<Type, Property>>> attrs = map.entrySet().stream()
+                .filter(it -> it.getKey().owner() != null)
+                .collect(Collectors.groupingBy(e -> e.getKey().owner()));
+        for (Entry<Type, List<Entry<Type, Property>>> entry : attrs.entrySet()) {
+            Property property = map.get(entry.getKey());
+            List<Entry<Type, Property>> v = entry.getValue();
+            if (v != null && !v.isEmpty()) {
+                ((Schema) property).setProperties(v.stream()
+                        .map(Entry::getValue)
+                        .toArray(Property[]::new));
             }
         }
-        Object result = null;
-        for (Entry<Type, List<Attribute>> entry : schema.entrySet()) {
-            Type instanceType = entry.getKey();
-            List<Attribute> attrs = entry.getValue();
-            Map<Attribute, Object> data = schemaData.get(instanceType);
-            if (instanceType.hasOwner()) {
-                if (instanceType instanceof Attribute) {
-                    Type k = instanceType.owner();
-                    Map<Attribute, Object> ownerData = schemaData.computeIfAbsent(k, __ -> new HashMap<>());
-                    Object o;
-                    o = newInstance(instanceType, attrs, data);
-                    ownerData.put((Attribute) instanceType, o);
-                } else {
-                    log.debug("ignored type: " + instanceType);
-                }
-            } else if (result == null) {
-                if (instanceType.javaType() != resultType) {
-                    throw new IllegalStateException();
-                }
-                result = newInstance(instanceType, attrs, data);
+        return result;
+    }
+
+    private static Property newProperty(Type type) {
+        if (type instanceof io.github.genie.sql.builder.meta.Schema) {
+            Class<?> javaType = type.javaType();
+            if (javaType.isInterface()) {
+                return new InterfaceSchema(type);
+            } else if (javaType.isRecord()) {
+                return new RecordSchema(type);
             } else {
-                throw new IllegalStateException();
+                return new BeanSchema(type);
             }
-        }
-        return TypeCastUtil.unsafeCast(result);
-    }
-
-    @Nullable
-    private static Object newInstance(Type key, List<Attribute> value, Map<Attribute, Object> data) {
-        if (data == null || data.isEmpty()) {
-            return null;
-        }
-        if (key.javaType().isInterface()) {
-            return newInterfaceInstance(value, key.javaType(), data);
-        } else if (key.javaType().isRecord()) {
-            return newRecordInstance(key.javaType(), data);
         } else {
-            return newBeanInstance(value, key.javaType(), data);
+            return new BaseProperty((Attribute) type);
         }
     }
 
-    @NotNull
-    private static Map<Type, List<Attribute>> getSchema(Collection<? extends Attribute> attributes) {
-        return schemas.computeIfAbsent(attributes, ProjectionUtil::doGetSchema);
-    }
 
-    private static Map<Type, List<Attribute>> doGetSchema(Collection<? extends Attribute> attributes) {
-        Map<Type, List<Attribute>> schema = new TreeMap<>(Comparator.comparingInt(Type::layer).reversed());
-        for (Attribute attribute : attributes) {
-            setAttributes(attribute, schema);
+    public abstract static class Schema implements Property {
+        protected Property[] properties;
+        protected final Type type;
+
+        public Schema(Type type) {
+            this.type = type;
         }
-        return schema;
+
+        @Override
+        public Attribute attribute() {
+            return (Attribute) type;
+        }
+
+        public void setProperties(Property[] properties) {
+            this.properties = properties;
+        }
     }
 
-    private static void setAttributes(Type type, Map<Type, List<Attribute>> schema) {
-        Type owner = type.owner();
-        if (owner != null) {
-            List<Attribute> types = schema.get(owner);
-            if (types == null) {
-                types = new ArrayList<>();
-                schema.put(owner, types);
-                setAttributes(owner, schema);
+    public static class InterfaceSchema extends Schema {
+        public InterfaceSchema(Type type) {
+            super(type);
+        }
+
+        @Override
+        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+            Map<Method, Object> map = new HashMap<>();
+            boolean hasNonnullProperty = false;
+            for (Property property : properties) {
+                Object extract = property.extract(false, extractor);
+                hasNonnullProperty = hasNonnullProperty || extract != null;
+                map.put(property.attribute().getter(), extract);
             }
-            if (type instanceof Attribute) {
-                schema.computeIfAbsent(owner, k -> new ArrayList<>()).add((Attribute) type);
+            if (root || hasNonnullProperty) {
+                return newProxyInstance(properties, type.javaType(), map);
+            } else {
+                return null;
             }
         }
     }
 
-    private static Object newBeanInstance(List<Attribute> attributes, Class<?> type, Map<Attribute, Object> data) {
-        Object o = newInstance(type);
-        for (Attribute attribute : attributes) {
-            Object attrVal = data.get(attribute);
-            if (attrVal != null) {
-                attribute.set(o, attrVal);
+    public static class RecordSchema extends Schema {
+        public Class<?>[] parameterTypes;
+
+        public RecordSchema(Type type) {
+            super(type);
+        }
+
+        public void setProperties(Property[] properties) {
+            Map<String, Property> map = new HashMap<>();
+            for (Property property : properties) {
+                map.put(property.attribute().name(), property);
             }
-        }
-        return o;
-    }
-
-    @NotNull
-    private static Object newInstance(Class<?> type) {
-        try {
-            Constructor<?> constructor = type.getDeclaredConstructor();
-            return constructor.newInstance();
-        } catch (ReflectiveOperationException e) {
-            throw new BeanReflectiveException(e);
-        }
-    }
-
-    private static Object newRecordInstance(Class<?> resultType, Map<Attribute, Object> data) {
-        Map<String, Object> d = data.entrySet().stream()
-                .collect(Collectors.toMap(e -> e.getKey().name(), Entry::getValue));
-        try {
+            Class<?> resultType = type.javaType();
             RecordComponent[] components = resultType.getRecordComponents();
-            Object[] args = new Object[components.length];
-            Class<?>[] parameterTypes = new Class[components.length];
+            parameterTypes = new Class[components.length];
+            Property[] argProperties = new Property[components.length];
             for (int i = 0; i < components.length; i++) {
                 RecordComponent component = components[i];
-                args[i] = d.get(component.getName());
+                argProperties[i] = map.get(component.getName());
                 parameterTypes[i] = component.getType();
             }
-            Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
-            Object row = constructor.newInstance(args);
-            return TypeCastUtil.unsafeCast(row);
+            this.properties = argProperties;
+        }
+
+        @Override
+        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+
+            try {
+                Class<?> resultType = type.javaType();
+                RecordComponent[] components = resultType.getRecordComponents();
+                Object[] args = new Object[components.length];
+                boolean hasNonnullProperty = false;
+                for (int i = 0; i < properties.length; i++) {
+                    Object extract = properties[i].extract(false, extractor);
+                    hasNonnullProperty = hasNonnullProperty || extract != null;
+                    args[i] = extract;
+                }
+                if (!root && !hasNonnullProperty) {
+                    return null;
+                }
+                Constructor<?> constructor = resultType.getDeclaredConstructor(parameterTypes);
+                return constructor.newInstance(args);
+            } catch (ReflectiveOperationException e) {
+                throw new BeanReflectiveException(e);
+            }
+        }
+    }
+
+    public static class BeanSchema extends Schema {
+        public BeanSchema(Type type) {
+            super(type);
+        }
+
+        @Override
+        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+            Object result = null;
+            for (Property property : properties) {
+                Object value = property.extract(false, extractor);
+                if (value != null) {
+                    if (result == null) {
+                        result = newInstance(type.javaType());
+                    }
+                    property.attribute().set(result, value);
+                }
+            }
+            if (root && result == null) {
+                result = newInstance(type.javaType());
+            }
+            return result;
+        }
+    }
+
+    public interface Property {
+        Attribute attribute();
+
+        Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor);
+    }
+
+
+    public static class BaseProperty implements Property {
+        private int index;
+        private final Attribute attribute;
+
+        public BaseProperty(Attribute attribute) {
+            this.attribute = attribute;
+        }
+
+
+        @Override
+        public Attribute attribute() {
+            return attribute;
+        }
+
+        @Override
+        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+            return extractor.apply(index, attribute.javaType());
+        }
+    }
+
+    @NotNull
+    private static Object newInstance(Class<?> resultType) {
+        try {
+            return resultType.getConstructor().newInstance();
         } catch (ReflectiveOperationException e) {
             throw new BeanReflectiveException(e);
         }
     }
 
     @NotNull
-    public static Object newInterfaceInstance(Collection<? extends Attribute> attributes,
-                                              @NotNull Class<?> resultType,
-                                              Map<Attribute, Object> map) {
+    public static Object newProxyInstance(Property[] fields, @NotNull Class<?> resultType, Map<Method, Object> map) {
         ClassLoader classLoader = resultType.getClassLoader();
         Class<?>[] interfaces = {resultType};
-        Map<Method, Object> m = new HashMap<>();
-        for (Entry<Attribute, Object> entry : map.entrySet()) {
-            Attribute attribute = entry.getKey();
-            if (attribute != null && attribute.getter() != null) {
-                m.put(attribute.getter(), entry.getValue());
-            }
-        }
-        for (Attribute type : attributes) {
-            Method getter = type.getter();
-            if (getter != null) {
-                m.putIfAbsent(getter, null);
-            }
-        }
-        return Proxy.newProxyInstance(classLoader, interfaces, new Handler(attributes, resultType, m));
+        return Proxy.newProxyInstance(classLoader, interfaces, new Handler(fields, resultType, map));
     }
 
     @Data
     @Accessors(fluent = true)
     private static class Handler implements InvocationHandler {
         private static final Method EQUALS = getEqualsMethod();
-        private final Collection<? extends Type> attributes;
+        private final Property[] fields;
         private final Class<?> resultType;
         private final Map<Method, Object> data;
 
@@ -244,13 +321,13 @@ public class ProjectionUtil {
         @Override
         public String toString() {
             Map<String, Object> stringMap = new HashMap<>();
-            for (Type attribute : attributes) {
-                if (attribute instanceof Attribute) {
-                    stringMap.put(attribute.name(), data.get(((Attribute) attribute).getter()));
-                }
+            for (Property property : fields) {
+                Attribute attribute = property.attribute();
+                stringMap.put(attribute.name(), data.get(attribute.getter()));
             }
             return resultType.getSimpleName() + stringMap;
         }
     }
+
 
 }

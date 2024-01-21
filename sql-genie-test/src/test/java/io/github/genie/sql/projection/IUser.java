@@ -1,5 +1,7 @@
 package io.github.genie.sql.projection;
 
+import io.github.genie.sql.builder.executor.ProjectionUtil;
+import io.github.genie.sql.builder.executor.ProjectionUtil.Schema;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
 import io.github.genie.sql.entity.User;
@@ -21,11 +23,15 @@ public interface IUser {
         for (ProjectionAttribute attribute : projection.attributes()) {
             System.out.println(attribute);
         }
+
+        Schema schema = ProjectionUtil.getSchema(projection.attributes());
+        System.out.println(schema);
     }
 
     record U(int id, int randomNumber, String username) {
 
 
     }
+
 
 }

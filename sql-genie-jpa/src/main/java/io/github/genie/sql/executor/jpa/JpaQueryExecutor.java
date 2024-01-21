@@ -13,6 +13,7 @@ import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
+import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static io.github.genie.sql.builder.executor.ProjectionUtil.newProjectionResult;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class JpaQueryExecutor implements AbstractQueryExecutor {
@@ -79,7 +79,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
                 return objectsList.stream()
-                        .<T>map(it -> newProjectionResult(getArrayValueExtractor(it), attributes, resultType))
+                        .<T>map(it -> ProjectionUtil.newInstance(getArrayValueExtractor(it), attributes, resultType))
                         .collect(Collectors.toList());
             }
         }
@@ -201,12 +201,11 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         protected void setFetch(List<? extends Column> fetchPaths) {
             if (fetchPaths != null) {
                 for (Column path : fetchPaths) {
-                    List<String> paths = path.paths();
                     Fetch<?, ?> fetch = null;
-                    for (int i = 0; i < paths.size(); i++) {
+                    for (int i = 0; i < path.size(); i++) {
                         Fetch<?, ?> cur = fetch;
-                        String stringPath = paths.get(i);
-                        Column sub = subPaths(paths, i + 1);
+                        String stringPath = path.get(i);
+                        Column sub = subPaths(path, i + 1);
                         fetch = (Fetch<?, ?>) fetched.computeIfAbsent(sub, k -> {
                             if (cur == null) {
                                 return root.fetch(stringPath, JoinType.LEFT);

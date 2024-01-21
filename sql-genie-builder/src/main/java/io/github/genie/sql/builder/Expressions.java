@@ -67,7 +67,7 @@ public interface Expressions {
         if (paths.getClass() != ArrayList.class) {
             paths = new ArrayList<>(paths);
         }
-        return new ColumnMeta(paths);
+        return new ColumnMeta(paths.toArray(String[]::new));
     }
 
     static Expression operate(Expression l, Operator o, Expression r) {
@@ -100,11 +100,11 @@ public interface Expressions {
     }
 
     static Column concat(Column join, String path) {
-        return column(Util.concat(join.paths(), path));
+        return join.get(path);
     }
 
     static Column concat(Column join, Path<?, ?> path) {
-        return column(Util.concat(join.paths(), columnName(path)));
+        return join.get(columnName(path));
     }
 
 }

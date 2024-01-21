@@ -288,12 +288,11 @@ public class ExpressionBuilder {
 
     protected Path<?> getPath(Column column) {
         From<?, ?> r = root;
-        List<String> paths = column.paths();
-        int size = paths.size();
+        int size = column.size();
         for (int i = 0; i < size; i++) {
-            String s = paths.get(i);
+            String s = column.get(i);
             if (i != size - 1) {
-                Column offset = subPaths(paths, i + 1);
+                Column offset = subPaths(column, i + 1);
                 r = join(offset);
             } else {
                 return r.get(s);
@@ -304,7 +303,7 @@ public class ExpressionBuilder {
     }
 
     @NotNull
-    protected Column subPaths(List<String> paths, int size) {
+    protected Column subPaths(Column paths, int size) {
         List<String> subPath = new ArrayList<>(size);
         for (int j = 0; j < size; j++) {
             subPath.add(paths.get(j));
@@ -318,7 +317,7 @@ public class ExpressionBuilder {
                 return v;
             } else {
                 From<?, ?> r = root;
-                for (String s : column.paths()) {
+                for (String s : column) {
                     r = r.join(s, JoinType.LEFT);
                 }
                 return r;

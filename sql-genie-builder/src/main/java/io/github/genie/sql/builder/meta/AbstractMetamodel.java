@@ -3,6 +3,7 @@ package io.github.genie.sql.builder.meta;
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
+import io.github.genie.sql.builder.meta.Metamodels.AnyToOneProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionAttributeImpl;
@@ -77,7 +78,8 @@ public abstract class AbstractMetamodel implements Metamodel {
                 continue;
             }
             if (entityAttribute instanceof EntityType) {
-                getProjectionAttributes(attribute.javaType(), attribute,
+                AnyToOneProjectionAttributeImpl o = new AnyToOneProjectionAttributeImpl(attribute, entityAttribute);
+                getProjectionAttributes(attribute.javaType(), o,
                         (EntityType) entityAttribute, list, deep + 1, maxDeep);
             } else if (attribute.javaType() == entityAttribute.javaType()) {
                 list.add(new ProjectionAttributeImpl(attribute, entityAttribute));
