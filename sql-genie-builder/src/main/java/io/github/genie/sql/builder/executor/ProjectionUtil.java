@@ -6,6 +6,7 @@ import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.ReflectUtil;
 import io.github.genie.sql.builder.meta.Type;
 import lombok.Data;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -22,26 +23,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ProjectionUtil {
 
+    public static long count = 0, cost = 0;
+
     private static final Map<Collection<? extends Attribute>, Schema> SCHEMAS = new ConcurrentHashMap<>();
 
-    public static <R> R newInstance(@NotNull BiFunction<Integer, Class<?>, ?> extractor,
-                                    Collection<? extends Attribute> attributes,
-                                    Class<?> resultType) {
-        Schema schema = getSchema(attributes);
+    public static RowExtractor getRowExtractor(Collection<? extends Attribute> attributes, Class<?> resultType) {
+        Schema schema = SCHEMAS.computeIfAbsent(attributes, ProjectionUtil::doGetSchema);
         if (schema.type.javaType() != resultType) {
             throw new IllegalArgumentException();
         }
-        return TypeCastUtil.unsafeCast(schema.extract(true, extractor));
-    }
-
-    public static Schema getSchema(Collection<? extends Attribute> attributes) {
-        return SCHEMAS.computeIfAbsent(attributes, ProjectionUtil::doGetSchema);
+        return schema;
     }
 
     private static Schema doGetSchema(Collection<? extends Attribute> attributes) {
@@ -100,8 +96,12 @@ public class ProjectionUtil {
         }
     }
 
+    public interface RowExtractor {
+        <T> T extract(Object[] extractor);
+    }
 
-    public abstract static class Schema implements Property {
+    public abstract static class Schema implements Property, RowExtractor {
+        @Setter
         protected Property[] properties;
         protected final Type type;
 
@@ -114,8 +114,13 @@ public class ProjectionUtil {
             return (Attribute) type;
         }
 
-        public void setProperties(Property[] properties) {
-            this.properties = properties;
+        @Override
+        public <T> T extract(Object[] extractor) {
+            long start = System.nanoTime();
+            Object extract = extract(true, extractor);
+            cost += (System.nanoTime() - start);
+            count++;
+            return TypeCastUtil.unsafeCast(extract);
         }
     }
 
@@ -125,7 +130,7 @@ public class ProjectionUtil {
         }
 
         @Override
-        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+        public Object extract(boolean root, Object[] extractor) {
             Map<Method, Object> map = new HashMap<>();
             boolean hasNonnullProperty = false;
             for (Property property : properties) {
@@ -166,7 +171,7 @@ public class ProjectionUtil {
         }
 
         @Override
-        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+        public Object extract(boolean root, Object[] extractor) {
 
             try {
                 Class<?> resultType = type.javaType();
@@ -195,7 +200,7 @@ public class ProjectionUtil {
         }
 
         @Override
-        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
+        public Object extract(boolean root, Object[] extractor) {
             Object result = null;
             for (Property property : properties) {
                 Object value = property.extract(false, extractor);
@@ -216,7 +221,7 @@ public class ProjectionUtil {
     public interface Property {
         Attribute attribute();
 
-        Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor);
+        Object extract(boolean root, Object[] extractor);
     }
 
 
@@ -235,8 +240,8 @@ public class ProjectionUtil {
         }
 
         @Override
-        public Object extract(boolean root, BiFunction<Integer, Class<?>, ?> extractor) {
-            return extractor.apply(index, attribute.javaType());
+        public Object extract(boolean root, Object[] extractor) {
+            return extractor[index];
         }
     }
 

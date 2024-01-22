@@ -14,6 +14,7 @@ import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
+import io.github.genie.sql.builder.executor.ProjectionUtil.RowExtractor;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
@@ -32,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 
@@ -78,8 +78,9 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                         .map(Attribute::column)
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
+                RowExtractor extractor = ProjectionUtil.getRowExtractor(attributes, resultType);
                 return objectsList.stream()
-                        .<T>map(it -> ProjectionUtil.newInstance(getArrayValueExtractor(it), attributes, resultType))
+                        .<T>map(extractor::extract)
                         .collect(Collectors.toList());
             }
         }
@@ -93,11 +94,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             query.setParameter(++position, arg);
         }
         return TypeCastUtil.cast(query.getResultList());
-    }
-
-    @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getArrayValueExtractor(Object[] resultSet) {
-        return (index, resultType1) -> resultSet[index];
     }
 
     private List<?> getEntityResultList(@NotNull QueryStructure structure) {

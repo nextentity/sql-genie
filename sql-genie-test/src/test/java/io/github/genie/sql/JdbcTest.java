@@ -6,12 +6,15 @@ import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.entity.User;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
-import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
+import io.github.genie.sql.executor.jdbc.JdbcResultCollector;
 import io.github.genie.sql.meta.JpaMetamodel;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 @Slf4j
 public class JdbcTest {
@@ -19,10 +22,16 @@ public class JdbcTest {
     private static GenericApiTest apiTest;
 
     @BeforeAll
-    static void init() {
+    static void init() throws SQLException {
         DataSourceConfig config = new DataSourceConfig();
         MysqlDataSource source = config.getMysqlDataSource();
-        ConnectionProvider sqlExecutor = new SimpleConnectionProvider(source);
+        Connection connection = source.getConnection();
+        ConnectionProvider sqlExecutor = new ConnectionProvider() {
+            @Override
+            public <T> T execute(ConnectionCallback<T> action) throws SQLException {
+                return action.doInConnection(connection);
+            }
+        };
         Query query = new JdbcQueryExecutor(new JpaMetamodel(),
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,

@@ -31,10 +31,10 @@ import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorI
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
-import io.github.genie.sql.builder.QueryStructures.MultiColumnSelect;
+import io.github.genie.sql.builder.QueryStructures.MultiColumnImpl;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
 import io.github.genie.sql.builder.QueryStructures.SelectClauseImpl;
-import io.github.genie.sql.builder.QueryStructures.SingleColumnSelect;
+import io.github.genie.sql.builder.QueryStructures.SingleColumnImpl;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import org.jetbrains.annotations.NotNull;
 
@@ -100,7 +100,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         QueryStructureImpl structure = queryStructure.copy();
         Expression paths = Expressions.of(path);
         Class<?> type = getType(path);
-        structure.select = new SingleColumnSelect(type, paths, distinct);
+        structure.select = new SingleColumnImpl(type, paths, distinct);
         return update(structure);
     }
 
@@ -122,7 +122,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
 
     public Where0<T, Object[]> select(boolean distinct, List<? extends ExpressionHolder<T, ?>> expressions) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.select = new MultiColumnSelect(expressions.stream()
+        structure.select = new MultiColumnImpl(expressions.stream()
                 .map(ExpressionHolder::expression)
                 .collect(Collectors.toList()), distinct);
         return update(structure);
@@ -140,7 +140,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         QueryStructureImpl structure = queryStructure.copy();
         Expression expression = paths.expression();
         Class<?> type = Object.class;
-        structure.select = new SingleColumnSelect(type, expression, distinct);
+        structure.select = new SingleColumnImpl(type, expression, distinct);
         return update(structure);
     }
 

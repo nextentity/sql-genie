@@ -10,9 +10,9 @@ import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.TypedExpression.PathExpression;
-import io.github.genie.sql.builder.QueryStructures.ColumnMeta;
-import io.github.genie.sql.builder.QueryStructures.ConstantMeta;
-import io.github.genie.sql.builder.QueryStructures.OperationMeta;
+import io.github.genie.sql.builder.QueryStructures.ColumnImpl;
+import io.github.genie.sql.builder.QueryStructures.ConstantImpl;
+import io.github.genie.sql.builder.QueryStructures.OperationImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +40,7 @@ public interface Expressions {
         } else if (value instanceof Path<?, ?>) {
             return of((Path<?, ?>) value);
         }
-        return new ConstantMeta(value);
+        return new ConstantImpl(value);
     }
 
     static Expression of(Expression value) {
@@ -67,7 +67,7 @@ public interface Expressions {
         if (paths.getClass() != ArrayList.class) {
             paths = new ArrayList<>(paths);
         }
-        return new ColumnMeta(paths.toArray(String[]::new));
+        return new ColumnImpl(paths.toArray(String[]::new));
     }
 
     static Expression operate(Expression l, Operator o, Expression r) {
@@ -88,9 +88,9 @@ public interface Expressions {
         if (o.isMultivalued() && l instanceof Operation && ((Operation) l).operator() == o) {
             Operation lo = (Operation) l;
             List<Expression> args = Util.concat(lo.args(), r);
-            return new OperationMeta(lo.operand(), o, args);
+            return new OperationImpl(lo.operand(), o, args);
         }
-        return new OperationMeta(l, o, r);
+        return new OperationImpl(l, o, r);
     }
 
     static <T> List<ColumnHolder<T, ?>> toExpressionList(Collection<Path<T, ?>> paths) {

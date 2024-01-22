@@ -180,7 +180,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class MultiColumnSelect implements MultiColumn {
+    static final class MultiColumnImpl implements MultiColumn {
         private final List<? extends Expression> columns;
         private final boolean distinct;
 
@@ -193,7 +193,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class SingleColumnSelect implements SingleColumn {
+    static final class SingleColumnImpl implements SingleColumn {
         private final Class<?> resultType;
         private final Expression column;
         private final boolean distinct;
@@ -215,7 +215,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class ConstantMeta implements Constant {
+    static final class ConstantImpl implements Constant {
         private final Object value;
 
         @Override
@@ -226,7 +226,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class OperationMeta implements Operation {
+    static final class OperationImpl implements Operation {
         private final Expression operand;
         private final Operator operator;
         private final List<? extends Expression> args;
@@ -240,7 +240,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class ColumnMeta implements Column {
+    static final class ColumnImpl implements Column {
         private final String[] paths;
         @Getter(lazy = true)
         private final String identity = String.join(".", paths);
@@ -265,7 +265,7 @@ final class QueryStructures {
             String[] strings = new String[size() + 1];
             System.arraycopy(paths, 0, strings, 0, paths.length);
             strings[size()] = path;
-            return new ColumnMeta(strings);
+            return new ColumnImpl(strings);
         }
 
         @Override
@@ -275,7 +275,7 @@ final class QueryStructures {
             }
             String[] strings = new String[size() - 1];
             System.arraycopy(paths, 0, strings, 0, strings.length);
-            return new ColumnMeta(strings);
+            return new ColumnImpl(strings);
         }
 
         @NotNull

@@ -39,7 +39,7 @@ import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
 import io.github.genie.sql.builder.QueryBuilder.AndBuilderImpl;
 import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
-import io.github.genie.sql.builder.QueryStructures.SingleColumnSelect;
+import io.github.genie.sql.builder.QueryStructures.SingleColumnImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -49,11 +49,11 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, AbstractCollector<U> {
 
-    static final SingleColumnSelect SELECT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.TRUE, false);
+    static final SingleColumnImpl SELECT_ANY =
+            new SingleColumnImpl(Integer.class, Expressions.TRUE, false);
 
-    static final SingleColumnSelect COUNT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
+    static final SingleColumnImpl COUNT_ANY =
+            new SingleColumnImpl(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
 
     final QueryExecutor queryExecutor;
     final QueryStructureImpl queryStructure;
@@ -133,8 +133,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     boolean requiredCountSubQuery(QueryStructureImpl structure) {
         Selection select = structure.select();
-        if (select instanceof SingleColumnSelect) {
-            Expression column = ((SingleColumnSelect) select).column();
+        if (select instanceof SingleColumnImpl) {
+            Expression column = ((SingleColumnImpl) select).column();
             return requiredCountSubQuery(column);
         } else if (select instanceof MultiColumn) {
             List<? extends Expression> columns = ((MultiColumn) select).columns();

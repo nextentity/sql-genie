@@ -1,68 +1,85 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.Selection.MultiColumn;
+import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.executor.ProjectionUtil;
+import io.github.genie.sql.builder.executor.ProjectionUtil.RowExtractor;
 import io.github.genie.sql.builder.meta.Attribute;
-import lombok.SneakyThrows;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.ResultCollector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 
-import static io.github.genie.sql.api.Selection.MultiColumn;
-import static io.github.genie.sql.api.Selection.SingleColumn;
-
-@SuppressWarnings("PatternVariableCanBeUsed")
-public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
-
+public class JdbcResultCollector implements ResultCollector {
     @Override
-    public <R> R collect(@NotNull ResultSet resultSet,
-                         @NotNull Selection selectClause,
-                         @NotNull Class<?> fromType,
-                         @NotNull List<? extends Attribute> attributes)
-            throws SQLException {
+    public <T> List<T> resolve(ResultSet resultSet,
+                               List<? extends Attribute> selected,
+                               QueryStructure structure) throws SQLException {
+        int type = resultSet.getType();
+        List<T> result;
+        if (type != ResultSet.TYPE_FORWARD_ONLY) {
+            resultSet.last();
+            int size = resultSet.getRow();
+            result = new ArrayList<>(size);
+            resultSet.beforeFirst();
+        } else {
+            result = new ArrayList<>();
+        }
+        Selection select = structure.select();
         int columnsCount = resultSet.getMetaData().getColumnCount();
-        int column = 0;
-        if (selectClause instanceof MultiColumn) {
-            MultiColumn multiColumn = (MultiColumn) selectClause;
+
+        if (select instanceof MultiColumn multiColumn) {
             if (multiColumn.columns().size() != columnsCount) {
                 throw new IllegalStateException();
             }
-            Object[] row = new Object[columnsCount];
-            while (column < columnsCount) {
-                row[column++] = resultSet.getObject(column);
+            while (resultSet.next()) {
+                Object[] row = getObjects(resultSet, columnsCount);
+                result.add(TypeCastUtil.unsafeCast(row));
             }
-            return TypeCastUtil.unsafeCast(row);
-        } else if (selectClause instanceof SingleColumn) {
-            SingleColumn singleColumn = (SingleColumn) selectClause;
+        } else if (select instanceof SingleColumn) {
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }
-            Object r = JdbcUtil.getValue(resultSet, 1, singleColumn.resultType());
-            return TypeCastUtil.unsafeCast(r);
-        } else {
-            if (attributes.size() != columnsCount) {
-                throw new IllegalStateException();
+            while (resultSet.next()) {
+                T row = getSingleObj(resultSet, select);
+                result.add(row);
             }
-            Class<?> resultType = selectClause.resultType();
-            BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
-            return ProjectionUtil.newInstance(extractor, attributes, resultType);
+        } else {
+            Class<?> resultType = select.resultType();
+            RowExtractor extractor = ProjectionUtil.getRowExtractor(selected, resultType);
+            Object[] data = new Object[columnsCount];
+            while (resultSet.next()) {
+                int i = 0;
+                for (Attribute attribute : selected) {
+                    data[i++] = JdbcUtil.getValue(resultSet, i, attribute.javaType());
+                }
+                T row = extractor.extract(data);
+                result.add(row);
+            }
         }
+        return result;
     }
 
-    @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getJdbcResultValueExtractor(@NotNull ResultSet resultSet) {
-        // noinspection Convert2Lambda
-        return new BiFunction<>() {
-            @SneakyThrows
-            @Override
-            public Object apply(Integer index, Class<?> resultType) {
-                return JdbcUtil.getValue(resultSet, 1 + index, resultType);
-            }
-        };
+    @Nullable
+    private <R> R getSingleObj(@NotNull ResultSet resultSet, Selection selectClause) throws SQLException {
+        Object r = JdbcUtil.getValue(resultSet, 1, selectClause.resultType());
+        return TypeCastUtil.unsafeCast(r);
+    }
+
+    private Object[] getObjects(@NotNull ResultSet resultSet, int columnsCount) throws SQLException {
+        int column = 0;
+        Object[] row = new Object[columnsCount];
+        while (column < columnsCount) {
+            row[column++] = resultSet.getObject(column);
+        }
+        return row;
     }
 
 }
