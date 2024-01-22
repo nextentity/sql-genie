@@ -172,38 +172,41 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void orderBy(Select<User> userQuery) {
-        List<User> users = userQuery.orderBy(User::getRandomNumber, User::getId).asc()
-                .getList();
-        ArrayList<User> sorted = new ArrayList<>(users());
-        sorted.sort(Comparator.comparingInt(User::getRandomNumber));
-        assertEquals(users, sorted);
-        users = userQuery.orderBy(User::getRandomNumber, User::getId)
-                .getList();
-        assertEquals(users, sorted);
-        users = userQuery.orderBy(User::getRandomNumber, User::getId).desc()
-                .getList();
-        sorted = new ArrayList<>(users());
-        sorted.sort((a, b) -> {
-            int compare = Integer.compare(b.getRandomNumber(), a.getRandomNumber());
-            if (compare == 0) {
-                compare = Integer.compare(b.getId(), a.getId());
-            }
-            return compare;
-        });
-        assertEquals(users, sorted);
+        for (Checker<User, OrderBy<User, User>> checker : getWhereTestCase(new Checker<>(users(), userQuery))) {
+            List<User> users = checker.collector.orderBy(User::getRandomNumber, User::getId).asc()
+                    .getList();
+            ArrayList<User> sorted = new ArrayList<>(checker.result);
+            sorted.sort(Comparator.comparingInt(User::getRandomNumber));
+            assertEquals(users, sorted);
+            users = checker.collector.orderBy(User::getRandomNumber, User::getId)
+                    .getList();
+            assertEquals(users, sorted);
+            users = checker.collector.orderBy(User::getRandomNumber, User::getId).desc()
+                    .getList();
+            sorted = new ArrayList<>(checker.result);
+            sorted.sort((a, b) -> {
+                int compare = Integer.compare(b.getRandomNumber(), a.getRandomNumber());
+                if (compare == 0) {
+                    compare = Integer.compare(b.getId(), a.getId());
+                }
+                return compare;
+            });
+            assertEquals(users, sorted);
 
-        users = userQuery.orderBy(User::getRandomNumber).desc()
-                .orderBy(User::getId)
-                .getList();
-        sorted = new ArrayList<>(users());
-        sorted.sort((a, b) -> {
-            int compare = Integer.compare(b.getRandomNumber(), a.getRandomNumber());
-            if (compare == 0) {
-                compare = Integer.compare(a.getId(), b.getId());
-            }
-            return compare;
-        });
-        assertEquals(users, sorted);
+            users = checker.collector.orderBy(User::getRandomNumber).desc()
+                    .orderBy(User::getId)
+                    .getList();
+            sorted = new ArrayList<>(checker.result);
+            sorted.sort((a, b) -> {
+                int compare = Integer.compare(b.getRandomNumber(), a.getRandomNumber());
+                if (compare == 0) {
+                    compare = Integer.compare(a.getId(), b.getId());
+                }
+                return compare;
+            });
+            assertEquals(users, sorted);
+        }
+
     }
 
     @ParameterizedTest
@@ -226,10 +229,10 @@ class QueryBuilderTest {
     @ArgumentsSource(UserDaoProvider.class)
     void where(Select<User> userQuery) {
         Checker<User, Where<User, User>> check = new Checker<>(users(), userQuery);
-        testWhere(check);
+        getWhereTestCase(check);
     }
 
-    private List<Checker<User, OrderBy<User, User>>> testWhere(Checker<User, Where<User, User>> check) {
+    private List<Checker<User, OrderBy<User, User>>> getWhereTestCase(Checker<User, Where<User, User>> check) {
         List<Checker<User, OrderBy<User, User>>> result = new ArrayList<>();
         String username = users().get(10).getUsername();
 
@@ -349,8 +352,6 @@ class QueryBuilderTest {
         stream = newStream(check).filter(User::isValid)
                 .filter(user -> user.getPid() != null && user.getRandomNumber() >= user.getRandomNumber() && user.getRandomNumber() <= user.getPid());
         addTestCaseAndCheck(result, new Checker<>(stream, collector));
-
-
         return result;
     }
 
