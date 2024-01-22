@@ -3,6 +3,7 @@ package io.github.genie.sql.builder.meta;
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

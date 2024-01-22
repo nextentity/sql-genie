@@ -7,7 +7,7 @@ import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Update;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.ExpressionHolders;
-import io.github.genie.sql.builder.meta.ReflectUtil;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.metamodel.EntityType;

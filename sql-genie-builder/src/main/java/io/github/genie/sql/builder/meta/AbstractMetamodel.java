@@ -2,6 +2,7 @@ package io.github.genie.sql.builder.meta;
 
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;

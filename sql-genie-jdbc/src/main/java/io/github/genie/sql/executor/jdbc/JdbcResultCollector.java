@@ -5,9 +5,9 @@ import io.github.genie.sql.api.Selection;
 import io.github.genie.sql.api.Selection.MultiColumn;
 import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil.RowExtractor;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.reflect.InstanceConstructor;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.ResultCollector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,14 +53,14 @@ public class JdbcResultCollector implements ResultCollector {
             }
         } else {
             Class<?> resultType = select.resultType();
-            RowExtractor extractor = ProjectionUtil.getRowExtractor(selected, resultType);
+            InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(selected, resultType);
             Object[] data = new Object[columnsCount];
             while (resultSet.next()) {
                 int i = 0;
                 for (Attribute attribute : selected) {
                     data[i++] = JdbcUtil.getValue(resultSet, i, attribute.javaType());
                 }
-                T row = extractor.extract(data);
+                T row = TypeCastUtil.unsafeCast(extractor.newInstance(data));
                 result.add(row);
             }
         }

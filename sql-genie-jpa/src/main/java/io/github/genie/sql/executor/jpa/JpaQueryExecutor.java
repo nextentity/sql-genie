@@ -13,12 +13,12 @@ import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil.RowExtractor;
+import io.github.genie.sql.builder.reflect.InstanceConstructor;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import jakarta.persistence.EntityManager;
@@ -78,9 +78,10 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                         .map(Attribute::column)
                         .collect(Collectors.toList());
                 List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                RowExtractor extractor = ProjectionUtil.getRowExtractor(attributes, resultType);
+                InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(attributes, resultType);
                 return objectsList.stream()
-                        .<T>map(extractor::extract)
+                        .map(extractor::newInstance)
+                        .map(TypeCastUtil::<T>unsafeCast)
                         .collect(Collectors.toList());
             }
         }
