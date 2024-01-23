@@ -160,7 +160,6 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         private final QueryConditionBuilder<T, U> queryBuilder;
         protected final BooleanExpression<T> base;
 
-
         public AndBuilderImpl(QueryConditionBuilder<T, U> queryBuilder, BooleanExpression<T> base) {
             this.queryBuilder = queryBuilder;
             this.base = base;

@@ -139,7 +139,6 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
             return between(root().of(l), r);
         }
 
-
         default BooleanExpression<T> notBetween(ExpressionHolder<T, U> l, U r) {
             return notBetween(l, root().of(r));
         }
@@ -147,7 +146,6 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
         default BooleanExpression<T> notBetween(U l, ExpressionHolder<T, U> r) {
             return notBetween(root().of(l), r);
         }
-
 
     }
 

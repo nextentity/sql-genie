@@ -47,7 +47,6 @@ class QueryBuilderTest {
         IUser.U first2 = userQuery.select(IUser.U.class).getFirst(20);
         System.out.println(first2);
 
-
         User first = userQuery.select(User.class).getFirst();
         assertEquals(first, users().get(0));
 

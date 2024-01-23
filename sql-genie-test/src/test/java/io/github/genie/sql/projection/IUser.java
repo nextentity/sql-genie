@@ -11,9 +11,6 @@ public interface IUser {
     U parentUser();
 
     record U(int id, int randomNumber, String username) {
-
-
     }
-
 
 }

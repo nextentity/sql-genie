@@ -11,8 +11,5 @@ public interface Type {
     default boolean hasOwner() {
         return owner() != null;
     }
-    default int layer() {
-        return hasOwner() ? owner().layer() + 1 : 0;
-    }
 
 }

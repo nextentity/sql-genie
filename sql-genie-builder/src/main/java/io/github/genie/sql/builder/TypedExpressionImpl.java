@@ -176,7 +176,6 @@ class TypedExpressionImpl<T, U> implements TypedExpression<T, U> {
         return (Operation) Expressions.operate(operation, operator, operand);
     }
 
-
     static class PathExpressionImpl<T, U>
             extends TypedExpressionImpl<T, U>
             implements PathExpression<T, U> {

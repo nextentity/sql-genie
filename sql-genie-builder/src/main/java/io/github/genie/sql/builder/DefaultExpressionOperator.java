@@ -326,7 +326,6 @@ class DefaultExpressionOperator<T, U, B> implements ExpressionOperator<T, U, B> 
 
     static class StringOperatorImpl<T, B> extends ComparableOperatorImpl<T, String, B> implements StringOperator<T, B> {
 
-
         public StringOperatorImpl(StringExpression<T> expression, Function<? super TypedExpression<?, ?>, B> resultBuilder) {
             super(expression, resultBuilder);
         }

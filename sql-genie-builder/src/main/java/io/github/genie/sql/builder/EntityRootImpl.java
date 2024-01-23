@@ -65,5 +65,4 @@ public class EntityRootImpl<T> implements EntityRoot<T> {
         return new BooleanExpressionImpl<>((Operation) null, expression);
     }
 
-
 }

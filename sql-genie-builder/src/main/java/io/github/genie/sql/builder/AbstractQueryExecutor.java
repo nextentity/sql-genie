@@ -12,5 +12,4 @@ public interface AbstractQueryExecutor extends QueryExecutor {
         return new QueryImpl(this, structurePostProcessor);
     }
 
-
 }

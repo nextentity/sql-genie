@@ -1237,7 +1237,6 @@ public abstract class GenericApiTest {
 
         List<UserModel> userModels = userQuery.select(UserModel.class).getList();
 
-
         List<Map<String, Object>> l0 = allUsers.stream()
                 .map(UserModel::new)
                 .map(UserInterface::asMap)

@@ -309,5 +309,4 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         return queryStructure;
     }
 
-
 }

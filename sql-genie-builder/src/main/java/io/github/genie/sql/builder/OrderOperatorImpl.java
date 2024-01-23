@@ -25,7 +25,6 @@ public class OrderOperatorImpl<T, U> implements OrderOperator<T, U> {
         this.orderByPaths = orderByPaths;
     }
 
-
     @NotNull
     private List<Order<T>> asOrderList(Order.SortOrder sort) {
         return orderByPaths
@@ -78,6 +77,5 @@ public class OrderOperatorImpl<T, U> implements OrderOperator<T, U> {
     public QueryStructureBuilder buildMetadata() {
         return asc().buildMetadata();
     }
-
 
 }

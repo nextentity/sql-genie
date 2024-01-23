@@ -32,8 +32,6 @@ public class Metamodels {
         private final List<? extends Attribute> referencedAttributes = Attribute.super.referencedAttributes();
         @Getter(lazy = true)
         private final Column column = Attribute.super.column();
-        @Getter(lazy = true)
-        private final int layer = Attribute.super.layer();
 
         public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
             this.javaType = javaType;
@@ -53,8 +51,6 @@ public class Metamodels {
             }
             return name;
         }
-
-
     }
 
     @Getter
@@ -89,10 +85,6 @@ public class Metamodels {
             return javaType.getSimpleName();
         }
 
-        @Override
-        public int layer() {
-            return 0;
-        }
     }
 
     @Getter
@@ -168,7 +160,6 @@ public class Metamodels {
         }
     }
 
-
     @Getter
     @AllArgsConstructor
     @Accessors(fluent = true)
@@ -186,11 +177,6 @@ public class Metamodels {
         @Override
         public String name() {
             return javaType.getSimpleName();
-        }
-
-        @Override
-        public int layer() {
-            return 0;
         }
 
         @Override

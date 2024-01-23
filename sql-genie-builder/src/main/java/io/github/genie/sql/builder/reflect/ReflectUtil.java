@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class ReflectUtil {
 
-    static final Map<Collection<? extends Attribute>, ObjectConstructor> SCHEMAS = new ConcurrentHashMap<>();
+    static final Map<Collection<? extends Attribute>, ObjectConstructor> CONSTRUCTORS = new ConcurrentHashMap<>();
 
     @Nullable
     public static Field getDeclaredField(@NotNull Class<?> clazz, String name) {
@@ -61,14 +61,14 @@ public class ReflectUtil {
     }
 
     public static InstanceConstructor getRowInstanceConstructor(Collection<? extends Attribute> attributes, Class<?> resultType) {
-        ObjectConstructor schema = SCHEMAS.computeIfAbsent(attributes, ReflectUtil::doGetSchema);
+        ObjectConstructor schema = CONSTRUCTORS.computeIfAbsent(attributes, ReflectUtil::doGetConstructor);
         if (schema.type.javaType() != resultType) {
             throw new IllegalArgumentException();
         }
         return schema;
     }
 
-    private static ObjectConstructor doGetSchema(Collection<? extends Attribute> attributes) {
+    private static ObjectConstructor doGetConstructor(Collection<? extends Attribute> attributes) {
         Map<Type, Property> map = new HashMap<>();
         ObjectConstructor result = null;
         for (Attribute attribute : attributes) {

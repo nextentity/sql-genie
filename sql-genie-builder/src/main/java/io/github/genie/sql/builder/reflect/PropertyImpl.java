@@ -10,7 +10,6 @@ public class PropertyImpl implements Property {
         this.attribute = attribute;
     }
 
-
     @Override
     public Attribute attribute() {
         return attribute;
@@ -20,7 +19,6 @@ public class PropertyImpl implements Property {
     public Object newInstance(Object[] args) {
         return args[index];
     }
-
 
     void setIndex(int index) {
         this.index = index;
