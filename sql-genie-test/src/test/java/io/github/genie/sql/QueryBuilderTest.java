@@ -66,7 +66,7 @@ class QueryBuilderTest {
         Long count = userQuery.select(Q.get(User::getId).count()).getSingle();
         assertEquals(count, users().size());
 
-        Object[] aggArray = userQuery.select(List.of(
+        Object[] aggArray = userQuery.select(Lists.of(
                 Q.get(User::getId).count(),
                 Q.get(User::getRandomNumber).max(),
                 Q.get(User::getRandomNumber).min(),
