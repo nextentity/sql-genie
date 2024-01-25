@@ -52,6 +52,9 @@ public class JdbcResultCollector implements ResultCollector {
                 result.add(row);
             }
         } else {
+            if (selected.size() != columnsCount) {
+                throw new IllegalStateException();
+            }
             Class<?> resultType = select.resultType();
             InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(selected, resultType);
             Object[] data = new Object[columnsCount];

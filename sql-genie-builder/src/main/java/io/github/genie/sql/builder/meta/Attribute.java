@@ -24,6 +24,15 @@ public interface Attribute extends Type {
 
     Field field();
 
+    Type declaringType();
+
+    static Type getDeclaringType(Type type) {
+        if (type instanceof Attribute) {
+            return ((Attribute) type).declaringType();
+        }
+        return null;
+    }
+
     default Object get(Object entity) {
         try {
             Method getter = getter();
@@ -53,12 +62,16 @@ public interface Attribute extends Type {
     default List<? extends Attribute> referencedAttributes() {
         Type cur = this;
         ArrayDeque<Attribute> attributes = new ArrayDeque<>(2);
-        do {
+        while (true) {
             if (cur instanceof Attribute) {
-                attributes.addFirst((Attribute) cur);
+                //noinspection PatternVariableCanBeUsed
+                Attribute attribute = (Attribute) cur;
+                attributes.addFirst(attribute);
+                cur = attribute.declaringType();
+            } else {
+                break;
             }
-            cur = cur.owner();
-        } while (cur.hasOwner());
+        }
         //noinspection Java9CollectionFactory
         return Collections.unmodifiableList(new ArrayList<>(attributes));
     }

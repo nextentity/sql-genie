@@ -23,7 +23,7 @@ public class Metamodels {
     public static class AttributeImpl implements Attribute {
 
         private Class<?> javaType;
-        private Type owner;
+        private Type declaringType;
         private String name;
         private Method getter;
         private Method setter;
@@ -33,9 +33,9 @@ public class Metamodels {
         @Getter(lazy = true)
         private final Column column = Attribute.super.column();
 
-        public AttributeImpl(Class<?> javaType, Type owner, String name, Method getter, Method setter, Field field) {
+        public AttributeImpl(Class<?> javaType, Type declaringType, String name, Method getter, Method setter, Field field) {
             this.javaType = javaType;
-            this.owner = owner;
+            this.declaringType = declaringType;
             this.name = name;
             this.getter = getter;
             this.setter = setter;
@@ -44,10 +44,10 @@ public class Metamodels {
 
         @Override
         public String toString() {
-            if (owner != null
-                && !(owner instanceof RootEntity)
-                && !(owner instanceof RootProjection)) {
-                return owner + "." + name;
+            if (declaringType != null
+                    && !(declaringType instanceof RootEntity)
+                    && !(declaringType instanceof RootProjection)) {
+                return declaringType + "." + name;
             }
             return name;
         }
@@ -60,7 +60,6 @@ public class Metamodels {
     public static class RootEntity implements EntityType {
 
         private Class<?> javaType;
-        private Type owner;
         private Attribute id;
         private Attribute version;
         private String tableName;
@@ -113,7 +112,7 @@ public class Metamodels {
         private String joinColumnName;
         private String referencedColumnName;
         private Supplier<EntityType> referencedSupplier;
-        @Delegate
+        @Delegate(excludes = Type.class)
         @Getter(lazy = true)
         private final EntityType referenced = referencedSupplier.get();
 
@@ -167,12 +166,6 @@ public class Metamodels {
         private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
         private final EntityType entityType;
-        private final Type owner;
-
-        @Override
-        public Type owner() {
-            return owner;
-        }
 
         @Override
         public String name() {

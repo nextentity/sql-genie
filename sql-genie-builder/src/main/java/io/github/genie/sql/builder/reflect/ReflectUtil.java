@@ -2,6 +2,7 @@ package io.github.genie.sql.builder.reflect;
 
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.ObjectType;
 import io.github.genie.sql.builder.meta.Type;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -75,7 +76,7 @@ public class ReflectUtil {
             Type cur = attribute;
             while (true) {
                 Property property = map.computeIfAbsent(cur, ReflectUtil::newProperty);
-                cur = cur.owner();
+                cur = Attribute.getDeclaringType(cur);
                 if (cur == null) {
                     if (result == null) {
                         result = (ObjectConstructor) property;
@@ -95,8 +96,8 @@ public class ReflectUtil {
             property.setIndex(i++);
         }
         Map<Type, List<Entry<Type, Property>>> attrs = map.entrySet().stream()
-                .filter(it -> it.getKey().owner() != null)
-                .collect(Collectors.groupingBy(e -> e.getKey().owner()));
+                .filter(it -> Attribute.getDeclaringType(it.getKey()) != null)
+                .collect(Collectors.groupingBy(e -> Attribute.getDeclaringType(e.getKey())));
         for (Entry<Type, List<Entry<Type, Property>>> entry : attrs.entrySet()) {
             Property property = map.get(entry.getKey());
             List<Entry<Type, Property>> v = entry.getValue();
@@ -111,7 +112,7 @@ public class ReflectUtil {
     }
 
     private static Property newProperty(Type type) {
-        if (type instanceof io.github.genie.sql.builder.meta.Schema) {
+        if (type instanceof ObjectType) {
             Class<?> javaType = type.javaType();
             if (javaType.isInterface()) {
                 return new InterfaceConstructor(type);

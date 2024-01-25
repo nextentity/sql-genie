@@ -1,6 +1,6 @@
 package io.github.genie.sql.builder.meta;
 
-public interface EntityType extends Schema {
+public interface EntityType extends ObjectType {
 
     Attribute id();
 

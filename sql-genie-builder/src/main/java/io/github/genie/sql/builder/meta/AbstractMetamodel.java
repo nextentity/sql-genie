@@ -2,7 +2,6 @@ package io.github.genie.sql.builder.meta;
 
 import io.github.genie.sql.builder.Util;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
@@ -10,6 +9,7 @@ import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.RootEntity;
 import io.github.genie.sql.builder.meta.Metamodels.RootProjection;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +43,7 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     @Override
     public EntityType getEntity(Class<?> entityType) {
-        return entityTypes.computeIfAbsent(entityType, type -> createEntityType(type, null));
+        return entityTypes.computeIfAbsent(entityType, this::createEntityType);
     }
 
     @Override
@@ -57,7 +57,7 @@ public abstract class AbstractMetamodel implements Metamodel {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
         List<ProjectionAttribute> immutable = Collections.unmodifiableList(list);
-        RootProjection result = new RootProjection(projectionType, immutable, entity, null);
+        RootProjection result = new RootProjection(projectionType, immutable, entity);
         getProjectionAttributes(projectionType, result, entity, list, 0, 2);
         list.trimToSize();
         return result;
@@ -163,14 +163,17 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected abstract Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass);
 
-    protected RootEntity createEntityType(Class<?> entityType, Type owner) {
+    protected RootEntity createEntityType(Class<?> entityType) {
         RootEntity result = new RootEntity();
+        return createEntityType(entityType, result, result);
+    }
+
+    protected RootEntity createEntityType(Class<?> entityType, RootEntity result, Type owner) {
         result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
         result.attributeMap(Collections.unmodifiableMap(map));
         result.tableName(getTableName(entityType));
-        result.owner(owner);
-        List<Attribute> attributes = getBeanAttributes(entityType, owner == null ? result : owner);
+        List<Attribute> attributes = getBeanAttributes(entityType, owner);
         boolean hasVersion = false;
         for (Attribute attr : attributes) {
             if (map.containsKey(attr.name())) {
@@ -199,7 +202,7 @@ public abstract class AbstractMetamodel implements Metamodel {
                 AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(attr);
                 ato.joinName(getJoinColumnName(attr));
                 ato.referencedColumnName(getReferencedColumnName(attr));
-                ato.referencedSupplier(() -> createEntityType(attr.javaType(), ato));
+                ato.referencedSupplier(() -> createEntityType(attr.javaType(), new RootEntity(), ato));
                 attribute = ato;
             } else {
                 log.warn("ignored attribute " + attr.field());

@@ -2,6 +2,6 @@ package io.github.genie.sql.builder.meta;
 
 import java.util.Collection;
 
-public interface Schema extends Type {
+public interface ObjectType extends Type {
     Collection<? extends Attribute> attributes();
 }
