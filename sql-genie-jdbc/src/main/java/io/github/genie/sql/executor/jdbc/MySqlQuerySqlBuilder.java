@@ -31,12 +31,11 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
@@ -190,25 +189,9 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         protected void appendFetchExpressions() {
             List<? extends Column> fetchClause = queryStructure.fetch();
             if (fetchClause != null && !fetchClause.isEmpty()) {
-                Column[] array = fetchClause.stream().flatMap(it -> {
-                            int count = 0;
-                            Column cur = it;
-                            while (cur != null) {
-                                count++;
-                                cur = cur.parent();
-                            }
-                            if (count == 1) {
-                                return Stream.of(it);
-                            }
-                            Column[] columns = new Column[count];
-                            int i = 0;
-                            cur = it;
-                            while (cur != null) {
-                                columns[i++] = cur;
-                                cur = cur.parent();
-                            }
-                            return Arrays.stream(columns);
-                        }).distinct()
+                Column[] array = fetchClause.stream()
+                        .flatMap(it -> Lists.iterate(it, Objects::nonNull, Column::parent))
+                        .distinct()
                         .toArray(Column[]::new);
                 for (Column fetch : array) {
                     Attribute attribute = getAttribute(fetch);
@@ -446,7 +429,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 case IS_NOT_NULL: {
                     appendBlank();
                     if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
+                            > operator.priority()) {
                         sql.append('(');
                         appendExpression(args, leftOperand);
                         sql.append(')');
@@ -472,20 +455,19 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         protected void appendPaths(Column column) {
             appendBlank();
-            Column expression = column;
             StringBuilder sb = sql;
-            int iMax = expression.size() - 1;
+            int iMax = column.size() - 1;
             if (iMax == -1)
                 return;
             int i = 0;
-            if (expression.size() == 1) {
+            if (column.size() == 1) {
                 appendFromAlias().append(".");
             }
             Class<?> type = queryStructure.from().type();
 
-            Column join = Expressions.column(Lists.of(expression.get(0)));
+            Column join = Expressions.column(Lists.of(column.get(0)));
 
-            for (String path : expression) {
+            for (String path : column) {
                 EntityType info = mappers.getEntity(type);
                 Attribute attribute = info.getAttribute(path);
                 if (i++ == iMax) {

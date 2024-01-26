@@ -1,6 +1,9 @@
 package io.github.genie.sql.api;
 
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public interface Lists {
 
@@ -51,6 +54,11 @@ public interface Lists {
 
     static <E> List<E> of() {
         return List.of();
+    }
+
+
+    static <T> Stream<T> iterate(T seed, Predicate<? super T> hasNext, UnaryOperator<T> next) {
+        return Stream.iterate(seed, hasNext, next);
     }
 
 }

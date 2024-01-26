@@ -283,6 +283,22 @@ final class QueryStructures {
         public Iterator<String> iterator() {
             return Arrays.stream(paths).iterator();
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            return Arrays.equals(paths, ((ColumnImpl) o).paths);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(paths);
+        }
     }
 
     public static String toString(Operation o) {
