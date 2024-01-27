@@ -144,7 +144,9 @@ public class ExpressionBuilder {
                 case IS_NOT_NULL:
                     return cb.isNotNull(e0);
                 case IN: {
-                    if (args.size() > 1) {
+                    if (args.isEmpty()) {
+                        return cb.literal(false);
+                    } else {
                         CriteriaBuilder.In<Object> in = cb.in(e0);
                         for (Expression arg : args) {
                             if (arg instanceof Constant) {
@@ -155,8 +157,6 @@ public class ExpressionBuilder {
                             }
                         }
                         return in;
-                    } else {
-                        return cb.literal(false);
                     }
                 }
                 case BETWEEN: {

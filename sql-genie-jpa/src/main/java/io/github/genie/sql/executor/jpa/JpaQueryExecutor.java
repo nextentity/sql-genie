@@ -13,11 +13,11 @@ import io.github.genie.sql.api.Selection.SingleColumn;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.reflect.InstanceConstructor;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.builder.reflect.InstanceConstructor;
 import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
@@ -194,6 +194,12 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             }
         }
 
+        protected void setHaving(Expression having) {
+            if (having != null) {
+                query.having(toPredicate(having));
+            }
+        }
+
         protected void setFetch(List<? extends Column> fetchPaths) {
             if (fetchPaths != null) {
                 for (Column path : fetchPaths) {
@@ -219,6 +225,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             setFetch(structure.fetch());
             setWhere(structure.where());
             setGroupBy(structure.groupBy());
+            setHaving(structure.having());
             setOrderBy(structure.orderBy());
             TypedQuery<?> objectsQuery = getTypedQuery();
             Integer offset = structure.offset();
