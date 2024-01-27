@@ -1,6 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.EntityRoot;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
@@ -42,6 +43,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
@@ -66,6 +68,11 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
         structure.fetch = list;
         return update(structure);
+    }
+
+    @Override
+    public Where0<T, Object[]> select(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+        return select(selectBuilder.apply(EntityRootImpl.of()));
     }
 
     public Where0<T, T> fetch(Collection<Path<T, ?>> paths) {
@@ -114,6 +121,11 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
 
     public Where0<T, Object[]> selectDistinct(List<? extends ExpressionHolder<T, ?>> expressions) {
         return select(true, expressions);
+    }
+
+    @Override
+    public Where0<T, Object[]> selectDistinct(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+        return selectDistinct(selectBuilder.apply(EntityRootImpl.of()));
     }
 
     public Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
@@ -206,6 +218,11 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
             return new AndBuilderImpl<>(queryBuilder, and);
         }
 
+        @Override
+        public AndBuilder0<T, U> and(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            return and(predicateBuilder.apply(EntityRootImpl.of()));
+        }
+
         private QueryConditionBuilder<T, U> getQueryBuilder() {
             QueryStructureImpl structure = queryBuilder.queryStructure().copy();
             structure.where = base.expression();
@@ -215,6 +232,11 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         @Override
         public Collector<U> orderBy(List<? extends Order<T>> orders) {
             return getQueryBuilder().orderBy(orders);
+        }
+
+        @Override
+        public Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder) {
+            return orderBy(ordersBuilder.apply(EntityRootImpl.of()));
         }
 
         @Override
@@ -245,6 +267,11 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         @Override
         public Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
             return getQueryBuilder().groupBy(expressions);
+        }
+
+        @Override
+        public Having<T, U> groupBy(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
+            return groupBy(expressionBuilder.apply(EntityRootImpl.of()));
         }
 
         @Override

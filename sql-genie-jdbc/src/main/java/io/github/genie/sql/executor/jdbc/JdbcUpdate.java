@@ -2,6 +2,8 @@ package io.github.genie.sql.executor.jdbc;
 
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Update;
+import io.github.genie.sql.api.Updater;
+import io.github.genie.sql.builder.UpdaterImpl;
 import io.github.genie.sql.builder.exception.OptimisticLockException;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.exception.TransactionRequiredException;
@@ -77,7 +79,7 @@ public class JdbcUpdate implements Update {
     }
 
     @Override
-    public <T> void delete(List<T> entities, Class<T> entityType) {
+    public <T> void delete(Iterable<T> entities, Class<T> entityType) {
         PreparedSql preparedSql = sqlBuilder.buildDelete(metamodel.getEntity(entityType));
         execute(connection -> {
             String sql = preparedSql.sql();
@@ -135,6 +137,11 @@ public class JdbcUpdate implements Update {
         });
     }
 
+    @Override
+    public <T> Updater<T> getUpdater(Class<T> type) {
+        return new UpdaterImpl<>(this, type);
+    }
+
     private static void setNewVersion(Object entity, List<BasicAttribute> versions) {
         for (BasicAttribute column : versions) {
             Object version = column.get(entity);
@@ -187,7 +194,7 @@ public class JdbcUpdate implements Update {
         return entities;
     }
 
-    private static <T> void setArgs(List<T> entities,
+    private static <T> void setArgs(Iterable<T> entities,
                                     List<BasicAttribute> columns,
                                     PreparedStatement statement)
             throws SQLException {

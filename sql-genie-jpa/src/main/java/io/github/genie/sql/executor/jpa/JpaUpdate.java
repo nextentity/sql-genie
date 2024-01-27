@@ -5,8 +5,10 @@ import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Update;
+import io.github.genie.sql.api.Updater;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.ExpressionHolders;
+import io.github.genie.sql.builder.UpdaterImpl;
 import io.github.genie.sql.builder.reflect.ReflectUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TransactionRequiredException;
@@ -81,7 +83,7 @@ public class JpaUpdate implements Update {
     }
 
     @Override
-    public <T> void delete(List<T> entities, Class<T> entityType) {
+    public <T> void delete(Iterable<T> entities, Class<T> entityType) {
         requiredTransaction();
         for (T entity : entities) {
             entityManager.remove(entity);
@@ -98,6 +100,11 @@ public class JpaUpdate implements Update {
         }
         ReflectUtil.copyTargetNullFields(t, entity, entityType);
         return entityManager.merge(entity);
+    }
+
+    @Override
+    public <T> Updater<T> getUpdater(Class<T> type) {
+        return new UpdaterImpl<>(this, type);
     }
 
     private <T> Object requireId(T entity) {

@@ -32,6 +32,8 @@ public interface Query {
 
         Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
 
+        Where0<T, Object[]> select(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
+
         <R> Where0<T, R> select(ExpressionHolder<T, R> expression);
 
         <R> Where0<T, R> select(Path<T, ? extends R> path);
@@ -82,6 +84,8 @@ public interface Query {
         <R> Where<T, R> selectDistinct(Class<R> projectionType);
 
         Where0<T, Object[]> selectDistinct(List<? extends ExpressionHolder<T, ?>> paths);
+
+        Where0<T, Object[]> selectDistinct(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
 
         <R> Where0<T, R> selectDistinct(ExpressionHolder<T, R> expression);
 
@@ -168,6 +172,8 @@ public interface Query {
 
         OrderBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
+        OrderBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
         <N> PathOperator<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
 
         <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> where(NumberPath<T, N> path);
@@ -184,6 +190,8 @@ public interface Query {
 
         GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
+        GroupBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
         <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path);
 
         <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path);
@@ -198,6 +206,8 @@ public interface Query {
 
     interface GroupBy<T, U> extends OrderBy<T, U> {
         Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions);
+
+        Having<T, U> groupBy(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder);
 
         Having<T, U> groupBy(Path<T, ?> path);
 
@@ -228,11 +238,15 @@ public interface Query {
 
         OrderBy<T, U> having(ExpressionHolder<T, Boolean> predicate);
 
+        OrderBy<T, U> having(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
     }
 
     interface OrderBy<T, U> extends Collector<U> {
 
         Collector<U> orderBy(List<? extends Order<T>> orders);
+
+        Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder);
 
         default Collector<U> orderBy(Order<T> order) {
             return orderBy(Lists.of(order));
@@ -414,6 +428,8 @@ public interface Query {
 
         AndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
 
+        AndBuilder<T, U> and(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
     }
 
     interface AndBuilder0<T, U> extends GroupBy<T, U>, AndBuilder<T, U> {
@@ -428,6 +444,8 @@ public interface Query {
         StringOperator<T, AndBuilder0<T, U>> and(StringPath<T> path);
 
         AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate);
+
+        AndBuilder0<T, U> and(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
     }
 

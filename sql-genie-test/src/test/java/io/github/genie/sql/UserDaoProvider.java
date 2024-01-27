@@ -15,11 +15,14 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -70,10 +73,17 @@ public class UserDaoProvider implements ArgumentsProvider {
                 .from(User.class);
     }
 
+    @SneakyThrows
     private static Select<User> jdbc() {
         DataSourceConfig config = new DataSourceConfig();
         MysqlDataSource source = config.getMysqlDataSource();
-        ConnectionProvider sqlExecutor = new SimpleConnectionProvider(source);
+        Connection connection = source.getConnection();
+        ConnectionProvider sqlExecutor = new ConnectionProvider() {
+            @Override
+            public <T> T execute(ConnectionCallback<T> action) throws SQLException {
+                return action.doInConnection(connection);
+            }
+        };
         Query query = new JdbcQueryExecutor(new JpaMetamodel(),
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,

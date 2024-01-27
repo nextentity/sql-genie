@@ -44,6 +44,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
@@ -86,8 +87,18 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
+    public GroupBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return where(predicateBuilder.apply(EntityRootImpl.of()));
+    }
+
+    @Override
     public Collector<U> orderBy(List<? extends Order<T>> orders) {
         return addOrderBy(orders);
+    }
+
+    @Override
+    public Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder) {
+        return orderBy(ordersBuilder.apply(EntityRootImpl.of()));
     }
 
     @Override
@@ -253,6 +264,11 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
+    public Having<T, U> groupBy(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
+        return groupBy(expressionBuilder.apply(EntityRootImpl.of()));
+    }
+
+    @Override
     public Having<T, U> groupBy(Path<T, ?> path) {
         QueryStructureImpl structure = queryStructure.copy();
         structure.groupBy = Lists.of(Expressions.of(path));
@@ -269,6 +285,11 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         QueryStructureImpl structure = queryStructure.copy();
         structure.having = predicate.expression();
         return update(structure);
+    }
+
+    @Override
+    public OrderBy<T, U> having(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return having(predicateBuilder.apply(EntityRootImpl.of()));
     }
 
     @Override
