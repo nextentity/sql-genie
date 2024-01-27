@@ -92,6 +92,16 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
+    public Where0<T, U> whereIf(boolean predicate, Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        if (predicate) {
+            QueryStructureImpl structure = queryStructure.copy();
+            structure.where = predicateBuilder.apply(EntityRootImpl.of()).expression();
+            return update(structure);
+        }
+        return this;
+    }
+
+    @Override
     public Collector<U> orderBy(List<? extends Order<T>> orders) {
         return addOrderBy(orders);
     }

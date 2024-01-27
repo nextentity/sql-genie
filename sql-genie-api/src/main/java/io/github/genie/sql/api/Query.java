@@ -174,6 +174,8 @@ public interface Query {
 
         OrderBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
+        Where<T, U> whereIf(boolean predicate, Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
         <N> PathOperator<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
 
         <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> where(NumberPath<T, N> path);
@@ -191,6 +193,8 @@ public interface Query {
         GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
         GroupBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+
+        Where0<T, U> whereIf(boolean predicate, Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
         <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path);
 
