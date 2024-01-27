@@ -24,7 +24,6 @@ import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
 import io.github.genie.sql.builder.QueryStructures.OrderImpl;
-import lombok.Data;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -531,7 +530,6 @@ class TypedExpressionImpl<T, U> implements TypedExpression<T, U> {
         }
     }
 
-    @Data
     @Accessors(fluent = true)
     static class PredicateImpl<T> implements Predicate<T> {
         private final Expression expression;
