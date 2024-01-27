@@ -356,13 +356,13 @@ class DefaultExpressionOperator<T, U, B> implements ExpressionOperator<T, U, B> 
         }
 
         @Override
-        public StringOperator<T, B> substring(int a, int b) {
-            return new StringOperatorImpl<>(base().substring(a, b), resultBuilder);
+        public StringOperator<T, B> substring(int offset, int length) {
+            return new StringOperatorImpl<>(base().substring(offset, length), resultBuilder);
         }
 
         @Override
-        public StringOperator<T, B> substring(int a) {
-            return new StringOperatorImpl<>(base().substring(a), resultBuilder);
+        public StringOperator<T, B> substring(int offset) {
+            return new StringOperatorImpl<>(base().substring(offset), resultBuilder);
         }
 
         @Override

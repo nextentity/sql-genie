@@ -161,9 +161,9 @@ public interface ExpressionOperator<T, U, B> {
 
         StringOperator<T, B> upper();
 
-        StringOperator<T, B> substring(int a, int b);
+        StringOperator<T, B> substring(int offset, int length);
 
-        StringOperator<T, B> substring(int a);
+        StringOperator<T, B> substring(int offset);
 
         StringOperator<T, B> trim();
 
