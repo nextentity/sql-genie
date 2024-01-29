@@ -2,7 +2,7 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.Path;
@@ -27,12 +27,12 @@ import static io.github.genie.sql.api.Operator.NOT;
 import static io.github.genie.sql.api.Operator.OR;
 import static io.github.genie.sql.api.Order.SortOrder.ASC;
 import static io.github.genie.sql.api.Order.SortOrder.DESC;
-import static io.github.genie.sql.builder.EntityRootImpl.ofBooleanExpression;
+import static io.github.genie.sql.builder.RootImpl.ofBooleanExpression;
 
 public final class Q {
 
-    public static <T> EntityRoot<T> of() {
-        return EntityRootImpl.of();
+    public static <T> Root<T> of() {
+        return RootImpl.of();
     }
 
     public static <T, U> PathExpression<T, U> get(Path<T, U> path) {

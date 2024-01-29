@@ -7,11 +7,9 @@ import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
 import io.github.genie.sql.api.TypedExpression;
-import io.github.genie.sql.api.TypedExpression.BooleanExpression;
 import io.github.genie.sql.api.TypedExpression.ComparableExpression;
 import io.github.genie.sql.api.TypedExpression.NumberExpression;
 import io.github.genie.sql.api.TypedExpression.PathExpression;
-import io.github.genie.sql.api.TypedExpression.Predicate;
 import io.github.genie.sql.api.TypedExpression.StringExpression;
 import org.jetbrains.annotations.NotNull;
 
@@ -95,23 +93,6 @@ class DefaultExpressionOperator<T, U, B> implements ExpressionOperator<T, U, B> 
     @Override
     public B isNotNull() {
         return resultBuilder.apply(base.isNotNull());
-    }
-
-    static class BooleanOperatorImpl<T, B> extends ComparableOperatorImpl<T, Boolean, B> implements BooleanOperator<T, B> {
-
-        @Override
-        protected BooleanExpression<T> base() {
-            return (BooleanExpression<T>) base;
-        }
-
-        public BooleanOperatorImpl(ComparableExpression<T, Boolean> expression, Function<? super TypedExpression<?, ?>, B> resultBuilder) {
-            super(expression, resultBuilder);
-        }
-
-        @Override
-        public Predicate<T> then() {
-            return base().then();
-        }
     }
 
     static class ComparableOperatorImpl<T, U extends Comparable<U>, B> extends DefaultExpressionOperator<T, U, B> implements ComparableOperator<T, U, B> {

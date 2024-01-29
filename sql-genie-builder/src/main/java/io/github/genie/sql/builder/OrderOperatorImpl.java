@@ -1,6 +1,6 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
@@ -46,8 +46,8 @@ public class OrderOperatorImpl<T, U> implements OrderOperator<T, U> {
     }
 
     @Override
-    public Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder) {
-        return orderBy(ordersBuilder.apply(EntityRootImpl.of()));
+    public Collector<U> orderBy(Function<Root<T>, List<? extends Order<T>>> ordersBuilder) {
+        return orderBy(ordersBuilder.apply(RootImpl.of()));
     }
 
     @Override

@@ -12,10 +12,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
 
-    EntityRoot<T> root();
+    Root<T> root();
 
     NumberExpression<T, Long> count();
 
@@ -59,6 +60,13 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
 
         AndOperator<T> and(ExpressionHolder<T, Boolean> expression);
 
+        default AndOperator<T> andIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            if (predicate) {
+                return and(predicateBuilder.apply(root()));
+            }
+            return this;
+        }
+
         AndOperator<T> and(List<? extends ExpressionHolder<T, Boolean>> expressions);
 
         Predicate<T> then();
@@ -78,6 +86,13 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
         OrOperator<T> or(BooleanPath<T> path);
 
         OrOperator<T> or(ExpressionHolder<T, Boolean> predicate);
+
+        default OrOperator<T> orIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            if (predicate) {
+                return or(predicateBuilder.apply(root()));
+            }
+            return this;
+        }
 
         OrOperator<T> or(List<? extends ExpressionHolder<T, Boolean>> expressions);
 
@@ -122,12 +137,12 @@ public interface TypedExpression<T, U> extends ExpressionHolder<T, U> {
         }
 
         default BooleanExpression<T> between(U l, U r) {
-            EntityRoot<T> eb = root();
+            Root<T> eb = root();
             return between(eb.of(l), eb.of(r));
         }
 
         default BooleanExpression<T> notBetween(U l, U r) {
-            EntityRoot<T> eb = root();
+            Root<T> eb = root();
             return notBetween(eb.of(l), eb.of(r));
         }
 

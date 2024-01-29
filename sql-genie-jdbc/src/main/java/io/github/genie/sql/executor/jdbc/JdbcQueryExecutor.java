@@ -1,8 +1,10 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
+import io.github.genie.sql.builder.exception.TransactionRequiredException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import lombok.Getter;
@@ -43,6 +45,10 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
         printSql(sql);
         try {
             return connectionProvider.execute(connection -> {
+                LockModeType locked = queryStructure.lockType();
+                if (locked != null && locked != LockModeType.NONE && connection.getAutoCommit()) {
+                    throw new TransactionRequiredException();
+                }
                 // noinspection SqlSourceToSinkFlow
                 try (PreparedStatement statement = connection.prepareStatement(sql.sql())) {
                     JdbcUtil.setParam(statement, sql.args());

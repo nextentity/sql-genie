@@ -1,6 +1,5 @@
 package io.github.genie.sql;
 
-import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.entity.User;
@@ -21,8 +20,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -69,26 +66,18 @@ public class UserDaoProvider implements ArgumentsProvider {
     private static Select<User> jpa() {
         EntityManager manager = EntityManagers.getEntityManager();
         return new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder())
-                .createQuery(/*new TestPostProcessor()*/)
+                .createQuery(new TestPostProcessor())
                 .from(User.class);
     }
 
     @SneakyThrows
     private static Select<User> jdbc() {
-        DataSourceConfig config = new DataSourceConfig();
-        MysqlDataSource source = config.getMysqlDataSource();
-        Connection connection = source.getConnection();
-        ConnectionProvider sqlExecutor = new ConnectionProvider() {
-            @Override
-            public <T> T execute(ConnectionCallback<T> action) throws SQLException {
-                return action.doInConnection(connection);
-            }
-        };
+        ConnectionProvider sqlExecutor = SingleConnectionProvider.CONNECTION_PROVIDER;
         Query query = new JdbcQueryExecutor(new JpaMetamodel(),
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,
                 new JdbcResultCollector()
-        ).createQuery(/*new TestPostProcessor()*/);
+        ).createQuery(new TestPostProcessor());
 
         return query.from(User.class);
     }

@@ -1,6 +1,6 @@
 package io.github.genie.sql.builder;
 
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.Operation;
@@ -20,15 +20,15 @@ import io.github.genie.sql.builder.TypedExpressionImpl.NumberExpressionImpl;
 import io.github.genie.sql.builder.TypedExpressionImpl.PathExpressionImpl;
 import io.github.genie.sql.builder.TypedExpressionImpl.StringExpressionImpl;
 
-public class EntityRootImpl<T> implements EntityRoot<T> {
+public class RootImpl<T> implements Root<T> {
 
-    private static final EntityRootImpl<?> INSTANCE = new EntityRootImpl<>();
+    private static final RootImpl<?> INSTANCE = new RootImpl<>();
 
-    public static <T> EntityRoot<T> of() {
+    public static <T> Root<T> of() {
         return TypeCastUtil.cast(INSTANCE);
     }
 
-    protected EntityRootImpl() {
+    protected RootImpl() {
     }
 
     @Override

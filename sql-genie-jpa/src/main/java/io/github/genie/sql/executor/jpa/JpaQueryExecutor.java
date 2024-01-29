@@ -195,7 +195,7 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected void setHaving(Expression having) {
-            if (having != null) {
+            if (having != null && !Expressions.isTrue(having)) {
                 query.having(toPredicate(having));
             }
         }

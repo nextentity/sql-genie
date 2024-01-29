@@ -10,7 +10,7 @@ import io.github.genie.sql.api.TypedExpression.NumberExpression;
 import io.github.genie.sql.api.TypedExpression.PathExpression;
 import io.github.genie.sql.api.TypedExpression.StringExpression;
 
-public interface EntityRoot<T> {
+public interface Root<T> {
 
     <U> ExpressionHolder<T, U> of(U value);
 

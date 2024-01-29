@@ -1,7 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
@@ -139,8 +139,8 @@ class TypedExpressionImpl<T, U> implements TypedExpression<T, U> {
     }
 
     @Override
-    public EntityRoot<T> root() {
-        return EntityRootImpl.of();
+    public Root<T> root() {
+        return RootImpl.of();
     }
 
     @Override

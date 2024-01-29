@@ -15,7 +15,7 @@ public class TypeCastUtil {
         return unsafeCast(expression);
     }
 
-    public static <T> EntityRootImpl<T> cast(EntityRootImpl<?> builder) {
+    public static <T> RootImpl<T> cast(RootImpl<?> builder) {
         return unsafeCast(builder);
     }
 

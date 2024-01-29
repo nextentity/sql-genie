@@ -1,7 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
@@ -82,23 +82,31 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     @Override
     public GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.where = predicate.expression();
+        andWhere(structure, predicate.expression());
         return update(structure);
     }
 
     @Override
-    public GroupBy<T, U> where(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-        return where(predicateBuilder.apply(EntityRootImpl.of()));
+    public GroupBy<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return where(predicateBuilder.apply(RootImpl.of()));
     }
 
     @Override
-    public Where0<T, U> whereIf(boolean predicate, Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+    public Where0<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
         if (predicate) {
             QueryStructureImpl structure = queryStructure.copy();
-            structure.where = predicateBuilder.apply(EntityRootImpl.of()).expression();
+            andWhere(structure, predicateBuilder.apply(RootImpl.of()).expression());
             return update(structure);
         }
         return this;
+    }
+
+    static void andWhere(QueryStructureImpl structure, Expression expression) {
+        if (structure.where == null || Expressions.isTrue(structure.where)) {
+            structure.where = expression;
+        } else {
+            structure.where = Expressions.operate(structure.where, Operator.AND, expression);
+        }
     }
 
     @Override
@@ -107,8 +115,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder) {
-        return orderBy(ordersBuilder.apply(EntityRootImpl.of()));
+    public Collector<U> orderBy(Function<Root<T>, List<? extends Order<T>>> ordersBuilder) {
+        return orderBy(ordersBuilder.apply(RootImpl.of()));
     }
 
     @Override
@@ -274,8 +282,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public Having<T, U> groupBy(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
-        return groupBy(expressionBuilder.apply(EntityRootImpl.of()));
+    public Having<T, U> groupBy(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
+        return groupBy(expressionBuilder.apply(RootImpl.of()));
     }
 
     @Override
@@ -298,8 +306,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public OrderBy<T, U> having(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-        return having(predicateBuilder.apply(EntityRootImpl.of()));
+    public OrderBy<T, U> having(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return having(predicateBuilder.apply(RootImpl.of()));
     }
 
     @Override
@@ -327,8 +335,8 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         return new AndBuilderImpl<>(this, root().get(path));
     }
 
-    public EntityRoot<T> root() {
-        return EntityRootImpl.of();
+    public Root<T> root() {
+        return RootImpl.of();
     }
 
     @Override

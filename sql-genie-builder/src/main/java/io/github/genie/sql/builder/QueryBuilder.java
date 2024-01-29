@@ -1,7 +1,7 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.EntityRoot;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
@@ -71,8 +71,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     @Override
-    public Where0<T, Object[]> select(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
-        return select(selectBuilder.apply(EntityRootImpl.of()));
+    public Where0<T, Object[]> select(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+        return select(selectBuilder.apply(RootImpl.of()));
     }
 
     public Where0<T, T> fetch(Collection<Path<T, ?>> paths) {
@@ -124,8 +124,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     @Override
-    public Where0<T, Object[]> selectDistinct(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
-        return selectDistinct(selectBuilder.apply(EntityRootImpl.of()));
+    public Where0<T, Object[]> selectDistinct(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+        return selectDistinct(selectBuilder.apply(RootImpl.of()));
     }
 
     public Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> expressions) {
@@ -219,13 +219,22 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
 
         @Override
-        public AndBuilder0<T, U> and(Function<EntityRoot<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-            return and(predicateBuilder.apply(EntityRootImpl.of()));
+        public AndBuilder0<T, U> andIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            if (predicate) {
+                return and(predicateBuilder.apply(RootImpl.of()));
+            }
+            return this;
+        }
+
+        @Override
+        public AndBuilder0<T, U> and(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            return and(predicateBuilder.apply(RootImpl.of()));
         }
 
         private QueryConditionBuilder<T, U> getQueryBuilder() {
             QueryStructureImpl structure = queryBuilder.queryStructure().copy();
-            structure.where = base.expression();
+            Expression expression = base.expression();
+            andWhere(structure, expression);
             return queryBuilder.update(structure);
         }
 
@@ -235,8 +244,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
 
         @Override
-        public Collector<U> orderBy(Function<EntityRoot<T>, List<? extends Order<T>>> ordersBuilder) {
-            return orderBy(ordersBuilder.apply(EntityRootImpl.of()));
+        public Collector<U> orderBy(Function<Root<T>, List<? extends Order<T>>> ordersBuilder) {
+            return orderBy(ordersBuilder.apply(RootImpl.of()));
         }
 
         @Override
@@ -270,8 +279,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
         }
 
         @Override
-        public Having<T, U> groupBy(Function<EntityRoot<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
-            return groupBy(expressionBuilder.apply(EntityRootImpl.of()));
+        public Having<T, U> groupBy(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
+            return groupBy(expressionBuilder.apply(RootImpl.of()));
         }
 
         @Override

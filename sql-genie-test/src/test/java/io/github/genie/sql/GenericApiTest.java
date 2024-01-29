@@ -1,14 +1,13 @@
 package io.github.genie.sql;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mysql.cj.jdbc.MysqlDataSource;
-import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Slice;
 import io.github.genie.sql.api.TypedExpression.BooleanExpression;
 import io.github.genie.sql.entity.User;
@@ -68,7 +67,6 @@ public class GenericApiTest {
     protected static final String username = "Jeremy Keynes";
 
     protected static List<User> allUsers;
-    protected static final MysqlDataSource dataSource = new DataSourceConfig().getMysqlDataSource();
 
     static {
 
@@ -76,12 +74,7 @@ public class GenericApiTest {
             try {
                 // noinspection SqlDialectInspection,SqlNoDataSourceInspection
                 connection.createStatement().executeUpdate("update user set pid = null");
-                ConnectionProvider connectionProvider = new ConnectionProvider() {
-                    @Override
-                    public <T> T execute(ConnectionCallback<T> action) throws SQLException {
-                        return action.doInConnection(connection);
-                    }
-                };
+                ConnectionProvider connectionProvider = SingleConnectionProvider.CONNECTION_PROVIDER;
                 JpaMetamodel metamodel = new JpaMetamodel();
                 Query query = new JdbcQueryExecutor(
                         metamodel,
@@ -126,25 +119,26 @@ public class GenericApiTest {
 
     @SneakyThrows
     private static <T> T doInTransaction(Function<Connection, T> action) {
-        Connection connection = dataSource.getConnection();
-        T result;
-        boolean autoCommit = connection.getAutoCommit();
-        try {
-            if (autoCommit) {
-                connection.setAutoCommit(false);
+        return SingleConnectionProvider.CONNECTION_PROVIDER.execute(connection -> {
+            T result;
+            boolean autoCommit = connection.getAutoCommit();
+            try {
+                if (autoCommit) {
+                    connection.setAutoCommit(false);
+                }
+                result = action.apply(connection);
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw Lombok.sneakyThrow(e);
+            } finally {
+                if (autoCommit) {
+                    connection.setAutoCommit(true);
+                }
             }
-            result = action.apply(connection);
-            connection.commit();
-        } catch (Exception e) {
-            connection.rollback();
-            throw Lombok.sneakyThrow(e);
-        } finally {
-            if (autoCommit) {
-                connection.setAutoCommit(true);
-            }
-        }
 
-        return result;
+            return result;
+        });
     }
 
 //    public GenericApiTest(Select<User> userQuery) {
@@ -476,6 +470,32 @@ public class GenericApiTest {
 
         sorted.sort((a, b) -> Integer.compare(b.getRandomNumber(), a.getRandomNumber()));
         sorted.sort(Comparator.comparing(User::getUsername));
+        assertEquals(list, sorted);
+        list = userQuery
+                .orderBy(User::getUsername)
+                .orderBy(Arrays.asList(
+                        get(User::getRandomNumber).desc(),
+                        get(User::getId).asc()
+                ))
+                .getList();
+        assertEquals(list, sorted);
+
+        list = userQuery
+                .orderBy((Root<User> root) -> Arrays.asList(
+                        root.get(User::getUsername).asc(),
+                        root.get(User::getRandomNumber).desc(),
+                        root.get(User::getId).asc()
+                ))
+                .getList();
+        assertEquals(list, sorted);
+
+        list = userQuery
+                .orderBy(User::getUsername)
+                .orderBy((Root<User> root) -> Arrays.asList(
+                        root.get(User::getRandomNumber).desc(),
+                        root.get(User::getId).asc()
+                ))
+                .getList();
         assertEquals(list, sorted);
 
         list = userQuery

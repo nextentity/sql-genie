@@ -1,14 +1,16 @@
 package io.github.genie.sql;
 
-import io.github.genie.sql.api.EntityRoot;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.Lists;
+import io.github.genie.sql.api.LockModeType;
 import io.github.genie.sql.api.Path;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.OrderBy;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.Query.Where;
+import io.github.genie.sql.api.Root;
+import io.github.genie.sql.api.Slice;
 import io.github.genie.sql.api.TypedExpression.BooleanExpression;
 import io.github.genie.sql.builder.ExpressionHolders;
 import io.github.genie.sql.builder.Q;
@@ -16,11 +18,13 @@ import io.github.genie.sql.entity.User;
 import io.github.genie.sql.projection.IUser;
 import io.github.genie.sql.projection.UserInterface;
 import io.github.genie.sql.projection.UserModel;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -34,7 +38,9 @@ import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Slf4j
 class QueryBuilderTest {
 
     static List<User> users() {
@@ -175,8 +181,8 @@ class QueryBuilderTest {
             assertEquals(value, objects[1]);
         }
 
-        Function<EntityRoot<User>, List<? extends ExpressionHolder<User, ?>>> expressionBuilder =
-                (EntityRoot<User> root) -> Lists.of(root.get(User::getRandomNumber));
+        Function<Root<User>, List<? extends ExpressionHolder<User, ?>>> expressionBuilder =
+                (Root<User> root) -> Lists.of(root.get(User::getRandomNumber));
         list = userQuery
                 .select(Lists.of(
                         Q.get(User::getRandomNumber),
@@ -236,7 +242,7 @@ class QueryBuilderTest {
                     .getList();
             assertEquals(users, sorted);
             users = checker.collector
-                    .orderBy((EntityRoot<User> r) -> Lists.of(
+                    .orderBy((Root<User> r) -> Lists.of(
                             r.get(User::getRandomNumber).asc(),
                             r.get(User::getId).asc()
                     ))
@@ -295,8 +301,14 @@ class QueryBuilderTest {
         getWhereTestCase(check);
     }
 
+    private List<Checker<User, OrderBy<User, User>>> whereTestCase;
+
+
     private List<Checker<User, OrderBy<User, User>>> getWhereTestCase(Checker<User, Where<User, User>> check) {
-        List<Checker<User, OrderBy<User, User>>> result = new ArrayList<>();
+        if (whereTestCase != null) {
+            return whereTestCase;
+        }
+        List<Checker<User, OrderBy<User, User>>> result = whereTestCase = new ArrayList<>();
         String username = users().get(10).getUsername();
 
         Where<User, User> userQuery = check.collector;
@@ -436,6 +448,10 @@ class QueryBuilderTest {
                 .collect(Collectors.toList());
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).or(User::getRandomNumber).eq(2));
         result.add(new Checker<>(users, collector));
+        collector = check.collector.where(Q.get(User::getRandomNumber).eq(1)
+                .orIf(true, root -> root.get(User::getRandomNumber).eq(2))
+                .orIf(false, root -> root.get(User::getId).eq(2)));
+        result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).or((ComparablePath<User, Integer>) User::getRandomNumber).eq(2));
         result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).or(Lists.of(Q.get(User::getRandomNumber).eq(2))));
@@ -445,10 +461,28 @@ class QueryBuilderTest {
                 .collect(Collectors.toList());
         collector = check.collector.where(User::getRandomNumber).eq(1).and(User::isValid);
         result.add(new Checker<>(users, collector));
+        collector = check.collector.where(User::getRandomNumber).eq(1)
+                .and((Path<User, Boolean>) User::isValid).eq(ExpressionHolders.ofTrue());
+        result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).and(User::isValid));
+        result.add(new Checker<>(users, collector));
+        collector = check.collector.where(Q.get(User::getRandomNumber).eq(1)
+                .andIf(true, root -> root.get(User::isValid)));
         result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).and(Lists.of(Q.get(User::isValid))));
         result.add(new Checker<>(users, collector));
+        collector = check.collector
+                .whereIf(true, root -> root.get(User::getRandomNumber).eq(1))
+                .whereIf(true, root -> root.get(User::isValid))
+                .whereIf(false, root -> root.get(User::getId).eq(2));
+        result.add(new Checker<>(users, collector));
+
+        collector = check.collector
+                .where(User::getRandomNumber).eq(1)
+                .andIf(true, root -> root.get(User::isValid))
+                .andIf(false, root -> root.get(User::getId).eq(2));
+        result.add(new Checker<>(users, collector));
+
         //
         //    B eq(ExpressionHolder<T, U> expression);
         users = check.expected.stream().filter(it -> it.getRandomNumber() == it.getId()).collect(Collectors.toList());
@@ -456,7 +490,7 @@ class QueryBuilderTest {
         result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(Q.get(User::getId)));
         result.add(new Checker<>(users, collector));
-        collector = check.collector.where((EntityRoot<User> root) -> root.get(User::getRandomNumber).eq(root.get(User::getId)));
+        collector = check.collector.where((Root<User> root) -> root.get(User::getRandomNumber).eq(root.get(User::getId)));
         result.add(new Checker<>(users, collector));
 
 
@@ -820,11 +854,130 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void queryList(Select<User> userQuery) {
+        User single = userQuery
+                .where(User::getId).le(10)
+                .getSingle(10);
+        User user = users().get(10);
+        assertEquals(single, user);
+        single = userQuery
+                .where(User::getId).eq(10)
+                .single().orElse(null);
+        User user10 = null;
+        for (User u : users()) {
+            if (u.getId() == 10) {
+                user10 = u;
+                break;
+            }
+        }
+        assertEquals(user10, single);
+
+        single = userQuery
+                .where(User::getId).le(10)
+                .single(10).orElse(null);
+        assertEquals(single, user);
+
+        assertTrue(userQuery
+                .where(User::getId).le(10)
+                .single(11).isEmpty());
+
+        Slice<User> slice = userQuery.slice(3, 10);
+        assertEquals(slice.total(), users().size());
+        for (int i = 3; i < 13; i++) {
+            assertEquals(slice.data().get(i - 3), users().get(i));
+        }
+
+        user = userQuery.getFirst();
+        assertEquals(user, users().get(0));
+        user = userQuery.getFirst(10);
+        assertEquals(user, users().get(10));
+        user = userQuery.first().orElse(null);
+        assertEquals(user, users().get(0));
+        user = userQuery.first(8).orElse(null);
+        assertEquals(user, users().get(8));
     }
+
 
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
-    void buildMetadata(Select<User> userQuery) {
+    void lock(Select<User> userQuery) throws SQLException {
+        if (userQuery == UserDaoProvider.jdbc) {
+            SingleConnectionProvider.CONNECTION_PROVIDER
+                    .execute(connection -> {
+                        connection.setAutoCommit(false);
+                        return null;
+                    });
+        } else {
+            EntityManagers.getEntityManager().getTransaction().begin();
+        }
+        try {
+            testLock(userQuery);
+        } finally {
+            if (userQuery == UserDaoProvider.jdbc) {
+                SingleConnectionProvider.CONNECTION_PROVIDER
+                        .execute(connection -> {
+                            connection.commit();
+                            return null;
+                        });
+            } else {
+                EntityManagers.getEntityManager().getTransaction().commit();
+            }
+        }
+    }
+
+    private static void testLock(Select<User> userQuery) {
+        for (LockModeType lockModeType : LockModeType.values()) {
+            try {
+                User single = userQuery
+                        .where(User::getId).le(10)
+                        .getSingle(10, lockModeType);
+                User user = users().get(10);
+                assertEquals(single, user);
+                single = userQuery
+                        .where(User::getId).eq(10)
+                        .single(lockModeType).orElse(null);
+                User user10 = null;
+                for (User u : users()) {
+                    if (u.getId() == 10) {
+                        user10 = u;
+                        break;
+                    }
+                }
+                assertEquals(user10, single);
+
+                single = userQuery
+                        .where(User::getId).le(10)
+                        .single(10).orElse(null);
+                assertEquals(single, user);
+
+                assertTrue(userQuery
+                        .where(User::getId).le(10)
+                        .single(11, lockModeType).isEmpty());
+
+
+                user = userQuery.getFirst(lockModeType);
+                assertEquals(user, users().get(0));
+                user = userQuery.getFirst(10, lockModeType);
+                assertEquals(user, users().get(10));
+                user = userQuery.first(lockModeType).orElse(null);
+                assertEquals(user, users().get(0));
+                user = userQuery.first(8, lockModeType).orElse(null);
+                assertEquals(user, users().get(8));
+
+                user = userQuery.where(User::getId).eq(0)
+                        .requireSingle(lockModeType);
+                assertEquals(user, users().get(0));
+
+                List<User> users = userQuery.where(User::getId).eq(0)
+                        .getList(0, lockModeType);
+                assertEquals(users.get(0), users().get(0));
+                users = userQuery.where(User::getId).eq(0)
+                        .getList(lockModeType);
+                assertEquals(users.get(0), users().get(0));
+
+            } catch (Exception e) {
+                log.error(lockModeType.name(), e);
+            }
+        }
     }
 
     @ParameterizedTest
