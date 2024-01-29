@@ -1,43 +1,20 @@
 package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
-import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
-import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
-import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.api.LockModeType;
-import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
-import io.github.genie.sql.api.Path.BooleanPath;
-import io.github.genie.sql.api.Path.ComparablePath;
-import io.github.genie.sql.api.Path.NumberPath;
-import io.github.genie.sql.api.Path.StringPath;
-import io.github.genie.sql.api.Query.AndBuilder0;
-import io.github.genie.sql.api.Query.Collector;
 import io.github.genie.sql.api.Query.Fetch;
-import io.github.genie.sql.api.Query.Having;
-import io.github.genie.sql.api.Query.OrderOperator;
-import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.Query.Where0;
 import io.github.genie.sql.api.QueryExecutor;
-import io.github.genie.sql.api.TypedExpression;
-import io.github.genie.sql.api.TypedExpression.AndOperator;
-import io.github.genie.sql.api.TypedExpression.BooleanExpression;
-import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.builder.QueryStructures.MultiColumnImpl;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
 import io.github.genie.sql.builder.QueryStructures.SelectClauseImpl;
 import io.github.genie.sql.builder.QueryStructures.SingleColumnImpl;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -166,133 +143,6 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
             throw new BeanReflectiveException(e);
         }
         return method.getReturnType();
-    }
-
-    static class AndBuilderImpl<T, U> implements AndBuilder0<T, U>, AbstractCollector<U> {
-        private final QueryConditionBuilder<T, U> queryBuilder;
-        protected final BooleanExpression<T> base;
-
-        public AndBuilderImpl(QueryConditionBuilder<T, U> queryBuilder, BooleanExpression<T> base) {
-            this.queryBuilder = queryBuilder;
-            this.base = base;
-        }
-
-        @Override
-        public <N> PathOperator<T, N, AndBuilder0<T, U>> and(Path<T, N> path) {
-            PathOperatorImpl<T, N, AndOperator<T>> and = (PathOperatorImpl<T, N, AndOperator<T>>) base.and(path);
-            return new PathOperatorImpl<>(and.base(), this::newAndBuilder);
-        }
-
-        @NotNull
-        private AndBuilderImpl<T, U> newAndBuilder(TypedExpression<?, ?> baseExpression) {
-            return new AndBuilderImpl<>(queryBuilder, TypeCastUtil.unsafeCast(baseExpression));
-        }
-
-        @Override
-        public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> and(NumberPath<T, N> path) {
-            NumberOperatorImpl<T, N, AndOperator<T>> and = (NumberOperatorImpl<T, N, AndOperator<T>>) base.and(path);
-            return new NumberOperatorImpl<>(and.base(), this::newAndBuilder);
-        }
-
-        @Override
-        public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> and(ComparablePath<T, N> path) {
-            ComparableOperatorImpl<T, N, AndOperator<T>> and = (ComparableOperatorImpl<T, N, AndOperator<T>>) base.and(path);
-            return new ComparableOperatorImpl<>(and.base(), this::newAndBuilder);
-        }
-
-        @Override
-        public AndBuilder0<T, U> and(BooleanPath<T> path) {
-            BooleanExpression<T> and = (BooleanExpression<T>) base.and(path);
-            return new AndBuilderImpl<>(queryBuilder, and);
-        }
-
-        @Override
-        public StringOperator<T, AndBuilder0<T, U>> and(StringPath<T> path) {
-            StringOperatorImpl<T, AndOperator<T>> and = (StringOperatorImpl<T, AndOperator<T>>) base.and(path);
-            return new StringOperatorImpl<>(and.base(), this::newAndBuilder);
-        }
-
-        @Override
-        public AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate) {
-            BooleanExpression<T> and = (BooleanExpression<T>) base.and(predicate);
-            return new AndBuilderImpl<>(queryBuilder, and);
-        }
-
-        @Override
-        public AndBuilder0<T, U> andIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-            if (predicate) {
-                return and(predicateBuilder.apply(RootImpl.of()));
-            }
-            return this;
-        }
-
-        @Override
-        public AndBuilder0<T, U> and(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-            return and(predicateBuilder.apply(RootImpl.of()));
-        }
-
-        private QueryConditionBuilder<T, U> getQueryBuilder() {
-            QueryStructureImpl structure = queryBuilder.queryStructure().copy();
-            Expression expression = base.expression();
-            andWhere(structure, expression);
-            return queryBuilder.update(structure);
-        }
-
-        @Override
-        public Collector<U> orderBy(List<? extends Order<T>> orders) {
-            return getQueryBuilder().orderBy(orders);
-        }
-
-        @Override
-        public Collector<U> orderBy(Function<Root<T>, List<? extends Order<T>>> ordersBuilder) {
-            return orderBy(ordersBuilder.apply(RootImpl.of()));
-        }
-
-        @Override
-        public OrderOperator<T, U> orderBy(Collection<Path<T, Comparable<?>>> paths) {
-            return getQueryBuilder().orderBy(paths);
-        }
-
-        @Override
-        public long count() {
-            return getQueryBuilder().count();
-        }
-
-        @Override
-        public List<U> getList(int offset, int maxResult, LockModeType lockModeType) {
-            return getQueryBuilder().getList(offset, maxResult, lockModeType);
-        }
-
-        @Override
-        public boolean exist(int offset) {
-            return getQueryBuilder().exist(offset);
-        }
-
-        @Override
-        public QueryStructureBuilder buildMetadata() {
-            return getQueryBuilder().buildMetadata();
-        }
-
-        @Override
-        public Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions) {
-            return getQueryBuilder().groupBy(expressions);
-        }
-
-        @Override
-        public Having<T, U> groupBy(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder) {
-            return groupBy(expressionBuilder.apply(RootImpl.of()));
-        }
-
-        @Override
-        public Having<T, U> groupBy(Path<T, ?> path) {
-            return getQueryBuilder().groupBy(path);
-        }
-
-        @Override
-        public Having<T, U> groupBy(Collection<Path<T, ?>> paths) {
-            return groupBy(Expressions.toExpressionList(paths));
-        }
-
     }
 
     @Override

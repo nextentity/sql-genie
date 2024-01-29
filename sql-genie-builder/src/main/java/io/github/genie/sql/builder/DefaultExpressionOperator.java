@@ -85,12 +85,6 @@ class DefaultExpressionOperator<T, U, B> implements ExpressionOperator<T, U, B> 
     }
 
     @Override
-    public NumberOperator<T, Long, B> count() {
-        NumberExpression<T, Long> count = base.count();
-        return new NumberOperatorImpl<>(count, resultBuilder);
-    }
-
-    @Override
     public B isNotNull() {
         return resultBuilder.apply(base.isNotNull());
     }

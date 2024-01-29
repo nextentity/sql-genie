@@ -43,11 +43,11 @@ public class Example {
         query.fetch(Employee::getCompany).where(Employee::getId).eq(1).getSingle();
 
         // select * from employee where name = 'Luna' and age > 10
-        query.where(Employee::getName).eq("Luna").and(Employee::getAge).gt(10).getList();
+        query.where(Employee::getName).eq("Luna").where(Employee::getAge).gt(10).getList();
 
         // select * from employee where name = 'Luna' and age > 10 order by id desc limit 0,100
         query.where(Employee::getName).eq("Luna")
-                .and(Employee::getAge).gt(10)
+                .where(Employee::getAge).gt(10)
                 .orderBy(Q.get(Employee::getId).desc())
                 .getList(0, 100);
 

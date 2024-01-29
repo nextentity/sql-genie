@@ -5,7 +5,6 @@ import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
 import io.github.genie.sql.api.ExpressionOperator.PathOperator;
 import io.github.genie.sql.api.ExpressionOperator.StringOperator;
-import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
@@ -169,41 +168,47 @@ public interface Query {
 
     interface Where<T, U> extends OrderBy<T, U> {
 
-        OrderBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
+        Where<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
-        OrderBy<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+        Where<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
-        Where<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+        default Where<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            if (predicate) {
+                return where(predicateBuilder.apply(root()));
+            }
+            return this;
+        }
 
-        <N> PathOperator<T, N, ? extends AndBuilder<T, U>> where(Path<T, N> path);
+        <N> PathOperator<T, N, ? extends Where<T, U>> where(Path<T, N> path);
 
-        <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> where(NumberPath<T, N> path);
+        <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends Where<T, U>> where(NumberPath<T, N> path);
 
-        <N extends Comparable<N>> ComparableOperator<T, N, ? extends AndBuilder<T, U>> where(ComparablePath<T, N> path);
+        <N extends Comparable<N>> ComparableOperator<T, N, ? extends Where<T, U>> where(ComparablePath<T, N> path);
 
-        StringOperator<T, ? extends AndBuilder<T, U>> where(StringPath<T> path);
-
-        AndBuilder<T, U> where(BooleanPath<T> path);
+        StringOperator<T, ? extends Where<T, U>> where(StringPath<T> path);
 
     }
 
     interface Where0<T, U> extends GroupBy<T, U>, Where<T, U> {
 
-        GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate);
+        Where0<T, U> where(ExpressionHolder<T, Boolean> predicate);
 
-        GroupBy<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+        Where0<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
-        Where0<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
+        default Where0<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+            if (predicate) {
+                return where(predicateBuilder.apply(root()));
+            }
+            return this;
+        }
 
-        <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path);
+        <N> PathOperator<T, N, Where0<T, U>> where(Path<T, N> path);
 
-        <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path);
+        <N extends Comparable<N>> ComparableOperator<T, N, Where0<T, U>> where(ComparablePath<T, N> path);
 
-        <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path);
+        <N extends Number & Comparable<N>> NumberOperator<T, N, Where0<T, U>> where(NumberPath<T, N> path);
 
-        StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path);
-
-        AndBuilder0<T, U> where(BooleanPath<T> path);
+        StringOperator<T, Where0<T, U>> where(StringPath<T> path);
 
     }
 
@@ -245,7 +250,7 @@ public interface Query {
 
     }
 
-    interface OrderBy<T, U> extends Collector<U> {
+    interface OrderBy<T, U> extends Collector<U>, RootProvider<T> {
 
         Collector<U> orderBy(List<? extends Order<T>> orders);
 
@@ -277,6 +282,10 @@ public interface Query {
             return orderBy(Lists.of(p1, p2, p3));
         }
 
+    }
+
+    interface RootProvider<T> {
+        Root<T> root();
     }
 
     interface OrderOperator<T, U> extends OrderBy<T, U> {
@@ -406,45 +415,6 @@ public interface Query {
         Slice<T> slice(int offset, int limit);
 
         QueryStructureBuilder buildMetadata();
-
-    }
-
-    interface AndBuilder<T, U> extends OrderBy<T, U> {
-
-        <N> PathOperator<T, N, ? extends AndBuilder<T, U>> and(Path<T, N> path);
-
-        <N extends Number & Comparable<N>> NumberOperator<T, N, ? extends AndBuilder<T, U>> and(NumberPath<T, N> path);
-
-        <N extends Comparable<N>> ComparableOperator<T, N, ? extends AndBuilder<T, U>> and(ComparablePath<T, N> path);
-
-        StringOperator<T, ? extends AndBuilder<T, U>> and(StringPath<T> path);
-
-        AndBuilder<T, U> and(BooleanPath<T> path);
-
-        AndBuilder<T, U> and(ExpressionHolder<T, Boolean> predicate);
-
-        AndBuilder<T, U> andIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
-
-        AndBuilder<T, U> and(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
-
-    }
-
-    interface AndBuilder0<T, U> extends GroupBy<T, U>, AndBuilder<T, U> {
-        <N> PathOperator<T, N, AndBuilder0<T, U>> and(Path<T, N> path);
-
-        <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> and(NumberPath<T, N> path);
-
-        <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> and(ComparablePath<T, N> path);
-
-        AndBuilder0<T, U> and(BooleanPath<T> path);
-
-        StringOperator<T, AndBuilder0<T, U>> and(StringPath<T> path);
-
-        AndBuilder0<T, U> and(ExpressionHolder<T, Boolean> predicate);
-
-        AndBuilder0<T, U> andIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
-
-        AndBuilder0<T, U> and(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
     }
 

@@ -36,8 +36,6 @@ public interface ExpressionOperator<T, U, B> {
 
     B isNull();
 
-    NumberOperator<T, Long, B> count();
-
     B isNotNull();
 
     interface BooleanOperator<T, B> extends ComparableOperator<T, Boolean, B> {

@@ -85,4 +85,8 @@ public class OrderOperatorImpl<T, U> implements OrderOperator<T, U> {
         return asc().buildMetadata();
     }
 
+    @Override
+    public Root<T> root() {
+        return RootImpl.of();
+    }
 }

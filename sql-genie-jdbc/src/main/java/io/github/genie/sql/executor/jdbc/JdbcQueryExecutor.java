@@ -7,8 +7,6 @@ import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.exception.TransactionRequiredException;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,18 +16,16 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
-@Getter
-@Setter
 public class JdbcQueryExecutor implements AbstractQueryExecutor {
 
     @NotNull
-    private Metamodel metamodel;
+    private final Metamodel metamodel;
     @NotNull
-    private QuerySqlBuilder sqlBuilder;
+    private final QuerySqlBuilder sqlBuilder;
     @NotNull
-    private ConnectionProvider connectionProvider;
+    private final ConnectionProvider connectionProvider;
     @NotNull
-    private ResultCollector collector;
+    private final ResultCollector collector;
 
     public JdbcQueryExecutor(@NotNull Metamodel metamodel, @NotNull QuerySqlBuilder sqlBuilder, @NotNull ConnectionProvider connectionProvider, @NotNull ResultCollector collector) {
         this.metamodel = metamodel;

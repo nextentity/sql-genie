@@ -141,10 +141,6 @@ public class GenericApiTest {
         });
     }
 
-//    public GenericApiTest(Select<User> userQuery) {
-//        this.userQuery = userQuery;
-//    }
-
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     public void testAndOr(Select<User> userQuery) {
@@ -155,15 +151,15 @@ public class GenericApiTest {
         List<User> dbList = userQuery
                 .where(User::getRandomNumber)
                 .ne(1)
-                .and(User::getRandomNumber)
+                .where(User::getRandomNumber)
                 .gt(100)
-                .and(User::getRandomNumber).ne(125)
-                .and(User::getRandomNumber).le(666)
-                .and(get(User::getRandomNumber).lt(106)
+                .where(User::getRandomNumber).ne(125)
+                .where(User::getRandomNumber).le(666)
+                .where(get(User::getRandomNumber).lt(106)
                         .or(User::getRandomNumber).gt(120)
                         .or(User::getRandomNumber).eq(109)
                 )
-                .and(User::getRandomNumber).ne(128)
+                .where(User::getRandomNumber).ne(128)
                 .getList();
 
         List<User> ftList = allUsers.stream()
@@ -190,14 +186,14 @@ public class GenericApiTest {
         System.out.println(single);
         List<User> dbList = userQuery
                 .where(User::getRandomNumber).ne(1)
-                .and(User::getRandomNumber).gt(100)
-                .and(User::getRandomNumber).ne(125)
-                .and(User::getRandomNumber).le(666)
-                .and(get(User::getRandomNumber).lt(106)
+                .where(User::getRandomNumber).gt(100)
+                .where(User::getRandomNumber).ne(125)
+                .where(User::getRandomNumber).le(666)
+                .where(get(User::getRandomNumber).lt(106)
                         .or(User::getRandomNumber).gt(120)
                         .or(User::getRandomNumber).eq(109)
                 )
-                .and(User::getRandomNumber).ne(128)
+                .where(User::getRandomNumber).ne(128)
                 .getList();
 
         List<User> ftList = allUsers.stream()
@@ -224,13 +220,13 @@ public class GenericApiTest {
         System.out.println(single);
         List<User> dbList = userQuery
                 .where(User::getRandomNumber).ne(1)
-                .and(User::getRandomNumber).gt(100)
-                .and(User::getRandomNumber).ne(125)
-                .and(User::getRandomNumber).le(666)
-                .and(get(User::getRandomNumber).lt(106)
+                .where(User::getRandomNumber).gt(100)
+                .where(User::getRandomNumber).ne(125)
+                .where(User::getRandomNumber).le(666)
+                .where(get(User::getRandomNumber).lt(106)
                         .or(User::getRandomNumber).gt(120)
                         .or(User::getRandomNumber).eq(109))
-                .and(User::getRandomNumber).ne(128)
+                .where(User::getRandomNumber).ne(128)
                 .getList();
 
         List<User> ftList = allUsers.stream()
@@ -339,14 +335,6 @@ public class GenericApiTest {
         MySqlQuerySqlBuilder builder = new MySqlQuerySqlBuilder();
         JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
         System.out.println(sql.sql());
-
-        String actual = "select" +
-                " min(user_.id),user_.random_number" +
-                " from `user` user_" +
-                " where user_.valid=1" +
-                " group by user_.random_number" +
-                " having user_.random_number=?" +
-                " limit ?,? for update";
 
     }
 
@@ -1227,10 +1215,6 @@ public class GenericApiTest {
         List<User> resultList = userQuery.getList(5, 10);
         List<User> subList = allUsers.subList(5, 5 + 10);
         assertEquals(resultList, subList);
-
-//        resultList = userQuery.getList(20);
-//        subList = allUsers.subList(20, allUsers.size());
-//        assertEquals(resultList, subList);
 
         List<Integer> userIds = userQuery.select(User::getId)
                 .getList(5, 10);

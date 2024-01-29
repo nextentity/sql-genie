@@ -216,8 +216,8 @@ class QueryBuilderTest {
                         Q.get(User::getRandomNumber),
                         Q.get(User::getId).count()
                 ))
-                .where(User::isValid)
-                .and(User::getRandomNumber).eq(1)
+                .where(User::isValid).eq(true)
+                .where(User::getRandomNumber).eq(1)
                 .groupBy(expressionBuilder)
                 .getList();
         count = users().stream()
@@ -459,10 +459,10 @@ class QueryBuilderTest {
         users = check.expected.stream()
                 .filter(it -> it.getRandomNumber() == 1 && it.isValid())
                 .collect(Collectors.toList());
-        collector = check.collector.where(User::getRandomNumber).eq(1).and(User::isValid);
+        collector = check.collector.where(User::getRandomNumber).eq(1).where(User::isValid).eq(true);
         result.add(new Checker<>(users, collector));
         collector = check.collector.where(User::getRandomNumber).eq(1)
-                .and((Path<User, Boolean>) User::isValid).eq(ExpressionHolders.ofTrue());
+                .where((Path<User, Boolean>) User::isValid).eq(ExpressionHolders.ofTrue());
         result.add(new Checker<>(users, collector));
         collector = check.collector.where(Q.get(User::getRandomNumber).eq(1).and(User::isValid));
         result.add(new Checker<>(users, collector));
@@ -479,8 +479,8 @@ class QueryBuilderTest {
 
         collector = check.collector
                 .where(User::getRandomNumber).eq(1)
-                .andIf(true, root -> root.get(User::isValid))
-                .andIf(false, root -> root.get(User::getId).eq(2));
+                .whereIf(true, root -> root.get(User::isValid))
+                .whereIf(false, root -> root.get(User::getId).eq(2));
         result.add(new Checker<>(users, collector));
 
         //
@@ -509,7 +509,7 @@ class QueryBuilderTest {
         collector = check.collector.where(Q.get(User::getRandomNumber).ne(Q.get(User::getId)));
         result.add(new Checker<>(users, collector));
         users = check.expected.stream().filter(User::isValid).collect(Collectors.toList());
-        collector = check.collector.where(User::isValid);
+        collector = check.collector.where(User::isValid).eq(true);
         result.add(new Checker<>(users, collector));
         //
         //    @SuppressWarnings({"unchecked"})
