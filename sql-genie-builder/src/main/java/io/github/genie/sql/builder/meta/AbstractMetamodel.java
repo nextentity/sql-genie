@@ -1,6 +1,6 @@
 package io.github.genie.sql.builder.meta;
 
-import io.github.genie.sql.builder.Util;
+import io.github.genie.sql.builder.PathReference;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneProjectionAttributeImpl;
@@ -307,7 +307,7 @@ public abstract class AbstractMetamodel implements Metamodel {
 
     protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
         Class<?> javaType = getter != null ? getter.getReturnType() : field.getType();
-        String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
+        String name = field != null ? field.getName() : PathReference.getPropertyName(getter.getName());
         return new AttributeImpl(javaType, owner, name, getter, setter, field);
     }
 

@@ -134,15 +134,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     protected Class<?> getType(Path<?, ?> path) {
-        Class<?> fromClause = queryStructure.from().type();
-        String name = Util.getReferenceMethodName(path);
-        Method method;
-        try {
-            method = fromClause.getDeclaredMethod(name);
-        } catch (NoSuchMethodException e) {
-            throw new BeanReflectiveException(e);
-        }
-        return method.getReturnType();
+        return PathReference.of(path).getReturnType();
     }
 
     @Override

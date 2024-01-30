@@ -849,6 +849,7 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void requiredCountSubQuery(Select<User> userQuery) {
+
     }
 
     @ParameterizedTest

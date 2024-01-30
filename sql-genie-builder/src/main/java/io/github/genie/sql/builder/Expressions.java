@@ -53,7 +53,7 @@ public interface Expressions {
     }
 
     static String columnName(Path<?, ?> path) {
-        return Util.getPropertyName(path);
+        return PathReference.of(path).getPropertyName();
     }
 
     static Column column(String path) {
@@ -87,7 +87,7 @@ public interface Expressions {
         }
         if (o.isMultivalued() && l instanceof Operation && ((Operation) l).operator() == o) {
             Operation lo = (Operation) l;
-            List<Expression> args = Util.concat(lo.args(), r);
+            List<Expression> args = Lists.concat(lo.args(), r);
             return new OperationImpl(lo.operand(), o, args);
         }
         return new OperationImpl(l, o, r);

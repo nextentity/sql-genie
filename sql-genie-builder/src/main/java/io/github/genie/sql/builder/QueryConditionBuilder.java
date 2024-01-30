@@ -114,7 +114,7 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         QueryStructureImpl structure = queryStructure.copy();
         structure.orderBy = structure.orderBy == null
                 ? orders
-                : Util.concat(structure.orderBy, orders);
+                : Lists.concat(structure.orderBy, orders);
         return update(structure);
     }
 

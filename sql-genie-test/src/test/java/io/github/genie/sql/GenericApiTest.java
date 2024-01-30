@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static io.github.genie.sql.builder.Q.and;
 import static io.github.genie.sql.builder.Q.asc;
@@ -1278,6 +1279,20 @@ public class GenericApiTest {
                 .groupBy(User::getUsername)
                 .slice(2, 10);
         System.out.println(slice);
+        long count = allUsers.stream()
+                .filter(user -> user.getParentUser() != null && user.getParentUser().getRandomNumber() == 10)
+                .map(User::getUsername)
+                .distinct()
+                .count();
+
+        List<String> names = allUsers.stream()
+                .filter(user -> user.getParentUser() != null && user.getParentUser().getRandomNumber() == 10)
+                .map(User::getUsername)
+                .skip(2)
+                .limit(10)
+                .collect(Collectors.toList());
+        assertEquals(slice.total(), count);
+        assertEquals(slice.data(), names);
     }
 
     @ParameterizedTest
