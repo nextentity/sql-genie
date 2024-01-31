@@ -16,6 +16,7 @@ import jakarta.persistence.criteria.Root;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -26,7 +27,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UserDaoProvider implements ArgumentsProvider {
+@Slf4j
+public class UserQueryProvider implements ArgumentsProvider {
     public static final Select<User> jdbc = jdbc();
     public static final Select<User> jpa = jpa();
 
@@ -65,20 +67,21 @@ public class UserDaoProvider implements ArgumentsProvider {
 
     private static Select<User> jpa() {
         EntityManager manager = EntityManagers.getEntityManager();
-        return new JpaQueryExecutor(manager, new JpaMetamodel(), new MySqlQuerySqlBuilder())
-                .createQuery(new TestPostProcessor())
-                .from(User.class);
+        Query query = new JpaQueryExecutor(manager, JpaMetamodel.of(), new MySqlQuerySqlBuilder())
+                .createQuery(new TestPostProcessor());
+        log.debug("create jpa query: " + query);
+        return query.from(User.class);
     }
 
     @SneakyThrows
     private static Select<User> jdbc() {
         ConnectionProvider sqlExecutor = SingleConnectionProvider.CONNECTION_PROVIDER;
-        Query query = new JdbcQueryExecutor(new JpaMetamodel(),
+        Query query = new JdbcQueryExecutor(JpaMetamodel.of(),
                 new MySqlQuerySqlBuilder(),
                 sqlExecutor,
                 new JdbcResultCollector()
         ).createQuery(new TestPostProcessor());
-
+        log.debug("create jdbc query: " + query);
         return query.from(User.class);
     }
 }

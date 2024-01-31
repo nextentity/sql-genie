@@ -116,23 +116,6 @@ public abstract class JdbcUtil {
         }
     }
 
-    public static void setParam(PreparedStatement pst, Object[] args) throws SQLException {
-        int i = 0;
-        for (Object arg : args) {
-            if (arg instanceof Enum) {
-                arg = ((Enum<?>) arg).ordinal();
-            }
-            pst.setObject(++i, arg);
-        }
-    }
-
-    public static void setParamBatch(PreparedStatement pst, List<Object[]> argsList) throws SQLException {
-        for (Object[] args : argsList) {
-            setParam(pst, args);
-            pst.addBatch();
-        }
-    }
-
     private static Object getEnum(Class<?> cls, int index) {
         Object array = SINGLE_ENUM_MAP.computeIfAbsent(cls, k -> {
             try {

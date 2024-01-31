@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.github.genie.sql.Transaction.doInTransaction;
 import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,11 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class QueryBuilderTest {
 
     static List<User> users() {
-        return UserDaoProvider.users();
+        return UserQueryProvider.users();
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void select(Select<User> userQuery) {
 
         IUser first1 = userQuery.select(IUser.class).getFirst(20);
@@ -108,7 +109,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void selectDistinct(Select<User> userQuery) {
         List<Integer> list = userQuery.selectDistinct(User::getRandomNumber)
                 .getList();
@@ -120,7 +121,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void fetch(Select<User> userQuery) {
         List<User> users = userQuery.fetch(User::getParentUser).getList();
 
@@ -155,7 +156,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void groupBy(Select<User> userQuery) {
         List<Tuple> list = userQuery
                 .select(Lists.of(
@@ -225,7 +226,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void orderBy(Select<User> userQuery) {
         for (Checker<User, OrderBy<User, User>> checker : getWhereTestCase(new Checker<>(users(), userQuery))) {
             ArrayList<User> sorted = new ArrayList<>(checker.expected);
@@ -273,7 +274,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void getList(Select<User> userQuery) {
 
         List<User> users = userQuery.getList();
@@ -288,7 +289,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void where(Select<User> userQuery) {
         Checker<User, Where<User, User>> check = new Checker<>(users(), userQuery);
         getWhereTestCase(check);
@@ -835,18 +836,18 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void count(Select<User> userQuery) {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void requiredCountSubQuery(Select<User> userQuery) {
 
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void queryList(Select<User> userQuery) {
         User single = userQuery
                 .where(User::getId).le(10)
@@ -892,30 +893,9 @@ class QueryBuilderTest {
 
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void lock(Select<User> userQuery) throws SQLException {
-        if (userQuery == UserDaoProvider.jdbc) {
-            SingleConnectionProvider.CONNECTION_PROVIDER
-                    .execute(connection -> {
-                        connection.setAutoCommit(false);
-                        return null;
-                    });
-        } else {
-            EntityManagers.getEntityManager().getTransaction().begin();
-        }
-        try {
-            testLock(userQuery);
-        } finally {
-            if (userQuery == UserDaoProvider.jdbc) {
-                SingleConnectionProvider.CONNECTION_PROVIDER
-                        .execute(connection -> {
-                            connection.commit();
-                            return null;
-                        });
-            } else {
-                EntityManagers.getEntityManager().getTransaction().commit();
-            }
-        }
+        doInTransaction(userQuery == UserQueryProvider.jdbc, () -> testLock(userQuery));
     }
 
     private static void testLock(Select<User> userQuery) {
@@ -975,7 +955,7 @@ class QueryBuilderTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void having(Select<User> userQuery) {
     }
 

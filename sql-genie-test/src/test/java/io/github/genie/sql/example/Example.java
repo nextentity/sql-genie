@@ -25,7 +25,7 @@ public class Example {
         properties.put("javax.persistence.jdbc.password", config.getPassword());
         try (EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa", properties)) {
             EntityManager em = factory.createEntityManager();
-            Query builder = new JpaQueryExecutor(em, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery();
+            Query builder = new JpaQueryExecutor(em, JpaMetamodel.of(), new MySqlQuerySqlBuilder()).createQuery();
             Select<Employee> select0 = builder.from(Employee.class);
             runExample(select0);
         }

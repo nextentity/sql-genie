@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -86,7 +87,10 @@ public class JdbcUpdate implements Update {
             log.debug(sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 setArgs(entities, preparedSql.columns(), statement);
-                statement.executeBatch();
+                int[] result = statement.executeBatch();
+                if (log.isDebugEnabled()) {
+                    log.debug("executeBatch result: " + Arrays.toString(result));
+                }
                 return null;
             }
         });

@@ -14,6 +14,7 @@ import io.github.genie.sql.api.tuple.Tuple;
 import io.github.genie.sql.api.tuple.Tuple2;
 import io.github.genie.sql.api.tuple.Tuple3;
 import io.github.genie.sql.builder.Tuples;
+import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.entity.User;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
@@ -78,7 +79,7 @@ public class GenericApiTest {
                 // noinspection SqlDialectInspection,SqlNoDataSourceInspection
                 connection.createStatement().executeUpdate("update user set pid = null");
                 ConnectionProvider connectionProvider = SingleConnectionProvider.CONNECTION_PROVIDER;
-                JpaMetamodel metamodel = new JpaMetamodel();
+                Metamodel metamodel = JpaMetamodel.of();
                 Query query = new JdbcQueryExecutor(
                         metamodel,
                         new MySqlQuerySqlBuilder(),
@@ -145,7 +146,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAndOr(Select<User> userQuery) {
         User single = userQuery
                 .where(User::getId).eq(0)
@@ -181,7 +182,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAndOrChain(Select<User> userQuery) {
         User single = userQuery
                 .where(User::getId).eq(0)
@@ -215,7 +216,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAndOrChan(Select<User> userQuery) {
         User single = userQuery
                 .where(User::getId).eq(0)
@@ -248,7 +249,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAndOr2(Select<User> userQuery) {
         User single = userQuery
                 .where(get(User::getId).eq(0))
@@ -284,7 +285,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testComparablePredicateTesterGt(Select<User> userQuery) {
 
         List<User> qgt80 = userQuery
@@ -299,7 +300,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testPredicateTesterEq(Select<User> userQuery) {
         int userId = 20;
         User user = userQuery
@@ -325,7 +326,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void testGroupBy(Select<User> userQuery) {
         QueryStructure structure = userQuery
                 .select(Arrays.asList(get(User::getId).min(), get(User::getRandomNumber)))
@@ -336,13 +337,13 @@ public class GenericApiTest {
                 .getList(1, 5, LockModeType.PESSIMISTIC_WRITE);
         System.out.println(structure);
         MySqlQuerySqlBuilder builder = new MySqlQuerySqlBuilder();
-        JdbcQueryExecutor.PreparedSql sql = builder.build(structure, new JpaMetamodel());
+        JdbcQueryExecutor.PreparedSql sql = builder.build(structure, JpaMetamodel.of());
         System.out.println(sql.sql());
 
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAggregateFunction(Select<User> userQuery) {
 
         List<ExpressionHolder<User, ?>> selected = Arrays.asList(
@@ -403,7 +404,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testSelect(Select<User> userQuery) {
         List<Tuple2<Integer, String>> qList = userQuery
                 .select(User::getRandomNumber, User::getUsername)
@@ -423,7 +424,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testTime(Select<User> userQuery) {
         long start = System.currentTimeMillis();
         userQuery
@@ -436,7 +437,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testOrderBy(Select<User> userQuery) {
         List<User> list = userQuery
                 .orderBy(Arrays.asList(
@@ -494,7 +495,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testOrderBy2(Select<User> userQuery) {
         List<User> list = userQuery
                 .orderBy(
@@ -554,7 +555,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testPredicate(Select<User> userQuery) {
         List<User> qList = userQuery
                 .where(not(get(User::getRandomNumber).ge(10)
@@ -605,7 +606,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testPredicate2(Select<User> userQuery) {
         List<User> qList = userQuery
                 .where(or(
@@ -659,7 +660,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testGroupBy1(Select<User> userQuery) {
         List<Tuple3<Boolean, Integer, Integer>> resultList = userQuery
                 .select(User::isValid, User::getRandomNumber, User::getPid)
@@ -679,7 +680,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testIsNull(Select<User> userQuery) {
 
         List<User> qList = userQuery.where(get(User::getPid).isNotNull())
@@ -701,7 +702,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testOperator(Select<User> userQuery) {
 
         BooleanExpression<User> isValid = get(User::isValid);
@@ -823,7 +824,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testPredicateAssembler(Select<User> userQuery) {
 
         List<User> qList = userQuery.where(get(User::isValid).eq(true)
@@ -1032,7 +1033,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void testSubQuery(Select<User> userQuery) {
         Date time = allUsers.get(20).getTime();
 
@@ -1047,7 +1048,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testNumberPredicateTester(Select<User> userQuery) {
         List<User> list = userQuery
                 .where(get(User::getRandomNumber).add(2).ge(4))
@@ -1143,7 +1144,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testStringPredicateTester(Select<User> userQuery) {
         String username = "Roy Sawyer";
 
@@ -1214,7 +1215,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testResultBuilder(Select<User> userQuery) {
         List<User> resultList = userQuery.getList(5, 10);
         List<User> subList = allUsers.subList(5, 5 + 10);
@@ -1275,7 +1276,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testSlice(Select<User> userQuery) {
         Slice<String> slice = userQuery.select(User::getUsername)
                 .where(User::getParentUser).get(User::getRandomNumber).eq(10)
@@ -1299,7 +1300,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void projection(Select<User> userQuery) throws JsonProcessingException {
         List<UserInterface> list0 = userQuery.select(UserInterface.class)
                 .getList();
@@ -1312,7 +1313,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     void testInterfaceSelect(Select<User> userQuery) {
         UserInterface list = userQuery.select(UserInterface.class)
                 .getFirst();
@@ -1321,7 +1322,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testAttr(Select<User> userQuery) {
         User first = userQuery.orderBy(get(User::getId).desc()).getFirst();
         ArrayList<User> users = new ArrayList<>(allUsers);
@@ -1364,7 +1365,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testWhere(Select<User> userQuery) {
         List<User> resultList = userQuery
                 .where(get(User::getParentUser).get(User::getUsername).eq(username))
@@ -1408,7 +1409,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testPathBuilder(Select<User> userQuery) {
         List<User> resultList = userQuery.where(get(User::getParentUser)
                         .get(User::getParentUser).get(User::getUsername).eq(username))
@@ -1445,7 +1446,7 @@ public class GenericApiTest {
     }
 
     @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
+    @ArgumentsSource(UserQueryProvider.class)
     public void testBigNum(Select<User> userQuery) {
         List<User> users = userQuery.where(get(User::getTimestamp).eq(Double.MAX_VALUE))
                 .getList();

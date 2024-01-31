@@ -16,7 +16,7 @@ import java.util.Objects;
 @ToString
 @Getter
 @Setter
-public class User extends EnableOptimisticLock {
+public class User extends EnableOptimisticLock implements Cloneable {
 
     @Id
     private int id;
@@ -86,4 +86,12 @@ public class User extends EnableOptimisticLock {
         return result;
     }
 
+    @Override
+    public User clone() {
+        try {
+            return (User) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

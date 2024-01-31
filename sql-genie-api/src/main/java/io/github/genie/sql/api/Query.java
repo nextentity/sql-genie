@@ -409,7 +409,6 @@ public interface Query {
 
     @Data
     @Accessors(fluent = true)
-    @SuppressWarnings("ClassCanBeRecord")
     final class SliceQueryStructure {
         private final QueryStructure count;
         private final QueryStructure list;

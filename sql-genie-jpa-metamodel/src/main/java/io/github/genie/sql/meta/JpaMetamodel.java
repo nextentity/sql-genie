@@ -2,6 +2,7 @@ package io.github.genie.sql.meta;
 
 import io.github.genie.sql.builder.meta.AbstractMetamodel;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.Metamodel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -23,8 +24,16 @@ import java.util.List;
 
 @Slf4j
 public class JpaMetamodel extends AbstractMetamodel {
-    private static final List<Class<? extends Annotation>> JOIN_ANNOTATIONS =
+    private static final JpaMetamodel JPA_METAMODEL = new JpaMetamodel();
+    private final List<Class<? extends Annotation>> JOIN_ANNOTATIONS =
             Arrays.asList(ManyToOne.class, OneToMany.class, ManyToMany.class, OneToOne.class);
+
+    protected JpaMetamodel() {
+    }
+
+    public static Metamodel of() {
+        return JPA_METAMODEL;
+    }
 
     @Override
     protected String getTableName(Class<?> javaType) {

@@ -15,6 +15,11 @@ public class UpdaterImpl<T> implements Updater<T> {
     }
 
     @Override
+    public T insert(T entity) {
+        return update.insert(entity, entityType);
+    }
+
+    @Override
     public List<T> insert(List<T> entities) {
         return update.insert(entities, entityType);
     }
@@ -25,12 +30,30 @@ public class UpdaterImpl<T> implements Updater<T> {
     }
 
     @Override
+    public T update(T entity) {
+        return update.update(entity, entityType);
+    }
+
+    @Override
     public void delete(Iterable<T> entities) {
         update.delete(entities, entityType);
     }
 
     @Override
+    public void delete(T entity) {
+        update.delete(entity, entityType);
+    }
+
+    @Override
     public T updateNonNullColumn(T entity) {
         return update.updateNonNullColumn(entity, entityType);
+    }
+
+    @Override
+    public String toString() {
+        return "UpdaterImpl{" +
+                "update=" + update.getClass().getSimpleName() +
+                ", entityType=" + entityType.getSimpleName() +
+                '}';
     }
 }
