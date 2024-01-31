@@ -8,10 +8,13 @@ import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.Tuples;
 import io.github.genie.sql.builder.TypeCastUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
@@ -54,35 +57,35 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return queryByNativeSql(queryStructure);
         }
         Selection selected = queryStructure.select();
-        if (selected instanceof SingleColumn) {
-            SingleColumn singleColumn = (SingleColumn) selected;
-            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleColumn.column()));
+        if (selected instanceof SingleSelected) {
+            SingleSelected singleSelected = (SingleSelected) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleSelected.expression()));
             List<Object> result = objectsList.stream().map(objects -> objects[0]).collect(Collectors.toList());
             return TypeCastUtil.cast(result);
-        } else if (selected instanceof MultiColumn) {
-            MultiColumn multiColumn = (MultiColumn) selected;
-            List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
-            return TypeCastUtil.cast(objectsList);
-        } else {
+        } else if (selected instanceof MultiSelected) {
+            MultiSelected multiSelected = (MultiSelected) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, multiSelected.expressions());
+            return TypeCastUtil.cast(objectsList.stream().map(Tuples::of).collect(Collectors.toList()));
+        } else if (queryStructure.select() instanceof EntitySelected) {
+            List<?> resultList = getEntityResultList(queryStructure);
+            return TypeCastUtil.cast(resultList);
+        } else if (queryStructure.select() instanceof ProjectionSelected) {
             Class<?> resultType = queryStructure.select().resultType();
-            if (resultType == queryStructure.from().type()) {
-                List<?> resultList = getEntityResultList(queryStructure);
-                return TypeCastUtil.cast(resultList);
-            } else {
-                Projection projection = metamodel
-                        .getProjection(queryStructure.from().type(), resultType);
-                Collection<? extends ProjectionAttribute> attributes = projection.attributes();
-                List<Column> columns = attributes.stream()
-                        .map(ProjectionAttribute::entityAttribute)
-                        .map(Attribute::column)
-                        .collect(Collectors.toList());
-                List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(attributes, resultType);
-                return objectsList.stream()
-                        .map(extractor::newInstance)
-                        .map(TypeCastUtil::<T>unsafeCast)
-                        .collect(Collectors.toList());
-            }
+            Projection projection = metamodel
+                    .getProjection(queryStructure.from().type(), resultType);
+            Collection<? extends ProjectionAttribute> attributes = projection.attributes();
+            List<Column> columns = attributes.stream()
+                    .map(ProjectionAttribute::entityAttribute)
+                    .map(Attribute::column)
+                    .collect(Collectors.toList());
+            List<Object[]> objectsList = getObjectsList(queryStructure, columns);
+            InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(attributes, resultType);
+            return objectsList.stream()
+                    .map(extractor::newInstance)
+                    .map(TypeCastUtil::<T>unsafeCast)
+                    .collect(Collectors.toList());
+        } else {
+            throw new IllegalStateException();
         }
     }
 

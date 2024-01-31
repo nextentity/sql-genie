@@ -27,7 +27,7 @@ import io.github.genie.sql.api.QueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
+import io.github.genie.sql.api.Selection.MultiSelected;
 import io.github.genie.sql.api.TypedExpression;
 import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
@@ -35,7 +35,7 @@ import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
 import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
 import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
-import io.github.genie.sql.builder.QueryStructures.SingleColumnImpl;
+import io.github.genie.sql.builder.QueryStructures.SingleSelectedImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -46,20 +46,16 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, AbstractCollector<U> {
 
-    static final SingleColumnImpl SELECT_ANY =
-            new SingleColumnImpl(Integer.class, Expressions.TRUE, false);
+    static final SingleSelectedImpl SELECT_ANY =
+            new SingleSelectedImpl(Integer.class, Expressions.TRUE, false);
 
-    static final SingleColumnImpl COUNT_ANY =
-            new SingleColumnImpl(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
+    static final SingleSelectedImpl COUNT_ANY =
+            new SingleSelectedImpl(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
 
     final QueryExecutor queryExecutor;
     final QueryStructureImpl queryStructure;
 
     protected final QueryStructurePostProcessor structurePostProcessor;
-
-    public QueryConditionBuilder(QueryExecutor queryExecutor, Class<T> type) {
-        this(queryExecutor, type, null);
-    }
 
     public QueryConditionBuilder(QueryExecutor queryExecutor, Class<T> type, QueryStructurePostProcessor structurePostProcessor) {
         this(queryExecutor, new QueryStructureImpl(type), structurePostProcessor);
@@ -148,11 +144,11 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     boolean requiredCountSubQuery(QueryStructureImpl structure) {
         Selection select = structure.select();
-        if (select instanceof SingleColumnImpl) {
-            Expression column = ((SingleColumnImpl) select).column();
+        if (select instanceof SingleSelectedImpl) {
+            Expression column = ((SingleSelectedImpl) select).expression();
             return requiredCountSubQuery(column);
-        } else if (select instanceof MultiColumn) {
-            List<? extends Expression> columns = ((MultiColumn) select).columns();
+        } else if (select instanceof MultiSelected) {
+            List<? extends Expression> columns = ((MultiSelected) select).expressions();
             if (requiredCountSubQuery(columns)) {
                 return true;
             }
@@ -160,9 +156,9 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         return requiredCountSubQuery(structure.having());
     }
 
-    protected boolean requiredCountSubQuery(List<? extends Expression> columns) {
-        for (Expression column : columns) {
-            if (requiredCountSubQuery(column)) {
+    protected boolean requiredCountSubQuery(List<? extends Expression> expressions) {
+        for (Expression expression : expressions) {
+            if (requiredCountSubQuery(expression.expression())) {
                 return true;
             }
         }
@@ -325,10 +321,6 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     @Override
     public <N> PathOperator<T, N, Where0<T, U>> where(Path<T, N> path) {
         return new PathOperatorImpl<>(root().get(path), this::whereAnd);
-    }
-
-    QueryStructureImpl queryStructure() {
-        return queryStructure;
     }
 
 }

@@ -8,6 +8,16 @@ import io.github.genie.sql.api.ExpressionOperator.StringOperator;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
+import io.github.genie.sql.api.tuple.Tuple;
+import io.github.genie.sql.api.tuple.Tuple10;
+import io.github.genie.sql.api.tuple.Tuple2;
+import io.github.genie.sql.api.tuple.Tuple3;
+import io.github.genie.sql.api.tuple.Tuple4;
+import io.github.genie.sql.api.tuple.Tuple5;
+import io.github.genie.sql.api.tuple.Tuple6;
+import io.github.genie.sql.api.tuple.Tuple7;
+import io.github.genie.sql.api.tuple.Tuple8;
+import io.github.genie.sql.api.tuple.Tuple9;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -28,109 +38,76 @@ public interface Query {
 
         <R> Where<T, R> select(Class<R> projectionType);
 
-        Where0<T, Object[]> select(List<? extends ExpressionHolder<T, ?>> paths);
+        Where0<T, Tuple> select(List<? extends ExpressionHolder<T, ?>> paths);
 
-        Where0<T, Object[]> select(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
+        Where0<T, Tuple> select(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
 
         <R> Where0<T, R> select(ExpressionHolder<T, R> expression);
 
         <R> Where0<T, R> select(Path<T, ? extends R> path);
 
-        Where0<T, Object[]> select(Collection<Path<T, ?>> paths);
+        Where0<T, Tuple> select(Collection<Path<T, ?>> paths);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1) {
-            return select(Lists.of(p0, p1));
-        }
+        <A, B> Where0<T, Tuple2<A, B>> select(Path<T, A> a, Path<T, B> b);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return select(Lists.of(p0, p1, p2));
-        }
+        <A, B, C> Where0<T, Tuple3<A, B, C>> select(Path<T, A> a, Path<T, B> b, Path<T, C> c);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return select(Lists.of(p0, p1, p2, p3));
-        }
+        <A, B, C, D> Where0<T, Tuple4<A, B, C, D>> select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return select(Lists.of(p0, p1, p2, p3, p4));
-        }
+        <A, B, C, D, E> Where0<T, Tuple5<A, B, C, D, E>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                           Path<T, ?> p5) {
-            return select(Lists.of(p0, p1, p2, p3, p4, p5));
-        }
+        <A, B, C, D, E, F> Where0<T, Tuple6<A, B, C, D, E, F>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                           Path<T, ?> p5, Path<T, ?> p6) {
-            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6));
-        }
+        <A, B, C, D, E, F, G> Where0<T, Tuple7<A, B, C, D, E, F, G>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7));
-        }
+        <A, B, C, D, E, F, G, H> Where0<T, Tuple8<A, B, C, D, E, F, G, H>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
-        }
+        <A, B, C, D, E, F, G, H, I> Where0<T, Tuple9<A, B, C, D, E, F, G, H, I>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h, Path<T, I> i);
 
-        default Where0<T, Object[]> select(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                           Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return select(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
-        }
+        <A, B, C, D, E, F, G, H, I, J> Where0<T, Tuple10<A, B, C, D, E, F, G, H, I, J>>
+        select(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h, Path<T, I> i, Path<T, J> j);
 
         <R> Where<T, R> selectDistinct(Class<R> projectionType);
 
-        Where0<T, Object[]> selectDistinct(List<? extends ExpressionHolder<T, ?>> paths);
+        Where0<T, Tuple> selectDistinct(List<? extends ExpressionHolder<T, ?>> paths);
 
-        Where0<T, Object[]> selectDistinct(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
+        Where0<T, Tuple> selectDistinct(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
 
         <R> Where0<T, R> selectDistinct(ExpressionHolder<T, R> expression);
 
         <R> Where0<T, R> selectDistinct(Path<T, ? extends R> path);
 
-        Where0<T, Object[]> selectDistinct(Collection<Path<T, ?>> paths);
+        Where0<T, Tuple> selectDistinct(Collection<Path<T, ?>> paths);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1) {
-            return selectDistinct(Lists.of(p0, p1));
-        }
+        <A, B> Where0<T, Tuple2<A, B>> selectDistinct(Path<T, A> a, Path<T, B> b);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2) {
-            return selectDistinct(Lists.of(p0, p1, p2));
-        }
+        <A, B, C> Where0<T, Tuple3<A, B, C>> selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3));
-        }
+        <A, B, C, D> Where0<T, Tuple4<A, B, C, D>> selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4));
-        }
+        <A, B, C, D, E> Where0<T, Tuple5<A, B, C, D, E>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                                   Path<T, ?> p5) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5));
-        }
+        <A, B, C, D, E, F> Where0<T, Tuple6<A, B, C, D, E, F>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                                   Path<T, ?> p5, Path<T, ?> p6) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6));
-        }
+        <A, B, C, D, E, F, G> Where0<T, Tuple7<A, B, C, D, E, F, G>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7));
-        }
+        <A, B, C, D, E, F, G, H> Where0<T, Tuple8<A, B, C, D, E, F, G, H>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8));
-        }
+        <A, B, C, D, E, F, G, H, I> Where0<T, Tuple9<A, B, C, D, E, F, G, H, I>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h, Path<T, I> i);
 
-        default Where0<T, Object[]> selectDistinct(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p2, Path<T, ?> p3, Path<T, ?> p4,
-                                                   Path<T, ?> p5, Path<T, ?> p6, Path<T, ?> p7, Path<T, ?> p8, Path<T, ?> p9) {
-            return selectDistinct(Lists.of(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
-        }
+        <A, B, C, D, E, F, G, H, I, J> Where0<T, Tuple10<A, B, C, D, E, F, G, H, I, J>>
+        selectDistinct(Path<T, A> a, Path<T, B> b, Path<T, C> c, Path<T, D> d, Path<T, E> e, Path<T, F> f, Path<T, G> g, Path<T, H> h, Path<T, I> i, Path<T, J> j);
+
 
     }
 

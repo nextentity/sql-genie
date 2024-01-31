@@ -10,6 +10,10 @@ import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Slice;
 import io.github.genie.sql.api.TypedExpression.BooleanExpression;
+import io.github.genie.sql.api.tuple.Tuple;
+import io.github.genie.sql.api.tuple.Tuple2;
+import io.github.genie.sql.api.tuple.Tuple3;
+import io.github.genie.sql.builder.Tuples;
 import io.github.genie.sql.entity.User;
 import io.github.genie.sql.executor.jdbc.ConnectionProvider;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor;
@@ -42,7 +46,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static io.github.genie.sql.builder.Q.and;
 import static io.github.genie.sql.builder.Q.asc;
@@ -55,7 +58,6 @@ import static io.github.genie.sql.builder.Q.min;
 import static io.github.genie.sql.builder.Q.not;
 import static io.github.genie.sql.builder.Q.or;
 import static io.github.genie.sql.builder.Q.sum;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -350,19 +352,19 @@ public class GenericApiTest {
                 avg(User::getRandomNumber),
                 sum(User::getRandomNumber)
         );
-        Object[] aggregated = userQuery
+        Tuple aggregated = userQuery
                 .select(selected)
                 .requireSingle();
 
         assertNotNull(aggregated);
-        assertEquals(getUserIdStream().min().orElse(0), aggregated[0]);
-        assertEquals(getUserIdStream().max().orElse(0), aggregated[1]);
-        assertEquals(getUserIdStream().count(), aggregated[2]);
+        assertEquals(getUserIdStream().min().orElseThrow(), aggregated.<Integer>get(0));
+        assertEquals(getUserIdStream().max().orElseThrow(), aggregated.<Integer>get(1));
+        assertEquals(getUserIdStream().count(), aggregated.<Long>get(2));
         OptionalDouble average = getUserIdStream().average();
-        assertEquals(average.orElse(0), ((Number) aggregated[3]).doubleValue(), 0.0001);
-        assertEquals((long) getUserIdStream().sum(), ((Number) aggregated[4]).intValue());
+        assertEquals(average.orElse(0), aggregated.<Number>get(3).doubleValue(), 0.0001);
+        assertEquals(getUserIdStream().sum(), aggregated.<Number>get(4).intValue());
 
-        List<Object[]> resultList = userQuery
+        List<Tuple> resultList = userQuery
                 .select(Arrays.asList(min(User::getId), get(User::getRandomNumber)))
                 .where(get(User::isValid).eq(true))
                 .groupBy(User::getRandomNumber)
@@ -372,17 +374,17 @@ public class GenericApiTest {
                 .filter(User::isValid)
                 .collect(Collectors.groupingBy(User::getRandomNumber, Collectors.minBy(Comparator.comparingInt(User::getId))));
 
-        List<Object[]> fObjects = map.values().stream()
+        List<Tuple> fObjects = map.values().stream()
                 .map(user -> {
                     Integer userId = user.map(User::getId).orElse(null);
                     Integer randomNumber = user.map(User::getRandomNumber).orElse(null);
-                    return new Object[]{userId, randomNumber};
+                    return Tuples.of(userId, randomNumber);
                 })
-                .sorted(Comparator.comparing(a -> ((Integer) a[0])))
+                .sorted(Comparator.comparing(a -> a.<Integer>get(0)))
                 .collect(Collectors.toList());
-        assertEqualsArrayList(resultList, fObjects);
+        assertEquals(resultList, fObjects);
 
-        Object[] one = userQuery
+        Tuple one = userQuery
                 .select(Collections.singletonList(sum(User::getId)))
                 .where(get(User::isValid).eq(true))
                 .requireSingle();
@@ -391,7 +393,7 @@ public class GenericApiTest {
                 .filter(User::isValid)
                 .mapToInt(User::getId)
                 .sum();
-        assertEquals(((Number) one[0]).intValue(), userId);
+        assertEquals(one.<Number>get(0).intValue(), userId);
 
         Integer first = userQuery
                 .select(User::getId)
@@ -403,25 +405,21 @@ public class GenericApiTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     public void testSelect(Select<User> userQuery) {
-        List<List<Object>> qList = map(userQuery
+        List<Tuple2<Integer, String>> qList = userQuery
                 .select(User::getRandomNumber, User::getUsername)
-                .getList());
+                .getList();
 
-        List<List<Object>> fList = map(allUsers.stream()
-                .map(it -> new Object[]{it.getRandomNumber(), it.getUsername()})
-                .collect(Collectors.toList()));
+        List<Tuple2<Integer, String>> fList = allUsers.stream()
+                .map(it -> Tuples.of(it.getRandomNumber(), it.getUsername()))
+                .collect(Collectors.toList());
 
         assertEquals(qList, fList);
 
-        qList = map(userQuery
+        qList = userQuery
                 .selectDistinct(User::getRandomNumber, User::getUsername)
-                .getList());
+                .getList();
         fList = fList.stream().distinct().collect(Collectors.toList());
         assertEquals(qList, fList);
-    }
-
-    List<List<Object>> map(List<Object[]> list) {
-        return list.stream().map(Arrays::asList).collect(Collectors.toList());
     }
 
     @ParameterizedTest
@@ -663,16 +661,21 @@ public class GenericApiTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     public void testGroupBy1(Select<User> userQuery) {
-        List<Object[]> resultList = userQuery
+        List<Tuple3<Boolean, Integer, Integer>> resultList = userQuery
                 .select(User::isValid, User::getRandomNumber, User::getPid)
                 .groupBy(User::getRandomNumber, User::getPid, User::isValid)
                 .getList();
 
-        List<Object[]> resultList2 = userQuery
+        List<Tuple3<Boolean, Integer, Integer>> resultList2 = userQuery
                 .select(User::isValid, User::getRandomNumber, User::getPid)
                 .groupBy(User::getRandomNumber, User::getPid, User::isValid)
                 .getList();
-        assertEqualsArrayList(resultList, resultList2);
+        assertEquals(resultList, resultList2);
+        List<Tuple3<Boolean, Integer, Integer>> list = allUsers.stream()
+                .map(it -> Tuples.of(it.isValid(), it.getRandomNumber(), it.getPid()))
+                .distinct()
+                .collect(Collectors.toList());
+        assertEquals(resultList, list);
     }
 
     @ParameterizedTest
@@ -1451,13 +1454,6 @@ public class GenericApiTest {
 
     private IntStream getUserIdStream() {
         return allUsers.stream().mapToInt(User::getRandomNumber);
-    }
-
-    static void assertEqualsArrayList(List<Object[]> resultList, List<Object[]> resultList2) {
-        assertEquals(resultList.size(), resultList2.size());
-        for (int i = 0; i < resultList.size(); i++) {
-            assertArrayEquals(resultList.get(i), resultList2.get(i));
-        }
     }
 
 }

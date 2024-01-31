@@ -13,8 +13,10 @@ import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.api.Slice;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -59,7 +61,7 @@ final class QueryStructures {
 
         public QueryStructureImpl(Class<?> from) {
             this.from = new FromEntity(from);
-            this.select = new SelectClauseImpl(from, false);
+            this.select = new EntitySelectedImpl(from, false);
         }
 
         protected QueryStructureImpl copy() {
@@ -124,15 +126,15 @@ final class QueryStructures {
         public String toString() {
 
             return "select " + select
-                   + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
-                   + " from " + from.type().getName()
-                   + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
-                   + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
-                   + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
-                   + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
-                   + (offset == null ? "" : " offset " + offset)
-                   + (limit == null ? "" : " limit " + limit)
-                   + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
+                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
+                    + " from " + from.type().getName()
+                    + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
+                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
+                    + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
+                    + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
+                    + (offset == null ? "" : " offset " + offset)
+                    + (limit == null ? "" : " limit " + limit)
+                    + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
         }
 
         private static boolean isEmpty(Collection<?> objects) {
@@ -167,7 +169,7 @@ final class QueryStructures {
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class SelectClauseImpl implements Selection {
+    static final class EntitySelectedImpl implements EntitySelected {
         private final Class<?> resultType;
         private final boolean distinct;
 
@@ -175,32 +177,43 @@ final class QueryStructures {
         public String toString() {
             return resultType.getName();
         }
-
     }
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class MultiColumnImpl implements MultiColumn {
-        private final List<? extends Expression> columns;
+    static final class ProjectionSelectedImpl implements ProjectionSelected {
+        private final Class<?> resultType;
         private final boolean distinct;
 
         @Override
         public String toString() {
-            return String.valueOf(columns);
+            return resultType.getName();
+        }
+    }
+
+    @lombok.Data
+    @Accessors(fluent = true)
+    static final class MultiSelectedImpl implements MultiSelected {
+        private final List<? extends Expression> expressions;
+        private final boolean distinct;
+
+        @Override
+        public String toString() {
+            return String.valueOf(expressions);
         }
 
     }
 
     @lombok.Data
     @Accessors(fluent = true)
-    static final class SingleColumnImpl implements SingleColumn {
+    static final class SingleSelectedImpl implements SingleSelected {
         private final Class<?> resultType;
-        private final Expression column;
+        private final Expression expression;
         private final boolean distinct;
 
         @Override
         public String toString() {
-            return String.valueOf(column);
+            return String.valueOf(expression);
         }
     }
 
@@ -281,7 +294,7 @@ final class QueryStructures {
         @NotNull
         @Override
         public Iterator<String> iterator() {
-            return Arrays.stream(paths).iterator();
+            return new ArrayIterator<>(paths);
         }
 
         @Override

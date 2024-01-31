@@ -12,6 +12,8 @@ import io.github.genie.sql.api.Query.Where;
 import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Slice;
 import io.github.genie.sql.api.TypedExpression.BooleanExpression;
+import io.github.genie.sql.api.tuple.Tuple;
+import io.github.genie.sql.api.tuple.Tuple2;
 import io.github.genie.sql.builder.ExpressionHolders;
 import io.github.genie.sql.builder.Q;
 import io.github.genie.sql.entity.User;
@@ -22,8 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,9 +65,9 @@ class QueryBuilderTest {
         Integer firstUserid = userQuery.select(User::getId).getFirst();
         assertEquals(firstUserid, users().get(0).getId());
 
-        Object[] array = userQuery.select(User::getId, User::getRandomNumber).getFirst();
-        assertEquals(array[0], users().get(0).getId());
-        assertEquals(array[1], users().get(0).getRandomNumber());
+        Tuple2<Integer, Integer> array = userQuery.select(User::getId, User::getRandomNumber).getFirst();
+        assertEquals(array.get0(), users().get(0).getId());
+        assertEquals(array.get1(), users().get(0).getRandomNumber());
 
         UserModel model = userQuery.select(UserModel.class).getFirst();
         assertEquals(model, new UserModel(users().get(0)));
@@ -81,12 +81,12 @@ class QueryBuilderTest {
         Long count = userQuery.select(Q.get(User::getId).count()).getSingle();
         assertEquals(count, users().size());
 
-        Object[] aggArray = userQuery.select(Lists.of(
-                Q.get(User::getId).count(),
-                Q.get(User::getRandomNumber).max(),
-                Q.get(User::getRandomNumber).min(),
-                Q.get(User::getRandomNumber).sum(),
-                Q.get(User::getRandomNumber).avg()
+        Tuple aggArray = userQuery.select(Lists.of(
+                get(User::getId).count(),
+                get(User::getRandomNumber).max(),
+                get(User::getRandomNumber).min(),
+                get(User::getRandomNumber).sum(),
+                get(User::getRandomNumber).avg()
         )).getSingle();
 
         int max = Integer.MIN_VALUE;
@@ -99,19 +99,12 @@ class QueryBuilderTest {
             sum += number;
         }
 
-        assertEquals(aggArray[0], (long) users().size());
-        assertEquals(aggArray[1], max);
-        assertEquals(aggArray[2], min);
-        assertEquals(((Number) aggArray[3]).intValue(), sum);
-        assertEquals(
-                asBigDecimal(aggArray[4]),
-                asBigDecimal(sum * 1.0 / users().size())
-        );
+        assertEquals(aggArray.<Long>get(0), users().size());
+        assertEquals(aggArray.<Integer>get(1), max);
+        assertEquals(aggArray.<Integer>get(2), min);
+        assertEquals(aggArray.<Number>get(3).intValue(), sum);
+        assertEquals(aggArray.<Number>get(4).doubleValue(), sum * 1.0 / users().size(), 0.001);
 
-    }
-
-    BigDecimal asBigDecimal(Object num) {
-        return new BigDecimal(num.toString()).setScale(4, RoundingMode.HALF_UP);
     }
 
     @ParameterizedTest
@@ -164,7 +157,7 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void groupBy(Select<User> userQuery) {
-        List<Object[]> list = userQuery
+        List<Tuple> list = userQuery
                 .select(Lists.of(
                         Q.get(User::getRandomNumber),
                         Q.get(User::getId).count()
@@ -176,9 +169,9 @@ class QueryBuilderTest {
                 .collect(Collectors.groupingBy(User::getRandomNumber, Collectors.counting()));
 
         assertEquals(list.size(), count.size());
-        for (Object[] objects : list) {
-            Long value = count.get(objects[0]);
-            assertEquals(value, objects[1]);
+        for (Tuple objects : list) {
+            Long value = count.get(objects.get(0));
+            assertEquals(value, objects.get(1));
         }
 
         Function<Root<User>, List<? extends ExpressionHolder<User, ?>>> expressionBuilder =
@@ -192,9 +185,9 @@ class QueryBuilderTest {
                 .getList();
 
         assertEquals(list.size(), count.size());
-        for (Object[] objects : list) {
-            Long value = count.get(objects[0]);
-            assertEquals(value, objects[1]);
+        for (Tuple objects : list) {
+            Long value = count.get(objects.get(0));
+            assertEquals(value, objects.get(1));
         }
 
         list = userQuery
@@ -206,9 +199,9 @@ class QueryBuilderTest {
                 .getList();
 
         assertEquals(list.size(), count.size());
-        for (Object[] objects : list) {
-            Long value = count.get(objects[0]);
-            assertEquals(value, objects[1]);
+        for (Tuple objects : list) {
+            Long value = count.get(objects.get(0));
+            assertEquals(value, objects.get(1));
         }
 
         list = userQuery
@@ -224,9 +217,9 @@ class QueryBuilderTest {
                 .filter(it -> it.isValid() && it.getRandomNumber() == 1)
                 .collect(Collectors.groupingBy(User::getRandomNumber, Collectors.counting()));
         assertEquals(list.size(), count.size());
-        for (Object[] objects : list) {
-            Long value = count.get(objects[0]);
-            assertEquals(value, objects[1]);
+        for (Tuple objects : list) {
+            Long value = count.get(objects.get(0));
+            assertEquals(value, objects.get(1));
         }
 
     }
@@ -984,11 +977,6 @@ class QueryBuilderTest {
     @ParameterizedTest
     @ArgumentsSource(UserDaoProvider.class)
     void having(Select<User> userQuery) {
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(UserDaoProvider.class)
-    void root(Select<User> userQuery) {
     }
 
     static class Checker<T, U extends Query.Collector<T>> {

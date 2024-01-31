@@ -14,8 +14,10 @@ import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.meta.AnyToOneAttribute;
 import io.github.genie.sql.builder.meta.Attribute;
@@ -129,15 +131,15 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         private void appendSelectedExpressions() {
             Selection selected = queryStructure.select();
-            if (selected instanceof SingleColumn) {
-                SingleColumn singleColumn = (SingleColumn) selected;
-                selectedExpressions.add(singleColumn.column());
-            } else if (selected instanceof MultiColumn) {
-                MultiColumn multiColumn = (MultiColumn) selected;
-                selectedExpressions.addAll(multiColumn.columns());
-            } else if (queryStructure.select().resultType() == queryStructure.from().type()) {
+            if (selected instanceof SingleSelected) {
+                SingleSelected singleSelected = (SingleSelected) selected;
+                selectedExpressions.add(singleSelected.expression());
+            } else if (selected instanceof MultiSelected) {
+                MultiSelected multiSelected = (MultiSelected) selected;
+                selectedExpressions.addAll(multiSelected.expressions());
+            } else if (selected instanceof EntitySelected) {
                 EntityType table = mappers
-                        .getEntity(queryStructure.select().resultType());
+                        .getEntity(queryStructure.from().type());
                 for (Attribute attribute : table.attributes()) {
                     if (!(attribute instanceof BasicAttribute)) {
                         continue;
@@ -147,9 +149,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attribute);
                 }
-            } else {
+            } else if (selected instanceof ProjectionSelected) {
                 Projection projection = mappers
-                        .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
+                        .getProjection(
+                                queryStructure.from().type(),
+                                queryStructure.select().resultType()
+                        );
                 for (ProjectionAttribute attr : projection.attributes()) {
                     if (attr.entityAttribute() instanceof EntityType) {
                         continue;
@@ -158,6 +163,8 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attr);
                 }
+            } else {
+                throw new IllegalStateException();
             }
         }
 

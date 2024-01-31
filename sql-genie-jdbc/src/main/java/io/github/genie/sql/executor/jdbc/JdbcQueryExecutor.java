@@ -6,6 +6,7 @@ import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.exception.TransactionRequiredException;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.EntityType;
 import io.github.genie.sql.builder.meta.Metamodel;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +50,8 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
                 try (PreparedStatement statement = connection.prepareStatement(sql.sql())) {
                     JdbcUtil.setParam(statement, sql.args());
                     try (ResultSet resultSet = statement.executeQuery()) {
-                        return collector.resolve(resultSet, sql.selected(), queryStructure);
+                        EntityType entity = metamodel.getEntity(queryStructure.from().type());
+                        return collector.resolve(resultSet, entity, sql.selected(), queryStructure);
                     }
                 }
             });
@@ -81,7 +83,11 @@ public class JdbcQueryExecutor implements AbstractQueryExecutor {
     }
 
     public interface ResultCollector {
-        <T> List<T> resolve(ResultSet resultSet, List<? extends Attribute> selected, QueryStructure structure) throws SQLException;
+        <T> List<T> resolve(
+                ResultSet resultSet,
+                EntityType entityType,
+                List<? extends Attribute> selected,
+                QueryStructure structure) throws SQLException;
     }
 }
 
