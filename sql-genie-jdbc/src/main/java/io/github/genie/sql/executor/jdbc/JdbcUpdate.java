@@ -206,6 +206,9 @@ public class JdbcUpdate implements Update {
             int i = 0;
             for (BasicAttribute column : columns) {
                 Object v = column.get(entity);
+                if (v instanceof Enum<?>) {
+                    v = ((Enum<?>) v).ordinal();
+                }
                 statement.setObject(++i, v);
             }
             statement.addBatch();

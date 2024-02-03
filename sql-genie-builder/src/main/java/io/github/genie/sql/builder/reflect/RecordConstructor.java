@@ -33,14 +33,14 @@ public class RecordConstructor extends ObjectConstructor {
     }
 
     @Override
-    public Object newInstance(Object[] extractor) {
+    public Object newInstance(Object[] arguments) {
         try {
             Class<?> resultType = type.javaType();
             RecordComponent[] components = resultType.getRecordComponents();
             Object[] args = new Object[components.length];
             boolean hasNonnullProperty = false;
             for (int i = 0; i < properties.length; i++) {
-                Object extract = properties[i].newInstance(extractor);
+                Object extract = properties[i].newInstance(arguments);
                 hasNonnullProperty = hasNonnullProperty || extract != null;
                 args[i] = extract;
             }

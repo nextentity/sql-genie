@@ -110,21 +110,10 @@ public final class Q {
     }
 
     @SafeVarargs
-    public static <T> List<Order<T>> desc(Path<T, ? extends Comparable<?>>... paths) {
-        return Arrays.stream(paths)
-                .map(Q::desc)
-                .collect(Collectors.toList());
-    }
-
-    @SafeVarargs
     public static <T> List<Order<T>> asc(Path<T, Comparable<?>>... paths) {
         return Arrays.stream(paths)
                 .map(Q::asc)
                 .collect(Collectors.toList());
-    }
-
-    public static <T> Order<T> orderBy(ExpressionHolder<T, ? extends Comparable<?>> expression, SortOrder order) {
-        return new OrderImpl<>(expression.expression(), order);
     }
 
     public static <T> BooleanExpression<T> not(ExpressionHolder<T, Boolean> lt) {

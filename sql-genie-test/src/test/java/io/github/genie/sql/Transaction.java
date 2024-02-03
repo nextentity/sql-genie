@@ -6,51 +6,42 @@ import java.sql.SQLException;
 
 public class Transaction {
 
-    public static void doInTransaction(boolean jdbc, Runnable action) {
+    public static void doInTransaction(Runnable action) {
         try {
-            executeAction(jdbc, action);
+            executeAction(action);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void executeAction(boolean jdbc, Runnable action) throws SQLException {
+    private static void executeAction(Runnable action) throws SQLException {
         EntityTransaction transaction = EntityManagers.getEntityManager().getTransaction();
-        boolean commit = true;
-        if (jdbc) {
-            SingleConnectionProvider.CONNECTION_PROVIDER
-                    .execute(connection -> {
-                        connection.setAutoCommit(false);
-                        return null;
-                    });
-        } else {
-            transaction.begin();
-        }
+        boolean rollback = false;
+        SingleConnectionProvider.CONNECTION_PROVIDER
+                .execute(connection -> {
+                    connection.setAutoCommit(false);
+                    return null;
+                });
+        transaction.begin();
         try {
             action.run();
         } catch (Throwable throwable) {
-            commit = false;
-            if (jdbc) {
-                SingleConnectionProvider.CONNECTION_PROVIDER
-                        .execute(connection -> {
-                            connection.rollback();
-                            return null;
-                        });
-            } else {
-                transaction.rollback();
-            }
+            rollback = true;
+            SingleConnectionProvider.CONNECTION_PROVIDER
+                    .execute(connection -> {
+                        connection.rollback();
+                        return null;
+                    });
+            transaction.rollback();
             throw throwable;
         } finally {
-            if (commit) {
-                if (jdbc) {
-                    SingleConnectionProvider.CONNECTION_PROVIDER
-                            .execute(connection -> {
-                                connection.commit();
-                                return null;
-                            });
-                } else {
-                    transaction.commit();
-                }
+            if (!rollback) {
+                SingleConnectionProvider.CONNECTION_PROVIDER
+                        .execute(connection -> {
+                            connection.commit();
+                            return null;
+                        });
+                transaction.commit();
             }
         }
     }

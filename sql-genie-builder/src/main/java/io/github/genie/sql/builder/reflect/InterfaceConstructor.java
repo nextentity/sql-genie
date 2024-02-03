@@ -12,11 +12,11 @@ public class InterfaceConstructor extends ObjectConstructor {
     }
 
     @Override
-    public Object newInstance(Object[] args) {
+    public Object newInstance(Object[] arguments) {
         Map<Method, Object> map = new HashMap<>();
         boolean hasNonnullProperty = false;
         for (Property property : properties) {
-            Object extract = property.newInstance(args);
+            Object extract = property.newInstance(arguments);
             hasNonnullProperty = hasNonnullProperty || extract != null;
             map.put(property.attribute().getter(), extract);
         }

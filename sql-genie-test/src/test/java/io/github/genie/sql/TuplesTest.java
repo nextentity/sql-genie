@@ -13,8 +13,11 @@ import io.github.genie.sql.api.tuple.Tuple9;
 import io.github.genie.sql.builder.Tuples;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TuplesTest {
@@ -32,11 +35,14 @@ class TuplesTest {
     @Test
     void of() {
         Date date = new Date();
-        Tuple objects = Tuples.of(new Object[]{1, "a", date});
+        Object[] array = {1, "a", date};
+        Tuple objects = Tuples.of(array);
         assertEquals(objects.size(), 3);
         assertEquals(objects.<Integer>get(0), 1);
         assertEquals(objects.<String>get(1), "a");
         assertEquals(objects.<Date>get(2), date);
+        assertArrayEquals(array, objects.toArray());
+        assertEquals(new ArrayList<>(Arrays.asList(array)), new ArrayList<>(objects.toList()));
     }
 
     @Test

@@ -1,5 +1,5 @@
 package io.github.genie.sql.builder.reflect;
 
 public interface InstanceConstructor {
-    Object newInstance(Object[] extractor);
+    Object newInstance(Object[] arguments);
 }

@@ -30,10 +30,6 @@ public interface Expressions {
                && Boolean.TRUE.equals(((Constant) expression).value());
     }
 
-    static Expression of(ExpressionHolder<?, ?> expression) {
-        return expression.expression();
-    }
-
     static Expression of(Object value) {
         if (value instanceof ExpressionHolder<?, ?>) {
             return ((ExpressionHolder<?, ?>) value).expression();
@@ -41,10 +37,6 @@ public interface Expressions {
             return of((Path<?, ?>) value);
         }
         return new ConstantImpl(value);
-    }
-
-    static Expression of(Expression value) {
-        return value;
     }
 
     static Column of(Path<?, ?> path) {

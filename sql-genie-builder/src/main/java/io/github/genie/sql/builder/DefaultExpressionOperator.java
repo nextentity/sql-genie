@@ -241,29 +241,6 @@ class DefaultExpressionOperator<T, U, B> implements ExpressionOperator<T, U, B> 
             return new NumberOperatorImpl<>(base().mod(expression), resultBuilder);
         }
 
-        @Override
-        public NumberOperator<T, U, B> sum() {
-            NumberExpression<T, U> sum = base().sum();
-            return new NumberOperatorImpl<>(sum, resultBuilder);
-        }
-
-        @Override
-        public <V extends Number & Comparable<V>> NumberOperator<T, V, B> avg() {
-            NumberExpression<T, V> sum = base().avg();
-            return new NumberOperatorImpl<>(sum, resultBuilder);
-        }
-
-        @Override
-        public NumberOperator<T, U, B> max() {
-            NumberExpression<T, U> sum = base().max();
-            return new NumberOperatorImpl<>(sum, resultBuilder);
-        }
-
-        @Override
-        public NumberOperator<T, U, B> min() {
-            NumberExpression<T, U> sum = base().min();
-            return new NumberOperatorImpl<>(sum, resultBuilder);
-        }
     }
 
     static class PathOperatorImpl<T, U, B> extends DefaultExpressionOperator<T, U, B> implements PathOperator<T, U, B> {

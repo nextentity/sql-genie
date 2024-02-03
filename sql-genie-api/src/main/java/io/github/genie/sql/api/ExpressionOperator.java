@@ -4,7 +4,6 @@ import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
-import io.github.genie.sql.api.TypedExpression.Predicate;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -37,10 +36,6 @@ public interface ExpressionOperator<T, U, B> {
     B isNull();
 
     B isNotNull();
-
-    interface BooleanOperator<T, B> extends ComparableOperator<T, Boolean, B> {
-        Predicate<T> then();
-    }
 
     interface ComparableOperator<T, U extends Comparable<U>, B> extends ExpressionOperator<T, U, B> {
 
@@ -98,14 +93,6 @@ public interface ExpressionOperator<T, U, B> {
         NumberOperator<T, U, B> divide(ExpressionHolder<T, U> expression);
 
         NumberOperator<T, U, B> mod(ExpressionHolder<T, U> expression);
-
-        NumberOperator<T, U, B> sum();
-
-        <V extends Number & Comparable<V>> NumberOperator<T, V, B> avg();
-
-        NumberOperator<T, U, B> max();
-
-        NumberOperator<T, U, B> min();
 
     }
 

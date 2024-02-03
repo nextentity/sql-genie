@@ -8,10 +8,10 @@ public class BeanConstructor extends ObjectConstructor {
     }
 
     @Override
-    public Object newInstance(Object[] args) {
+    public Object newInstance(Object[] arguments) {
         Object result = null;
         for (Property property : properties) {
-            Object value = property.newInstance(args);
+            Object value = property.newInstance(arguments);
             if (value != null) {
                 if (result == null) {
                     result = ReflectUtil.newInstance(type.javaType());

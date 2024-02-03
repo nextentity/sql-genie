@@ -46,7 +46,7 @@ public class UserQueryProvider implements ArgumentsProvider {
         Map<Integer, User> map = list.stream().collect(Collectors.toMap(User::getId, Function.identity()));
         return list.stream()
                 .map(user -> {
-                    user = new User(user);
+                    user = user.clone();
                     Integer pid = user.getPid();
                     if (pid != null) {
                         User p = map.get(pid);

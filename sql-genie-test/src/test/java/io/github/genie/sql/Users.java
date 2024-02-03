@@ -1,10 +1,15 @@
 package io.github.genie.sql;
 
+import io.github.genie.sql.entity.Gender;
 import io.github.genie.sql.entity.User;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -31,19 +36,13 @@ public class Users {
                 "Lester Margery", "Josephine Child", "Ralap Zechariah", "Lucien Paul", "Max Leopold", "Jane Lamb",
                 "Boris Kell(e)y", "Emma Amelia", "Monroe Carllyle", "Truda Alerander", "Zara Abraham", "Zero Tours",
                 "Julie Swift", "Archer London", "Kennedy Arnold", "Abner Lyly", "Carr Bach", " Roy Sawyer  ",
-                "Nicholas Carroll", "Booth Longfellow", "Payne Webster", "Tony Darwin"};
+                "Nicholas Carroll", "Booth Longfellow", "Payne Webster", "Tony Darwin", " Trim "};
 
         List<User> result = new ArrayList<>(names.length);
         Random random = new Random();
-        long l = Duration.ofDays(5).toMillis();
         for (int i = 0; i < names.length * 100; i++) {
             String name = names[i % names.length];
-            User user = new User();
-            user.setId(i);
-            user.setUsername(name);
-            user.setTime(new Timestamp(System.currentTimeMillis() - random.nextInt((int) l)));
-            user.setTimestamp((double) user.getTime().getTime());
-            user.setRandomNumber(random.nextInt(20));
+            User user = newUser(i, name, random);
             int pid = i / 10;
             user.setPid(pid == 0 ? null : pid);
             user.setValid(i % 2 == 0);
@@ -58,6 +57,25 @@ public class Users {
 
         return result;
 
+    }
+
+    @NotNull
+    public static User newUser(int i, String name, Random random) {
+        Gender[] values = Gender.values();
+        long l = Duration.ofDays(5).toMillis();
+        User user = new User();
+        user.setId(i);
+        user.setUsername(name);
+        user.setTime(new Timestamp(System.currentTimeMillis() - random.nextInt((int) l)));
+        user.setTimestamp((double) user.getTime().getTime());
+        user.setRandomNumber(random.nextInt(20));
+        user.setGender(values[random.nextInt(2)]);
+        user.setInstant(new Timestamp(System.currentTimeMillis()));
+        user.setTestLong(random.nextLong());
+        user.setTestInteger(random.nextInt(100));
+        user.setTestLocalDate(LocalDate.now());
+        user.setTestLocalDateTime(new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        return user;
     }
 
 }

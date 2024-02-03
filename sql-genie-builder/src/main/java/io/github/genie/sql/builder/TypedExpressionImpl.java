@@ -259,7 +259,7 @@ class TypedExpressionImpl<T, U> implements TypedExpression<T, U> {
 
         @Override
         public BooleanExpression<T> notBetween(ExpressionHolder<T, U> l, ExpressionHolder<T, U> r) {
-            Expression operate = operate(Operator.BETWEEN, List.of(l, ExpressionHolders.of(r)));
+            Expression operate = operate(Operator.BETWEEN, List.of(l, r));
             operate = Expressions.operate(operate, Operator.NOT);
             return new BooleanExpressionImpl<>(this, operate);
         }

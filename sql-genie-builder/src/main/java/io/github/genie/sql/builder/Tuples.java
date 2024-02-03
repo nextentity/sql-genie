@@ -67,7 +67,7 @@ public class Tuples {
         return new ImmutableTuple<>(new Object[]{a, b});
     }
 
-    private static final class ImmutableTuple<A, B, C, D, E, F, G, H, I, J>
+    public static final class ImmutableTuple<A, B, C, D, E, F, G, H, I, J>
             implements Tuple10<A, B, C, D, E, F, G, H, I, J> {
         private final Object[] data;
 

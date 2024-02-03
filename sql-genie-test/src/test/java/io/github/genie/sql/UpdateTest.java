@@ -3,12 +3,12 @@ package io.github.genie.sql;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.Updater;
 import io.github.genie.sql.entity.User;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -28,7 +28,7 @@ public class UpdateTest {
     @ParameterizedTest
     @ArgumentsSource(UserUpdaterProvider.class)
     void insert(Updater<User> userUpdater) {
-        doInTransaction(userUpdater == UserUpdaterProvider.jdbc, () -> doInsert(userUpdater));
+        doInTransaction(() -> doInsert(userUpdater));
     }
 
     private void doInsert(Updater<User> userUpdater) {
@@ -55,21 +55,14 @@ public class UpdateTest {
     }
 
     private static User newUser(int id) {
-        User user = new User();
-        user.setId(id);
-        user.setRandomNumber(new Random().nextInt(100));
-        user.setUsername("username-" + id);
-        user.setTime(new Date());
-        user.setTimestamp((double) System.currentTimeMillis());
-        user.setValid(false);
-        return user;
+        return Users.newUser(id, "username-" + id, new Random());
     }
 
 
     @ParameterizedTest
     @ArgumentsSource(UserUpdaterProvider.class)
     void update(Updater<User> userUpdater) {
-        doInTransaction(userUpdater == UserUpdaterProvider.jdbc, () -> testUpdate(userUpdater));
+        doInTransaction(() -> testUpdate(userUpdater));
     }
 
     private void testUpdate(Updater<User> userUpdater) {
@@ -90,7 +83,7 @@ public class UpdateTest {
     @ParameterizedTest
     @ArgumentsSource(UserUpdaterProvider.class)
     void updateNonNullColumn(Updater<User> userUpdater) {
-        doInTransaction(userUpdater == UserUpdaterProvider.jdbc, () -> testUpdateNonNullColumn(userUpdater));
+        doInTransaction(() -> testUpdateNonNullColumn(userUpdater));
     }
 
     private void testUpdateNonNullColumn(Updater<User> userUpdater) {
@@ -106,9 +99,50 @@ public class UpdateTest {
             user.setUsername(null);
             user.setTime(null);
             user.setPid(null);
-            userUpdater.updateNonNullColumn(user);
+            user = userUpdater.updateNonNullColumn(user);
         }
         assertEquals(users2, query(userUpdater).where(User::getId).in(1, 2, 3).getList());
 
+    }
+
+    @Test
+    public void test() {
+        doInTransaction(() -> {
+            Updater<User> updater = UserUpdaterProvider.jdbc;
+            Select<User> select = UserQueryProvider.jdbc;
+            User user = select.where(User::getId).eq(10000006).getSingle();
+            if (user != null) {
+                updater.delete(user);
+            }
+            User entity = newUser(10000006);
+            updater.insert(entity);
+            user = select.where(User::getId).eq(10000006).getSingle();
+            assertEquals(entity, user);
+            System.out.println(entity.getInstant());
+            System.out.println(user.getInstant());
+        });
+
+        doInTransaction(() -> {
+            Updater<User> updater = UserUpdaterProvider.jpa;
+            Select<User> select = UserQueryProvider.jpa;
+            User user = select.where(User::getId).eq(10000007).getSingle();
+            if (user != null) {
+                updater.delete(user);
+            }
+            User entity = newUser(10000007);
+            updater.insert(entity);
+            user = select.where(User::getId).eq(10000007).getSingle();
+            assertEquals(entity, user);
+            System.out.println(entity.getInstant());
+            System.out.println(user.getInstant());
+        });
+    }
+
+    @Test
+    public void test2() {
+        User a = UserQueryProvider.jdbc.where(User::getId).eq(1).getSingle();
+        User b = UserQueryProvider.jpa.where(User::getId).eq(1).getSingle();
+        System.out.println(a);
+        System.out.println(b);
     }
 }

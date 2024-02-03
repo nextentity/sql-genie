@@ -2,6 +2,7 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.Lists;
@@ -10,7 +11,6 @@ import io.github.genie.sql.api.Query.Fetch;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.api.Query.Where0;
 import io.github.genie.sql.api.QueryExecutor;
-import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.tuple.Tuple;
 import io.github.genie.sql.api.tuple.Tuple10;
 import io.github.genie.sql.api.tuple.Tuple2;
@@ -29,7 +29,6 @@ import io.github.genie.sql.builder.QueryStructures.SingleSelectedImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -55,12 +54,8 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     @Override
-    public Where0<T, Tuple> select(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+    public Where0<T, Tuple> select(ExpressionBuilder<T> selectBuilder) {
         return select(selectBuilder.apply(RootImpl.of()));
-    }
-
-    public Where0<T, T> fetch(Collection<Path<T, ?>> paths) {
-        return fetch(Expressions.toExpressionList(paths));
     }
 
     @Override
@@ -161,7 +156,7 @@ public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Sele
     }
 
     @Override
-    public Where0<T, Tuple> selectDistinct(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder) {
+    public Where0<T, Tuple> selectDistinct(ExpressionBuilder<T> selectBuilder) {
         return selectDistinct(selectBuilder.apply(RootImpl.of()));
     }
 

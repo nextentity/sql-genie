@@ -1,15 +1,21 @@
 package io.github.genie.sql.entity;
 
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.Hibernate;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
+
+import static jakarta.persistence.ConstraintMode.NO_CONSTRAINT;
 
 @SuppressWarnings("JpaDataSourceORMInspection")
 @jakarta.persistence.Entity
@@ -38,18 +44,29 @@ public class User extends EnableOptimisticLock implements Cloneable {
 
     private boolean valid;
 
-    public User() {
-    }
+    private Gender gender;
 
-    public User(User user) {
-        id = user.getId();
-        randomNumber = user.getRandomNumber();
-        username = user.getUsername();
-        time = user.getTime();
-        pid = user.getPid();
-        timestamp = user.getTimestamp();
-        parentUser = user.getParentUser();
-        valid = user.isValid();
+    private Date instant;
+
+    private Long testLong;
+
+    private Integer testInteger;
+
+    private LocalDate testLocalDate;
+
+    private LocalDateTime testLocalDateTime;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "randomNumber", updatable = false, insertable = false, foreignKey = @ForeignKey(NO_CONSTRAINT))
+    @ToString.Exclude
+    private User randomUser;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "testInteger", updatable = false, insertable = false, foreignKey = @ForeignKey(NO_CONSTRAINT))
+    @ToString.Exclude
+    private User testUser;
+
+    public User() {
     }
 
     public boolean isNew() {
@@ -59,31 +76,28 @@ public class User extends EnableOptimisticLock implements Cloneable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof User)) {
-            return false;
-        }
-        @SuppressWarnings("PatternVariableCanBeUsed")
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
         User user = (User) o;
-
-        if (getRandomNumber() != user.getRandomNumber()) return false;
-        if (isValid() != user.isValid()) return false;
-        if (!Objects.equals(getUsername(), user.getUsername())) return false;
-        // if (!Objects.equals(time, user.time)) return false;
-        return Objects.equals(getPid(), user.getPid());
+        return getId() == user.getId()
+               && getRandomNumber() == user.getRandomNumber()
+               && isValid() == user.isValid()
+               && Objects.equals(getUsername(), user.getUsername())
+               && Objects.equals(getTime(), user.getTime())
+               && Objects.equals(getPid(), user.getPid())
+               && Objects.equals(getTimestamp(), user.getTimestamp())
+               && getGender() == user.getGender()
+               && Objects.equals(getInstant(), user.getInstant())
+               && Objects.equals(getTestLong(), user.getTestLong())
+               && Objects.equals(getTestInteger(), user.getTestInteger())
+               && Objects.equals(getTestLocalDate(), user.getTestLocalDate())
+               && Objects.equals(getTestLocalDateTime(), user.getTestLocalDateTime());
     }
 
     @Override
     public int hashCode() {
-        int result = getRandomNumber();
-        String username = getUsername();
-        result = 31 * result + (username != null ? username.hashCode() : 0);
-        Date time = getTime();
-        result = 31 * result + (time != null ? time.hashCode() : 0);
-        Integer pid = getPid();
-        result = 31 * result + (pid != null ? pid.hashCode() : 0);
-        boolean valid = isValid();
-        result = 31 * result + (valid ? 1 : 0);
-        return result;
+        return Objects.hash(getId(), getRandomNumber(), getUsername(), getTime(), getPid(),
+                getTimestamp(), isValid(), getGender(), getInstant(), getTestLong(),
+                getTestInteger(), getTestLocalDate(), getTestLocalDateTime());
     }
 
     @Override

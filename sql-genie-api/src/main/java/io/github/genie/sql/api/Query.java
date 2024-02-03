@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.github.genie.sql.api.Order.SortOrder.ASC;
 import static io.github.genie.sql.api.Order.SortOrder.DESC;
@@ -40,7 +41,7 @@ public interface Query {
 
         Where0<T, Tuple> select(List<? extends ExpressionHolder<T, ?>> paths);
 
-        Where0<T, Tuple> select(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
+        Where0<T, Tuple> select(ExpressionBuilder<T> selectBuilder);
 
         <R> Where0<T, R> select(ExpressionHolder<T, R> expression);
 
@@ -76,7 +77,7 @@ public interface Query {
 
         Where0<T, Tuple> selectDistinct(List<? extends ExpressionHolder<T, ?>> paths);
 
-        Where0<T, Tuple> selectDistinct(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> selectBuilder);
+        Where0<T, Tuple> selectDistinct(ExpressionBuilder<T> selectBuilder);
 
         <R> Where0<T, R> selectDistinct(ExpressionHolder<T, R> expression);
 
@@ -127,18 +128,24 @@ public interface Query {
             return fetch(Lists.of(p0, p1, p3));
         }
 
-        Where<T, T> fetch(Collection<Path<T, ?>> paths);
+        default Where<T, T> fetch(Collection<Path<T, ?>> paths) {
+            Root<T> root = root();
+            return fetch(paths.stream().map(root::get).collect(Collectors.toList()));
+        }
 
         default Where<T, T> fetch(Path<T, ?> path) {
-            return fetch(Lists.of(path));
+            Root<T> root = root();
+            return fetch(root.get(path));
         }
 
         default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1) {
-            return fetch(Lists.of(p0, p1));
+            Root<T> root = root();
+            return fetch(root.get(p0), root.get(p1));
         }
 
         default Where<T, T> fetch(Path<T, ?> p0, Path<T, ?> p1, Path<T, ?> p3) {
-            return fetch(Lists.of(p0, p1, p3));
+            Root<T> root = root();
+            return fetch(root.get(p0), root.get(p1), root.get(p3));
         }
 
     }
@@ -149,12 +156,7 @@ public interface Query {
 
         Where<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
-        default Where<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
-            if (predicate) {
-                return where(predicateBuilder.apply(root()));
-            }
-            return this;
-        }
+        Where<T, U> whereIf(boolean predicate, Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder);
 
         <N> PathOperator<T, N, ? extends Where<T, U>> where(Path<T, N> path);
 
@@ -192,7 +194,7 @@ public interface Query {
     interface GroupBy<T, U> extends OrderBy<T, U> {
         Having<T, U> groupBy(List<? extends ExpressionHolder<T, ?>> expressions);
 
-        Having<T, U> groupBy(Function<Root<T>, List<? extends ExpressionHolder<T, ?>>> expressionBuilder);
+        Having<T, U> groupBy(ExpressionBuilder<T> expressionBuilder);
 
         Having<T, U> groupBy(Path<T, ?> path);
 

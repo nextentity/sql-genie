@@ -18,6 +18,7 @@ import io.github.genie.sql.api.Selection.MultiSelected;
 import io.github.genie.sql.api.Selection.ProjectionSelected;
 import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.api.Slice;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
@@ -29,9 +30,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings({"PatternVariableCanBeUsed", "ClassCanBeRecord"})
+@SuppressWarnings({"PatternVariableCanBeUsed"})
 final class QueryStructures {
 
+    @EqualsAndHashCode
     static class QueryStructureImpl implements QueryStructure, Cloneable {
 
         Selection select;

@@ -18,16 +18,15 @@ import java.util.function.Supplier;
 public class Metamodels {
 
     @Getter
-    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public static class AttributeImpl implements Attribute {
 
-        private Class<?> javaType;
-        private Type declaringType;
-        private String name;
-        private Method getter;
-        private Method setter;
-        private Field field;
+        private final Class<?> javaType;
+        private final Type declaringType;
+        private final String name;
+        private final Method getter;
+        private final Method setter;
+        private final Field field;
         @Getter(lazy = true)
         private final List<? extends Attribute> referencedAttributes = Attribute.super.referencedAttributes();
         @Getter(lazy = true)

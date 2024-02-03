@@ -16,8 +16,8 @@ public class PropertyImpl implements Property {
     }
 
     @Override
-    public Object newInstance(Object[] args) {
-        return args[index];
+    public Object newInstance(Object[] arguments) {
+        return arguments[index];
     }
 
     void setIndex(int index) {
