@@ -77,6 +77,7 @@
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <lombok.version>1.18.30</lombok.version>
@@ -162,10 +163,7 @@
         <configuration>
           <source>${maven.compiler.source}</source>
           <target>${maven.compiler.target}</target>
-          <compilerArgs>
-            <arg>--module-path</arg>
-            <arg>${java.home}/jmods</arg>
-          </compilerArgs>
+          <release>${maven.compiler.release}</release>
           <annotationProcessorPaths>
             <annotationProcessorPath>
               <groupId>org.projectlombok</groupId>
