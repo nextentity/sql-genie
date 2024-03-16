@@ -59,6 +59,7 @@ public class UserQueryProvider implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext extensionContext) {
+        EntityManagers.getEntityManager().clear();
         return Stream.of(
                 Arguments.of(jdbc),
                 Arguments.of(jpa)
