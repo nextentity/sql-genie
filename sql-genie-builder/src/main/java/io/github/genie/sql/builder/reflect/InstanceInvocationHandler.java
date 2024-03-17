@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Data
 @Accessors(fluent = true)
-public class InstanceInvocationHandler implements InvocationHandler {
+public final class InstanceInvocationHandler implements InvocationHandler {
     private static final Method EQUALS = getEqualsMethod();
     private final Property[] properties;
     private final Class<?> resultType;
@@ -51,21 +51,14 @@ public class InstanceInvocationHandler implements InvocationHandler {
         if (other == null || !Proxy.isProxyClass(other.getClass())) {
             return false;
         }
-        InvocationHandler handler = Proxy.getInvocationHandler(other);
-        return equals(handler);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
+        InvocationHandler invocationHandler = Proxy.getInvocationHandler(other);
+        if (invocationHandler.getClass() != InstanceInvocationHandler.class) {
             return false;
         }
-        InstanceInvocationHandler handler = (InstanceInvocationHandler) o;
+        InstanceInvocationHandler handler = (InstanceInvocationHandler) invocationHandler;
         return resultType.equals(handler.resultType) && data.equals(handler.data);
     }
+
 
     @Override
     public int hashCode() {
@@ -76,11 +69,6 @@ public class InstanceInvocationHandler implements InvocationHandler {
 
     @Override
     public String toString() {
-        Map<String, Object> stringMap = new HashMap<>();
-        for (Property property : properties) {
-            Attribute attribute = property.attribute();
-            stringMap.put(attribute.name(), data.get(attribute.getter()));
-        }
-        return resultType.getSimpleName() + stringMap;
+        return "Proxy(" + resultType + ")";
     }
 }
