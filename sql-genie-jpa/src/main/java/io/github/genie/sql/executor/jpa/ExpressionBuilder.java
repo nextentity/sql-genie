@@ -6,6 +6,7 @@ import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.TypeCastUtil;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.FetchParent;
 import jakarta.persistence.criteria.From;
@@ -19,8 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.github.genie.sql.builder.TypeCastUtil.unsafeCast;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class ExpressionBuilder {
@@ -145,7 +144,9 @@ public class ExpressionBuilder {
                 case IS_NOT_NULL:
                     return cb.isNotNull(e0);
                 case IN: {
-                    if (args.size() > 1) {
+                    if (args.isEmpty()) {
+                        return cb.literal(false);
+                    } else {
                         CriteriaBuilder.In<Object> in = cb.in(e0);
                         for (Expression arg : args) {
                             if (arg instanceof Constant) {
@@ -156,8 +157,6 @@ public class ExpressionBuilder {
                             }
                         }
                         return in;
-                    } else {
-                        return cb.literal(false);
                     }
                 }
                 case BETWEEN: {
@@ -283,14 +282,17 @@ public class ExpressionBuilder {
         return unsafeCast(expression);
     }
 
-    protected Path<?> getPath(Column expression) {
+    public static <T> T unsafeCast(Object o) {
+        return TypeCastUtil.unsafeCast(o);
+    }
+
+    protected Path<?> getPath(Column column) {
         From<?, ?> r = root;
-        List<String> paths = expression.paths();
-        int size = paths.size();
+        int size = column.size();
         for (int i = 0; i < size; i++) {
-            String s = paths.get(i);
+            String s = column.get(i);
             if (i != size - 1) {
-                Column offset = subPaths(paths, i + 1);
+                Column offset = subPaths(column, i + 1);
                 r = join(offset);
             } else {
                 return r.get(s);
@@ -301,7 +303,7 @@ public class ExpressionBuilder {
     }
 
     @NotNull
-    protected Column subPaths(List<String> paths, int size) {
+    protected Column subPaths(Column paths, int size) {
         List<String> subPath = new ArrayList<>(size);
         for (int j = 0; j < size; j++) {
             subPath.add(paths.get(j));
@@ -309,13 +311,13 @@ public class ExpressionBuilder {
         return Expressions.column(subPath);
     }
 
-    private Join<?, ?> join(Column offset) {
-        return (Join<?, ?>) fetched.compute(offset, (k, v) -> {
+    private Join<?, ?> join(Column column) {
+        return (Join<?, ?>) fetched.compute(column, (k, v) -> {
             if (v instanceof Join<?, ?>) {
                 return v;
             } else {
                 From<?, ?> r = root;
-                for (String s : offset.paths()) {
+                for (String s : column) {
                     r = r.join(s, JoinType.LEFT);
                 }
                 return r;

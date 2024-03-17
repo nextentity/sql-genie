@@ -1,74 +1,119 @@
 package io.github.genie.sql.executor.jdbc;
 
+import io.github.genie.sql.api.Column;
+import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
+import io.github.genie.sql.builder.Tuples;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
-import lombok.SneakyThrows;
+import io.github.genie.sql.builder.meta.EntityType;
+import io.github.genie.sql.builder.meta.Type;
+import io.github.genie.sql.builder.reflect.InstanceConstructor;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
+import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.ResultCollector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
-import static io.github.genie.sql.api.Selection.MultiColumn;
-import static io.github.genie.sql.api.Selection.SingleColumn;
-
-@SuppressWarnings("PatternVariableCanBeUsed")
-public class JdbcResultCollector implements JdbcQueryExecutor.ResultCollector {
-
+public class JdbcResultCollector implements ResultCollector {
     @Override
-    public <R> R collect(@NotNull ResultSet resultSet,
-                         @NotNull Selection selectClause,
-                         @NotNull Class<?> fromType,
-                         @NotNull List<? extends Attribute> attributes)
-            throws SQLException {
+    public <T> List<T> resolve(ResultSet resultSet,
+                               EntityType entityType,
+                               List<? extends Attribute> selected,
+                               QueryStructure structure) throws SQLException {
+        int type = resultSet.getType();
+        List<T> result;
+        if (type != ResultSet.TYPE_FORWARD_ONLY) {
+            resultSet.last();
+            int size = resultSet.getRow();
+            result = new ArrayList<>(size);
+            resultSet.beforeFirst();
+        } else {
+            result = new ArrayList<>();
+        }
+        Selection select = structure.select();
         int columnsCount = resultSet.getMetaData().getColumnCount();
-        int column = 0;
-        if (selectClause instanceof MultiColumn) {
-            MultiColumn multiColumn = (MultiColumn) selectClause;
-            if (multiColumn.columns().size() != columnsCount) {
+
+        if (select instanceof MultiSelected multiSelected) {
+            if (multiSelected.expressions().size() != columnsCount) {
                 throw new IllegalStateException();
             }
-            Object[] row = new Object[columnsCount];
-            while (column < columnsCount) {
-                row[column++] = resultSet.getObject(column);
+            List<Class<?>> types = multiSelected.expressions().stream()
+                    .map(expression -> {
+                        if (expression instanceof Column) {
+                            Type t = entityType;
+                            //noinspection PatternVariableCanBeUsed
+                            Column column = (Column) expression;
+                            for (String s : column) {
+                                t = ((EntityType) t).getAttribute(s);
+                            }
+                            return t.javaType();
+                        }
+                        return Object.class;
+                    })
+                    .collect(Collectors.toList());
+            while (resultSet.next()) {
+                Object[] row = getObjects(resultSet, columnsCount, types);
+                result.add(TypeCastUtil.unsafeCast(Tuples.of(row)));
             }
-            return TypeCastUtil.unsafeCast(row);
-        } else if (selectClause instanceof SingleColumn) {
-            SingleColumn singleColumn = (SingleColumn) selectClause;
+        } else if (select instanceof SingleSelected) {
             if (1 != columnsCount) {
                 throw new IllegalStateException();
             }
-            Object r = JdbcUtil.getValue(resultSet, 1, singleColumn.resultType());
-            return TypeCastUtil.unsafeCast(r);
+            //noinspection PatternVariableCanBeUsed
+            SingleSelected sc = (SingleSelected) select;
+            while (resultSet.next()) {
+                T row = getSingleObj(resultSet, sc);
+                result.add(row);
+            }
         } else {
-            if (attributes.size() != columnsCount) {
+            if (selected.size() != columnsCount) {
                 throw new IllegalStateException();
             }
-            Class<?> resultType = selectClause.resultType();
-            BiFunction<Integer, Class<?>, Object> extractor = getJdbcResultValueExtractor(resultSet);
-            if (resultType.isInterface()) {
-                return ProjectionUtil.getInterfaceResult(extractor, attributes, resultType);
-            } else if (resultType.isRecord()) {
-                return ProjectionUtil.getRecordResult(extractor, attributes, resultType);
+            Class<?> resultType;
+            if (select instanceof EntitySelected) {
+                resultType = structure.from().type();
+            } else if (select instanceof ProjectionSelected) {
+                resultType = select.resultType();
             } else {
-                return ProjectionUtil.getBeanResult(extractor, attributes, resultType);
+                throw new IllegalStateException();
+            }
+            InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(selected, resultType);
+            Object[] data = new Object[columnsCount];
+            while (resultSet.next()) {
+                int i = 0;
+                for (Attribute attribute : selected) {
+                    data[i++] = JdbcUtil.getValue(resultSet, i, attribute.javaType());
+                }
+                T row = TypeCastUtil.unsafeCast(extractor.newInstance(data));
+                result.add(row);
             }
         }
+        return result;
     }
 
-    @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getJdbcResultValueExtractor(@NotNull ResultSet resultSet) {
-        // noinspection Convert2Lambda
-        return new BiFunction<>() {
-            @SneakyThrows
-            @Override
-            public Object apply(Integer index, Class<?> resultType) {
-                return JdbcUtil.getValue(resultSet, 1 + index, resultType);
-            }
-        };
+    @Nullable
+    private <R> R getSingleObj(@NotNull ResultSet resultSet, SingleSelected selectClause) throws SQLException {
+        Object r = JdbcUtil.getValue(resultSet, 1, selectClause.resultType());
+        return TypeCastUtil.unsafeCast(r);
+    }
+
+    private Object[] getObjects(@NotNull ResultSet resultSet, int columnsCount, List<Class<?>> types) throws SQLException {
+        int column = 0;
+        Object[] row = new Object[columnsCount];
+        for (Class<?> expression : types) {
+            row[column++] = JdbcUtil.getValue(resultSet, column, expression);
+        }
+        return row;
     }
 
 }

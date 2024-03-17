@@ -2,6 +2,7 @@ package io.github.genie.sql.builder;
 
 import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Expression;
+import io.github.genie.sql.api.ExpressionBuilder;
 import io.github.genie.sql.api.ExpressionHolder;
 import io.github.genie.sql.api.ExpressionOperator.ComparableOperator;
 import io.github.genie.sql.api.ExpressionOperator.NumberOperator;
@@ -13,52 +14,49 @@ import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Path;
-import io.github.genie.sql.api.Path.BooleanPath;
 import io.github.genie.sql.api.Path.ComparablePath;
 import io.github.genie.sql.api.Path.NumberPath;
 import io.github.genie.sql.api.Path.StringPath;
-import io.github.genie.sql.api.Query.AndBuilder0;
 import io.github.genie.sql.api.Query.Collector;
-import io.github.genie.sql.api.Query.GroupBy;
 import io.github.genie.sql.api.Query.Having;
 import io.github.genie.sql.api.Query.OrderBy;
+import io.github.genie.sql.api.Query.OrderOperator;
 import io.github.genie.sql.api.Query.QueryStructureBuilder;
 import io.github.genie.sql.api.Query.SliceQueryStructure;
 import io.github.genie.sql.api.Query.Where0;
 import io.github.genie.sql.api.QueryExecutor;
 import io.github.genie.sql.api.QueryStructure;
+import io.github.genie.sql.api.Root;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.Context;
-import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOpsImpl;
-import io.github.genie.sql.builder.DefaultExpressionOperator.StringOpsImpl;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.TypedExpression;
+import io.github.genie.sql.builder.DefaultExpressionOperator.ComparableOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.NumberOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.PathOperatorImpl;
+import io.github.genie.sql.builder.DefaultExpressionOperator.StringOperatorImpl;
 import io.github.genie.sql.builder.QueryStructures.FromSubQuery;
 import io.github.genie.sql.builder.QueryStructures.QueryStructureImpl;
-import io.github.genie.sql.builder.QueryStructures.SingleColumnSelect;
+import io.github.genie.sql.builder.QueryStructures.SingleSelectedImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, AbstractCollector<U> {
 
-    static final SingleColumnSelect SELECT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.TRUE);
+    static final SingleSelectedImpl SELECT_ANY =
+            new SingleSelectedImpl(Integer.class, Expressions.TRUE, false);
 
-    static final SingleColumnSelect COUNT_ANY =
-            new SingleColumnSelect(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT));
+    static final SingleSelectedImpl COUNT_ANY =
+            new SingleSelectedImpl(Integer.class, Expressions.operate(Expressions.TRUE, Operator.COUNT), false);
 
     final QueryExecutor queryExecutor;
     final QueryStructureImpl queryStructure;
 
     protected final QueryStructurePostProcessor structurePostProcessor;
-
-    public QueryConditionBuilder(QueryExecutor queryExecutor, Class<T> type) {
-        this(queryExecutor, type, null);
-    }
 
     public QueryConditionBuilder(QueryExecutor queryExecutor, Class<T> type, QueryStructurePostProcessor structurePostProcessor) {
         this(queryExecutor, new QueryStructureImpl(type), structurePostProcessor);
@@ -75,24 +73,53 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public GroupBy<T, U> where(ExpressionHolder<T, Boolean> predicate) {
+    public Where0<T, U> where(ExpressionHolder<T, Boolean> predicate) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.where = predicate.expression();
+        whereAnd(structure, predicate.expression());
         return update(structure);
+    }
+
+    @Override
+    public Where0<T, U> where(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return where(predicateBuilder.apply(RootImpl.of()));
+    }
+
+    static void whereAnd(QueryStructureImpl structure, Expression expression) {
+        if (structure.where == null || Expressions.isTrue(structure.where)) {
+            structure.where = expression;
+        } else {
+            structure.where = Expressions.operate(structure.where, Operator.AND, expression);
+        }
     }
 
     @Override
     public Collector<U> orderBy(List<? extends Order<T>> orders) {
+        return addOrderBy(orders);
+    }
+
+    @Override
+    public Collector<U> orderBy(Function<Root<T>, List<? extends Order<T>>> ordersBuilder) {
+        return orderBy(ordersBuilder.apply(RootImpl.of()));
+    }
+
+    @Override
+    public OrderOperator<T, U> orderBy(Collection<Path<T, Comparable<?>>> paths) {
+        return new OrderOperatorImpl<>(this, paths);
+    }
+
+    QueryConditionBuilder<T, U> addOrderBy(List<? extends Order<T>> orders) {
         QueryStructureImpl structure = queryStructure.copy();
-        structure.orderBy = orders;
+        structure.orderBy = structure.orderBy == null
+                ? orders
+                : Lists.concat(structure.orderBy, orders);
         return update(structure);
     }
 
     @Override
-    public int count() {
+    public long count() {
         QueryStructure structure = buildCountData();
         structure = structurePostProcessor.preCountQuery(this, structure);
-        return queryExecutor.<Number>getList(structure).get(0).intValue();
+        return queryExecutor.<Number>getList(structure).get(0).longValue();
     }
 
     @NotNull
@@ -100,7 +127,9 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         QueryStructureImpl structure = queryStructure.copy();
         structure.lockType = LockModeType.NONE;
         structure.orderBy = Lists.of();
-        if (requiredCountSubQuery(queryStructure)) {
+        if (queryStructure.select().distinct()) {
+            return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
+        } else if (requiredCountSubQuery(queryStructure)) {
             structure.select = COUNT_ANY;
             return new QueryStructureImpl(COUNT_ANY, new FromSubQuery(structure));
         } else if (queryStructure.groupBy() != null && !queryStructure.groupBy().isEmpty()) {
@@ -116,11 +145,11 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
 
     boolean requiredCountSubQuery(QueryStructureImpl structure) {
         Selection select = structure.select();
-        if (select instanceof SingleColumnSelect) {
-            Expression column = ((SingleColumnSelect) select).column();
+        if (select instanceof SingleSelectedImpl) {
+            Expression column = ((SingleSelectedImpl) select).expression();
             return requiredCountSubQuery(column);
-        } else if (select instanceof MultiColumn) {
-            List<? extends Expression> columns = ((MultiColumn) select).columns();
+        } else if (select instanceof MultiSelected) {
+            List<? extends Expression> columns = ((MultiSelected) select).expressions();
             if (requiredCountSubQuery(columns)) {
                 return true;
             }
@@ -128,9 +157,9 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
         return requiredCountSubQuery(structure.having());
     }
 
-    protected boolean requiredCountSubQuery(List<? extends Expression> columns) {
-        for (Expression column : columns) {
-            if (requiredCountSubQuery(column)) {
+    protected boolean requiredCountSubQuery(List<? extends Expression> expressions) {
+        for (Expression expression : expressions) {
+            if (requiredCountSubQuery(expression.expression())) {
                 return true;
             }
         }
@@ -236,6 +265,11 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
+    public Having<T, U> groupBy(ExpressionBuilder<T> expressionBuilder) {
+        return groupBy(expressionBuilder.apply(RootImpl.of()));
+    }
+
+    @Override
     public Having<T, U> groupBy(Path<T, ?> path) {
         QueryStructureImpl structure = queryStructure.copy();
         structure.groupBy = Lists.of(Expressions.of(path));
@@ -255,36 +289,39 @@ public class QueryConditionBuilder<T, U> implements Where0<T, U>, Having<T, U>, 
     }
 
     @Override
-    public <N extends Number & Comparable<N>> NumberOperator<T, N, AndBuilder0<T, U>> where(NumberPath<T, N> path) {
-        return new NumberOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+    public OrderBy<T, U> having(Function<Root<T>, ExpressionHolder<T, Boolean>> predicateBuilder) {
+        return having(predicateBuilder.apply(RootImpl.of()));
+    }
+
+    @Override
+    public <N extends Number & Comparable<N>> NumberOperator<T, N, Where0<T, U>> where(NumberPath<T, N> path) {
+        return new NumberOperatorImpl<>(root().get(path), this::whereAnd);
+    }
+
+    @Override
+    public <N extends Comparable<N>> ComparableOperator<T, N, Where0<T, U>> where(ComparablePath<T, N> path) {
+        return new ComparableOperatorImpl<>(root().get(path), this::whereAnd);
     }
 
     @NotNull
-    protected AndBuilder0<T, U> newChanAndBuilder(Context<AndBuilder0<T, U>> context) {
-        return new AndBuilderImpl<>(QueryConditionBuilder.this, context);
+    private Where0<T, U> whereAnd(TypedExpression<?, ?> expression) {
+        QueryStructureImpl structure = queryStructure.copy();
+        whereAnd(structure, expression.expression());
+        return update(structure);
     }
 
     @Override
-    public <N extends Comparable<N>> ComparableOperator<T, N, AndBuilder0<T, U>> where(ComparablePath<T, N> path) {
-        return new ComparableOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+    public StringOperator<T, Where0<T, U>> where(StringPath<T> path) {
+        return new StringOperatorImpl<>(root().get(path), this::whereAnd);
+    }
+
+    public Root<T> root() {
+        return RootImpl.of();
     }
 
     @Override
-    public StringOperator<T, AndBuilder0<T, U>> where(StringPath<T> path) {
-        return new StringOpsImpl<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
+    public <N> PathOperator<T, N, Where0<T, U>> where(Path<T, N> path) {
+        return new PathOperatorImpl<>(root().get(path), this::whereAnd);
     }
 
-    @Override
-    public AndBuilder0<T, U> where(BooleanPath<T> path) {
-        return newChanAndBuilder(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
-    }
-
-    @Override
-    public <N> PathOperator<T, N, AndBuilder0<T, U>> where(Path<T, N> path) {
-        return new DefaultExpressionOperator<>(new Context<>(Lists.of(), Expressions.TRUE, Expressions.of(path), this::newChanAndBuilder));
-    }
-
-    QueryStructureImpl queryStructure() {
-        return queryStructure;
-    }
 }

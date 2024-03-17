@@ -8,6 +8,6 @@ public interface Sliceable<T, U> {
 
     int limit();
 
-    U collect(List<T> list, int total);
+    U collect(List<T> list, long total);
 
 }

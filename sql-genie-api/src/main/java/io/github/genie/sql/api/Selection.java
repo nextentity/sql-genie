@@ -1,5 +1,7 @@
 package io.github.genie.sql.api;
 
+import io.github.genie.sql.api.tuple.Tuple;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -7,19 +9,27 @@ public interface Selection extends Serializable {
 
     Class<?> resultType();
 
-    interface MultiColumn extends Selection {
-        List<? extends Expression> columns();
+    boolean distinct();
+
+    interface MultiSelected extends Selection {
+        List<? extends Expression> expressions();
 
         @Override
         default Class<?> resultType() {
-            return Object[].class;
+            return Tuple.class;
         }
 
     }
 
-    interface SingleColumn extends Selection {
-        Expression column();
+    interface SingleSelected extends Selection {
+        Expression expression();
 
+    }
+
+    interface ProjectionSelected extends Selection {
+    }
+
+    interface EntitySelected extends Selection {
     }
 
 }

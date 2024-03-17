@@ -1,8 +1,11 @@
 package io.github.genie.sql.api;
 
-import java.util.List;
+non-sealed public interface Column extends Expression, Iterable<String> {
+    int size();
 
-non-sealed public interface Column extends Expression {
-    List<String> paths();
+    String get(int i);
 
+    Column get(String path);
+
+    Column parent();
 }

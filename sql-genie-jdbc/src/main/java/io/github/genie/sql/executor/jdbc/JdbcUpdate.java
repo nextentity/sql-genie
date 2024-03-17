@@ -2,6 +2,8 @@ package io.github.genie.sql.executor.jdbc;
 
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Update;
+import io.github.genie.sql.api.Updater;
+import io.github.genie.sql.builder.UpdaterImpl;
 import io.github.genie.sql.builder.exception.OptimisticLockException;
 import io.github.genie.sql.builder.exception.SqlExecuteException;
 import io.github.genie.sql.builder.exception.TransactionRequiredException;
@@ -19,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -77,14 +80,17 @@ public class JdbcUpdate implements Update {
     }
 
     @Override
-    public <T> void delete(List<T> entities, Class<T> entityType) {
+    public <T> void delete(Iterable<T> entities, Class<T> entityType) {
         PreparedSql preparedSql = sqlBuilder.buildDelete(metamodel.getEntity(entityType));
         execute(connection -> {
             String sql = preparedSql.sql();
             log.debug(sql);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 setArgs(entities, preparedSql.columns(), statement);
-                statement.executeBatch();
+                int[] result = statement.executeBatch();
+                if (log.isDebugEnabled()) {
+                    log.debug("executeBatch result: " + Arrays.toString(result));
+                }
                 return null;
             }
         });
@@ -133,6 +139,11 @@ public class JdbcUpdate implements Update {
             }
             return entity;
         });
+    }
+
+    @Override
+    public <T> Updater<T> getUpdater(Class<T> type) {
+        return new UpdaterImpl<>(this, type);
     }
 
     private static void setNewVersion(Object entity, List<BasicAttribute> versions) {
@@ -187,7 +198,7 @@ public class JdbcUpdate implements Update {
         return entities;
     }
 
-    private static <T> void setArgs(List<T> entities,
+    private static <T> void setArgs(Iterable<T> entities,
                                     List<BasicAttribute> columns,
                                     PreparedStatement statement)
             throws SQLException {
@@ -195,6 +206,9 @@ public class JdbcUpdate implements Update {
             int i = 0;
             for (BasicAttribute column : columns) {
                 Object v = column.get(entity);
+                if (v instanceof Enum<?>) {
+                    v = ((Enum<?>) v).ordinal();
+                }
                 statement.setObject(++i, v);
             }
             statement.addBatch();

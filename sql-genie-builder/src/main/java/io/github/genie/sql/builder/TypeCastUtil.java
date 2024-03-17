@@ -15,6 +15,10 @@ public class TypeCastUtil {
         return unsafeCast(expression);
     }
 
+    public static <T> RootImpl<T> cast(RootImpl<?> builder) {
+        return unsafeCast(builder);
+    }
+
     public static <T> T unsafeCast(Object object) {
         // noinspection unchecked
         return (T) object;

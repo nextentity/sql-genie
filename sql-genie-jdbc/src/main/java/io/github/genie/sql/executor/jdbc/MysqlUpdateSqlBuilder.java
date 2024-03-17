@@ -20,11 +20,11 @@ public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
         StringBuilder sql = new StringBuilder("insert into `")
                 .append(tableName).append("` (");
         String delimiter = "";
-        for (Attribute field : entityType.attributes()) {
-            if (!(field instanceof BasicAttribute)) {
+        for (Attribute attribute : entityType.attributes()) {
+            if (!(attribute instanceof BasicAttribute)) {
                 continue;
             }
-            BasicAttribute column = (BasicAttribute) field;
+            BasicAttribute column = (BasicAttribute) attribute;
             sql.append(delimiter).append("`").append(column.columnName()).append("`");
             columns.add(column);
             delimiter = ",";
@@ -73,11 +73,10 @@ public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
 
     @Override
     public PreparedSql buildDelete(EntityType entity) {
-        StringBuilder sql = new StringBuilder("delete from `").append(entity.tableName()).append("` ");
         BasicAttribute id = (BasicAttribute) entity.id();
-        sql.append(" where `").append(id.columnName()).append("`=?");
+        String sql = "delete from `" + entity.tableName() + "` where `" + id.columnName() + "`=?";
         return new PreparedSqlImpl(
-                sql.toString(),
+                sql,
                 Collections.singletonList(id),
                 Collections.emptyList()
         );

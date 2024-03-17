@@ -6,7 +6,7 @@
 
   <groupId>io.github.genie-cloud</groupId>
   <artifactId>sql-genie</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
 
   <packaging>pom</packaging>
 
@@ -33,7 +33,7 @@
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
-        <version>1.18.30</version>
+        <version>${lombok.version}</version>
       </dependency>
 
       <dependency>
@@ -77,8 +77,10 @@
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <lombok.version>1.18.30</lombok.version>
   </properties>
 
   <licenses>
@@ -158,6 +160,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
+          <release>${maven.compiler.release}</release>
+          <annotationProcessorPaths>
+            <annotationProcessorPath>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </annotationProcessorPath>
+          </annotationProcessorPaths>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

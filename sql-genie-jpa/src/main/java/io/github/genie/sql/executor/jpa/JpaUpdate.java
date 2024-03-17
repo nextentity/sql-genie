@@ -5,11 +5,12 @@ import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Update;
+import io.github.genie.sql.api.Updater;
 import io.github.genie.sql.builder.ExpressionHolders;
 import io.github.genie.sql.builder.Expressions;
-import io.github.genie.sql.builder.meta.ReflectUtil;
+import io.github.genie.sql.builder.UpdaterImpl;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
 import lombok.extern.slf4j.Slf4j;
@@ -33,22 +34,14 @@ public class JpaUpdate implements Update {
 
     @Override
     public <T> List<T> insert(List<T> entities, Class<T> entityType) {
-        requiredTransaction();
         for (T entity : entities) {
             entityManager.persist(entity);
         }
         return entities;
     }
 
-    private void requiredTransaction() {
-        if (!entityManager.getTransaction().isActive()) {
-            throw new TransactionRequiredException();
-        }
-    }
-
     @Override
     public <T> List<T> update(List<T> entities, Class<T> entityType) {
-        requiredTransaction();
         List<Expression> ids = new ArrayList<>();
         Set<Object> uniqueValues = new HashSet<>();
         for (T entity : entities) {
@@ -81,8 +74,7 @@ public class JpaUpdate implements Update {
     }
 
     @Override
-    public <T> void delete(List<T> entities, Class<T> entityType) {
-        requiredTransaction();
+    public <T> void delete(Iterable<T> entities, Class<T> entityType) {
         for (T entity : entities) {
             entityManager.remove(entity);
         }
@@ -90,7 +82,6 @@ public class JpaUpdate implements Update {
 
     @Override
     public <T> T updateNonNullColumn(T entity, Class<T> entityType) {
-        requiredTransaction();
         Object id = requireId(entity);
         T t = entityManager.find(entityType, id);
         if (t == null) {
@@ -98,6 +89,11 @@ public class JpaUpdate implements Update {
         }
         ReflectUtil.copyTargetNullFields(t, entity, entityType);
         return entityManager.merge(entity);
+    }
+
+    @Override
+    public <T> Updater<T> getUpdater(Class<T> type) {
+        return new UpdaterImpl<>(this, type);
     }
 
     private <T> Object requireId(T entity) {

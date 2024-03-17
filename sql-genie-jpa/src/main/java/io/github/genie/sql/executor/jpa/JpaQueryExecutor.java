@@ -8,16 +8,20 @@ import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.builder.AbstractQueryExecutor;
 import io.github.genie.sql.builder.Expressions;
+import io.github.genie.sql.builder.Tuples;
 import io.github.genie.sql.builder.TypeCastUtil;
-import io.github.genie.sql.builder.executor.ProjectionUtil;
 import io.github.genie.sql.builder.meta.Attribute;
 import io.github.genie.sql.builder.meta.Metamodel;
 import io.github.genie.sql.builder.meta.Projection;
 import io.github.genie.sql.builder.meta.ProjectionAttribute;
+import io.github.genie.sql.builder.reflect.InstanceConstructor;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
 import jakarta.persistence.EntityManager;
@@ -30,8 +34,8 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
@@ -53,46 +57,35 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             return queryByNativeSql(queryStructure);
         }
         Selection selected = queryStructure.select();
-        if (selected instanceof SingleColumn) {
-            SingleColumn singleColumn = (SingleColumn) selected;
-            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleColumn.column()));
+        if (selected instanceof SingleSelected) {
+            SingleSelected singleSelected = (SingleSelected) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, Lists.of(singleSelected.expression()));
             List<Object> result = objectsList.stream().map(objects -> objects[0]).collect(Collectors.toList());
             return TypeCastUtil.cast(result);
-        } else if (selected instanceof MultiColumn) {
-            MultiColumn multiColumn = (MultiColumn) selected;
-            List<Object[]> objectsList = getObjectsList(queryStructure, multiColumn.columns());
-            return TypeCastUtil.cast(objectsList);
-        } else {
+        } else if (selected instanceof MultiSelected) {
+            MultiSelected multiSelected = (MultiSelected) selected;
+            List<Object[]> objectsList = getObjectsList(queryStructure, multiSelected.expressions());
+            return TypeCastUtil.cast(objectsList.stream().map(Tuples::of).collect(Collectors.toList()));
+        } else if (queryStructure.select() instanceof EntitySelected) {
+            List<?> resultList = getEntityResultList(queryStructure);
+            return TypeCastUtil.cast(resultList);
+        } else if (queryStructure.select() instanceof ProjectionSelected) {
             Class<?> resultType = queryStructure.select().resultType();
-            if (resultType == queryStructure.from().type()) {
-                List<?> resultList = getEntityResultList(queryStructure);
-                return TypeCastUtil.cast(resultList);
-            } else {
-                Projection projection = metamodel
-                        .getProjection(queryStructure.from().type(), resultType);
-                List<ProjectionAttribute> fields = projection.attributes();
-                List<Column> columns = fields.stream()
-                        .map(projectionField -> {
-                            String fieldName = projectionField.baseField().name();
-                            return Expressions.column(fieldName);
-                        })
-                        .collect(Collectors.toList());
-                List<Object[]> objectsList = getObjectsList(queryStructure, columns);
-                List<Attribute> list = fields.stream().map(ProjectionAttribute::field).collect(Collectors.toList());
-                if (resultType.isInterface()) {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getInterfaceResult(getArrayValueExtractor(it), list, resultType))
-                            .collect(Collectors.toList());
-                } else if (resultType.isRecord()) {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getRecordResult(getArrayValueExtractor(it), list, resultType))
-                            .collect(Collectors.toList());
-                } else {
-                    return objectsList.stream()
-                            .<T>map(it -> ProjectionUtil.getBeanResult(getArrayValueExtractor(it), list, resultType))
-                            .collect(Collectors.toList());
-                }
-            }
+            Projection projection = metamodel
+                    .getProjection(queryStructure.from().type(), resultType);
+            Collection<? extends ProjectionAttribute> attributes = projection.attributes();
+            List<Column> columns = attributes.stream()
+                    .map(ProjectionAttribute::entityAttribute)
+                    .map(Attribute::column)
+                    .collect(Collectors.toList());
+            List<Object[]> objectsList = getObjectsList(queryStructure, columns);
+            InstanceConstructor extractor = ReflectUtil.getRowInstanceConstructor(attributes, resultType);
+            return objectsList.stream()
+                    .map(extractor::newInstance)
+                    .map(TypeCastUtil::<T>unsafeCast)
+                    .collect(Collectors.toList());
+        } else {
+            throw new IllegalStateException();
         }
     }
 
@@ -104,11 +97,6 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             query.setParameter(++position, arg);
         }
         return TypeCastUtil.cast(query.getResultList());
-    }
-
-    @NotNull
-    private static BiFunction<Integer, Class<?>, Object> getArrayValueExtractor(Object[] resultSet) {
-        return (index, resultType1) -> resultSet[index];
     }
 
     private List<?> getEntityResultList(@NotNull QueryStructure structure) {
@@ -209,15 +197,21 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
             }
         }
 
+        protected void setHaving(Expression having) {
+            if (having != null && !Expressions.isTrue(having)) {
+                query.having(toPredicate(having));
+            }
+        }
+
         protected void setFetch(List<? extends Column> fetchPaths) {
             if (fetchPaths != null) {
                 for (Column path : fetchPaths) {
-                    List<String> paths = path.paths();
                     Fetch<?, ?> fetch = null;
-                    for (int i = 0; i < paths.size(); i++) {
+                    for (int i = 0; i < path.size(); i++) {
                         Fetch<?, ?> cur = fetch;
-                        String stringPath = paths.get(i);
-                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(subPaths(paths, i + 1), k -> {
+                        String stringPath = path.get(i);
+                        Column sub = subPaths(path, i + 1);
+                        fetch = (Fetch<?, ?>) fetched.computeIfAbsent(sub, k -> {
                             if (cur == null) {
                                 return root.fetch(stringPath, JoinType.LEFT);
                             } else {
@@ -230,10 +224,12 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
         }
 
         protected List<?> getResultList() {
+            setDistinct(structure.select());
+            setFetch(structure.fetch());
             setWhere(structure.where());
             setGroupBy(structure.groupBy());
+            setHaving(structure.having());
             setOrderBy(structure.orderBy());
-            setFetch(structure.fetch());
             TypedQuery<?> objectsQuery = getTypedQuery();
             Integer offset = structure.offset();
             if (offset != null && offset > 0) {
@@ -248,6 +244,10 @@ public class JpaQueryExecutor implements AbstractQueryExecutor {
                 objectsQuery.setLockMode(lockModeType);
             }
             return objectsQuery.getResultList();
+        }
+
+        private void setDistinct(Selection select) {
+            query.distinct(select.distinct());
         }
 
         protected abstract TypedQuery<?> getTypedQuery();

@@ -30,7 +30,7 @@ public class Pageable<T> implements Sliceable<T, Page<T>> {
     }
 
     @Override
-    public Page<T> collect(List<T> list, int total) {
+    public Page<T> collect(List<T> list, long total) {
         return new Page<>(list, total, this);
     }
 }

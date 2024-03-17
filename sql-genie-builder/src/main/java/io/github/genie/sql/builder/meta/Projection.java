@@ -1,9 +1,11 @@
 package io.github.genie.sql.builder.meta;
 
-import java.util.List;
+import java.util.Collection;
 
-public interface Projection {
+public interface Projection extends ObjectType {
 
-    List<ProjectionAttribute> attributes();
+    Collection<? extends ProjectionAttribute> attributes();
+
+    EntityType entityType();
 
 }

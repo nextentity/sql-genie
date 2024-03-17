@@ -14,8 +14,10 @@ import io.github.genie.sql.api.Order;
 import io.github.genie.sql.api.Order.SortOrder;
 import io.github.genie.sql.api.QueryStructure;
 import io.github.genie.sql.api.Selection;
-import io.github.genie.sql.api.Selection.MultiColumn;
-import io.github.genie.sql.api.Selection.SingleColumn;
+import io.github.genie.sql.api.Selection.EntitySelected;
+import io.github.genie.sql.api.Selection.MultiSelected;
+import io.github.genie.sql.api.Selection.ProjectionSelected;
+import io.github.genie.sql.api.Selection.SingleSelected;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.meta.AnyToOneAttribute;
 import io.github.genie.sql.builder.meta.Attribute;
@@ -27,7 +29,6 @@ import io.github.genie.sql.builder.meta.ProjectionAttribute;
 import io.github.genie.sql.builder.meta.Type;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.PreparedSql;
 import io.github.genie.sql.executor.jdbc.JdbcQueryExecutor.QuerySqlBuilder;
-import lombok.Data;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
@@ -45,6 +47,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
     public static final String FOR_UPDATE = " for update";
     public static final String FOR_UPDATE_NOWAIT = " for update nowait";
     public static final String SELECT = "select ";
+    public static final String DISTINCT = "distinct ";
     public static final String FROM = "from ";
     public static final String WHERE = " where ";
     public static final String HAVING = " having ";
@@ -109,32 +112,34 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         private void doBuilder() {
-            buildProjectionPaths();
-            sql.append(SELECT);
-            appendSelects();
-            appendFetchPath();
+            appendSelect();
             appendFrom();
             int joinIndex = sql.length();
             appendWhere();
             appendGroupBy();
             appendOrderBy();
             appendHaving();
-            appendOffsetAndLimit();
             insertJoin(joinIndex);
+            appendOffsetAndLimit();
             appendLockModeType(queryStructure.lockType());
         }
 
-        private void buildProjectionPaths() {
+        private void initializeSelectedExpressions() {
+            appendSelectedExpressions();
+            appendFetchExpressions();
+        }
+
+        private void appendSelectedExpressions() {
             Selection selected = queryStructure.select();
-            if (selected instanceof SingleColumn) {
-                SingleColumn singleColumn = (SingleColumn) selected;
-                selectedExpressions.add(singleColumn.column());
-            } else if (selected instanceof MultiColumn) {
-                MultiColumn multiColumn = (MultiColumn) selected;
-                selectedExpressions.addAll(multiColumn.columns());
-            } else if (queryStructure.select().resultType() == queryStructure.from().type()) {
+            if (selected instanceof SingleSelected) {
+                SingleSelected singleSelected = (SingleSelected) selected;
+                selectedExpressions.add(singleSelected.expression());
+            } else if (selected instanceof MultiSelected) {
+                MultiSelected multiSelected = (MultiSelected) selected;
+                selectedExpressions.addAll(multiSelected.expressions());
+            } else if (selected instanceof EntitySelected) {
                 EntityType table = mappers
-                        .getEntity(queryStructure.select().resultType());
+                        .getEntity(queryStructure.from().type());
                 for (Attribute attribute : table.attributes()) {
                     if (!(attribute instanceof BasicAttribute)) {
                         continue;
@@ -144,19 +149,22 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                     selectedExpressions.add(columns);
                     selectedAttributes.add(attribute);
                 }
-            } else {
+            } else if (selected instanceof ProjectionSelected) {
                 Projection projection = mappers
-                        .getProjection(queryStructure.from().type(), queryStructure.select().resultType());
+                        .getProjection(
+                                queryStructure.from().type(),
+                                queryStructure.select().resultType()
+                        );
                 for (ProjectionAttribute attr : projection.attributes()) {
-                    if (!(attr.baseField() instanceof BasicAttribute)) {
+                    if (attr.entityAttribute() instanceof EntityType) {
                         continue;
                     }
-                    BasicAttribute column = (BasicAttribute) attr.baseField();
-
-                    Column columns = Expressions.column(column.name());
+                    Column columns = attr.entityAttribute().column();
                     selectedExpressions.add(columns);
-                    selectedAttributes.add(attr.field());
+                    selectedAttributes.add(attr);
                 }
+            } else {
+                throw new IllegalStateException();
             }
         }
 
@@ -164,7 +172,12 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             return offset == null ? -1 : offset;
         }
 
-        private void appendSelects() {
+        private void appendSelect() {
+            initializeSelectedExpressions();
+            sql.append(SELECT);
+            if (queryStructure.select().distinct()) {
+                sql.append(DISTINCT);
+            }
             String join = NONE_DELIMITER;
             for (Expression expression : selectedExpressions) {
                 sql.append(join);
@@ -180,27 +193,26 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
             }
         }
 
-        protected void appendFetchPath() {
+        protected void appendFetchExpressions() {
             List<? extends Column> fetchClause = queryStructure.fetch();
-            if (fetchClause != null) {
-                for (Column fetch : fetchClause) {
+            if (fetchClause != null && !fetchClause.isEmpty()) {
+                Column[] array = fetchClause.stream()
+                        .flatMap(it -> Lists.iterate(it, Objects::nonNull, Column::parent))
+                        .distinct()
+                        .toArray(Column[]::new);
+                for (Column fetch : array) {
                     Attribute attribute = getAttribute(fetch);
                     if (!(attribute instanceof AnyToOneAttribute)) {
                         continue;
                     }
                     AnyToOneAttribute am = (AnyToOneAttribute) attribute;
-                    EntityType entityTypeInfo = am.referenced();
-                    for (Attribute field : entityTypeInfo.attributes()) {
-                        if (!(field instanceof BasicAttribute)) {
+                    for (Attribute attr : am.attributes()) {
+                        if (!(attr instanceof BasicAttribute)) {
                             continue;
                         }
-                        BasicAttribute attr = (BasicAttribute) field;
-                        sql.append(",");
                         Column column = Expressions.concat(fetch, attr.name());
-                        appendPaths(column);
-                        appendSelectAlias();
                         selectedExpressions.add(column);
-                        selectedAttributes.add(field);
+                        selectedAttributes.add(attr);
                     }
                 }
             }
@@ -424,7 +436,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
                 case IS_NOT_NULL: {
                     appendBlank();
                     if (operator0 != null && operator0.priority()
-                                             > operator.priority()) {
+                            > operator.priority()) {
                         sql.append('(');
                         appendExpression(args, leftOperand);
                         sql.append(')');
@@ -450,20 +462,19 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         protected void appendPaths(Column column) {
             appendBlank();
-            List<String> expression = column.paths();
             StringBuilder sb = sql;
-            int iMax = expression.size() - 1;
+            int iMax = column.size() - 1;
             if (iMax == -1)
                 return;
             int i = 0;
-            if (expression.size() == 1) {
+            if (column.size() == 1) {
                 appendFromAlias().append(".");
             }
             Class<?> type = queryStructure.from().type();
 
-            Column join = Expressions.column(Lists.of(expression.get(0)));
+            Column join = Expressions.column(Lists.of(column.get(0)));
 
-            for (String path : expression) {
+            for (String path : column) {
                 EntityType info = mappers.getEntity(type);
                 Attribute attribute = info.getAttribute(path);
                 if (i++ == iMax) {
@@ -525,12 +536,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
 
         private static Column getParent(Column k) {
-            if (k == null || k.paths().size() <= 1) {
-                return null;
-            }
-            List<String> paths = new ArrayList<>(k.paths());
-            paths.remove(paths.size() - 1);
-            return Expressions.column(paths);
+            return k.parent();
         }
 
         Operator getOperator(Expression e) {
@@ -545,11 +551,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
 
         protected Attribute getAttribute(Column path) {
             Type schema = entity;
-            for (String s : path.paths()) {
-                if (schema instanceof AnyToOneAttribute) {
-                    AnyToOneAttribute associationProperty = (AnyToOneAttribute) schema;
-                    schema = associationProperty.referenced();
-                }
+            for (String s : path) {
                 if (schema instanceof EntityType) {
                     EntityType ts = (EntityType) schema;
                     schema = ts.getAttribute(s);
@@ -613,7 +615,7 @@ public class MySqlQuerySqlBuilder implements QuerySqlBuilder {
         }
     }
 
-    @Data
+    @lombok.Data
     @Accessors(fluent = true)
     public static final class PreparedSqlImpl implements PreparedSql {
         private final String sql;

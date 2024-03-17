@@ -2,12 +2,14 @@ package io.github.genie.sql.meta;
 
 import io.github.genie.sql.builder.meta.AbstractMetamodel;
 import io.github.genie.sql.builder.meta.Attribute;
+import io.github.genie.sql.builder.meta.Metamodel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -16,13 +18,22 @@ import jakarta.persistence.Version;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
 public class JpaMetamodel extends AbstractMetamodel {
-    private static final List<Class<? extends Annotation>> JOIN_ANNOTATIONS =
+    private static final JpaMetamodel JPA_METAMODEL = new JpaMetamodel();
+    private final List<Class<? extends Annotation>> JOIN_ANNOTATIONS =
             Arrays.asList(ManyToOne.class, OneToMany.class, ManyToMany.class, OneToOne.class);
+
+    protected JpaMetamodel() {
+    }
+
+    public static Metamodel of() {
+        return JPA_METAMODEL;
+    }
 
     @Override
     protected String getTableName(Class<?> javaType) {
@@ -37,7 +48,7 @@ public class JpaMetamodel extends AbstractMetamodel {
         return tableName;
     }
 
-    private static String camelbackToUnderline(String simpleName) {
+    protected String camelbackToUnderline(String simpleName) {
         return simpleName.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
@@ -54,14 +65,14 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isMarkedId(Attribute field) {
-        Id id = getAnnotation(field, Id.class);
+    protected boolean isMarkedId(Attribute attribute) {
+        Id id = getAnnotation(attribute, Id.class);
         return id != null;
     }
 
     @Override
-    protected String getReferencedColumnName(Attribute field) {
-        JoinColumn annotation = getAnnotation(field, JoinColumn.class);
+    protected String getReferencedColumnName(Attribute attribute) {
+        JoinColumn annotation = getAnnotation(attribute, JoinColumn.class);
         String referencedColumnName = null;
         if (annotation != null) {
             referencedColumnName = annotation.referencedColumnName();
@@ -70,8 +81,8 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected String getJoinColumnName(Attribute field) {
-        JoinColumn annotation = getAnnotation(field, JoinColumn.class);
+    protected String getJoinColumnName(Attribute attribute) {
+        JoinColumn annotation = getAnnotation(attribute, JoinColumn.class);
         String joinColumnName = null;
         if (annotation != null) {
             joinColumnName = annotation.name();
@@ -80,10 +91,10 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isVersionField(Attribute field) {
-        Version version = getAnnotation(field, Version.class);
+    protected boolean isVersionField(Attribute attribute) {
+        Version version = getAnnotation(attribute, Version.class);
         if (version != null) {
-            Class<?> type = field.javaType();
+            Class<?> type = attribute.javaType();
             if (isSupportVersion(type)) {
                 return true;
             } else {
@@ -93,19 +104,19 @@ public class JpaMetamodel extends AbstractMetamodel {
         return false;
     }
 
-    private static boolean isSupportVersion(Class<?> type) {
+    protected boolean isSupportVersion(Class<?> type) {
         return type == long.class || type == Long.class || type == Integer.class || type == int.class;
     }
 
     @Override
-    protected boolean isTransient(Attribute field) {
-        return getAnnotation(field, Transient.class) != null;
+    protected boolean isTransient(Attribute attribute) {
+        return attribute == null || getAnnotation(attribute, Transient.class) != null;
     }
 
     @Override
-    protected boolean isBasicField(Attribute field) {
+    protected boolean isBasicField(Attribute attribute) {
         for (Class<? extends Annotation> type : JOIN_ANNOTATIONS) {
-            if (getAnnotation(field, type) != null) {
+            if (getAnnotation(attribute, type) != null) {
                 return false;
             }
         }
@@ -113,27 +124,37 @@ public class JpaMetamodel extends AbstractMetamodel {
     }
 
     @Override
-    protected boolean isAnyToOne(Attribute field) {
-        return getAnnotation(field, ManyToOne.class) != null || getAnnotation(field, OneToOne.class) != null;
+    protected boolean isAnyToOne(Attribute attribute) {
+        return getAnnotation(attribute, ManyToOne.class) != null || getAnnotation(attribute, OneToOne.class) != null;
     }
 
-    protected String getColumnName(Attribute field) {
-        String columnName = getColumnNameByAnnotation(field);
+    protected String getColumnName(Attribute attribute) {
+        String columnName = getColumnNameByAnnotation(attribute);
         if (columnName == null) {
-            columnName = camelbackToUnderline(field.name());
+            columnName = camelbackToUnderline(attribute.name());
         }
         return unwrapSymbol(columnName);
     }
 
-    private static String unwrapSymbol(String symbol) {
-        if (symbol.startsWith("`") && symbol.endsWith("`")) {
+    @Override
+    protected Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass) {
+        MappedSuperclass mappedSuperclass = superClass.getAnnotation(MappedSuperclass.class);
+        if (mappedSuperclass != null) {
+            return superClass.getDeclaredFields();
+        } else {
+            return new Field[0];
+        }
+    }
+
+    protected String unwrapSymbol(String symbol) {
+        while (symbol.startsWith("`") && symbol.endsWith("`")) {
             symbol = symbol.substring(1, symbol.length() - 1);
         }
         return symbol;
     }
 
-    private String getColumnNameByAnnotation(Attribute field) {
-        Column column = getAnnotation(field, Column.class);
+    protected String getColumnNameByAnnotation(Attribute attribute) {
+        Column column = getAnnotation(attribute, Column.class);
         if (column != null && !column.name().isEmpty()) {
             return column.name();
         }

@@ -1,12 +1,12 @@
 package io.github.genie.sql.test.example;
 
+import io.github.genie.sql.test.DataSourceConfig;
 import io.github.genie.sql.api.Query;
 import io.github.genie.sql.api.Query.Select;
 import io.github.genie.sql.builder.Q;
 import io.github.genie.sql.executor.jdbc.MySqlQuerySqlBuilder;
 import io.github.genie.sql.executor.jpa.JpaQueryExecutor;
 import io.github.genie.sql.meta.JpaMetamodel;
-import io.github.genie.sql.test.DataSourceConfig;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -25,7 +25,7 @@ public class Example {
         properties.put("javax.persistence.jdbc.password", config.getPassword());
         try (EntityManagerFactory factory = Persistence.createEntityManagerFactory("org.hibernate.jpa", properties)) {
             EntityManager em = factory.createEntityManager();
-            Query builder = new JpaQueryExecutor(em, new JpaMetamodel(), new MySqlQuerySqlBuilder()).createQuery();
+            Query builder = new JpaQueryExecutor(em, JpaMetamodel.of(), new MySqlQuerySqlBuilder()).createQuery();
             Select<Employee> select0 = builder.from(Employee.class);
             runExample(select0);
         }
@@ -43,11 +43,11 @@ public class Example {
         query.fetch(Employee::getCompany).where(Employee::getId).eq(1).getSingle();
 
         // select * from employee where name = 'Luna' and age > 10
-        query.where(Employee::getName).eq("Luna").and(Employee::getAge).gt(10).getList();
+        query.where(Employee::getName).eq("Luna").where(Employee::getAge).gt(10).getList();
 
         // select * from employee where name = 'Luna' and age > 10 order by id desc limit 0,100
         query.where(Employee::getName).eq("Luna")
-                .and(Employee::getAge).gt(10)
+                .where(Employee::getAge).gt(10)
                 .orderBy(Q.get(Employee::getId).desc())
                 .getList(0, 100);
 

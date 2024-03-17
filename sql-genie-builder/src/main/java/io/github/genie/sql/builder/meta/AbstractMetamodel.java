@@ -1,30 +1,38 @@
 package io.github.genie.sql.builder.meta;
 
-import io.github.genie.sql.builder.Util;
+import io.github.genie.sql.builder.PathReference;
 import io.github.genie.sql.builder.exception.BeanReflectiveException;
-import io.github.genie.sql.builder.meta.Metamodels.AbstractType;
 import io.github.genie.sql.builder.meta.Metamodels.AnyToOneAttributeImpl;
+import io.github.genie.sql.builder.meta.Metamodels.AnyToOneProjectionAttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.AttributeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.BasicAttributeImpl;
-import io.github.genie.sql.builder.meta.Metamodels.EntityTypeImpl;
 import io.github.genie.sql.builder.meta.Metamodels.ProjectionAttributeImpl;
-import io.github.genie.sql.builder.meta.Metamodels.ProjectionImpl;
+import io.github.genie.sql.builder.meta.Metamodels.RootEntity;
+import io.github.genie.sql.builder.meta.Metamodels.RootProjection;
+import io.github.genie.sql.builder.reflect.ReflectUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
@@ -39,115 +47,173 @@ public abstract class AbstractMetamodel implements Metamodel {
     }
 
     @Override
-    public Projection getProjection(Class<?> baseType, Class<?> projectionType) {
-        List<Class<?>> key = new ArrayList<>(2);
-        key.add(baseType);
-        key.add(projectionType);
-        return projections.computeIfAbsent(key, k -> createProjection(baseType, projectionType));
+    public Projection getProjection(Class<?> entityType, Class<?> projectionType) {
+        List<Class<?>> key = Arrays.asList(entityType, projectionType);
+        return projections.computeIfAbsent(key, k -> createProjection(entityType, projectionType));
     }
 
     @NotNull
     protected Projection createProjection(Class<?> baseType, Class<?> projectionType) {
         EntityType entity = getEntity(baseType);
         ArrayList<ProjectionAttribute> list = new ArrayList<>();
-        if (projectionType.isInterface()) {
-            Method[] methods = projectionType.getMethods();
-            for (Method method : methods) {
-                if (method.getParameterCount() == 0) {
-                    String name = Util.getPropertyName(method.getName());
-                    Attribute baseField = entity.getAttribute(name);
-                    if (baseField != null && baseField.getter().getReturnType() == method.getReturnType()) {
-                        AttributeImpl attribute = new AttributeImpl();
-                        attribute.getter(method);
-                        attribute.name(name);
-                        attribute.javaType(method.getReturnType());
-                        list.add(new ProjectionAttributeImpl(baseField, attribute));
-                    }
-                }
+        List<ProjectionAttribute> immutable = Collections.unmodifiableList(list);
+        RootProjection result = new RootProjection(projectionType, immutable, entity);
+        getProjectionAttributes(projectionType, result, entity, list, 0, 2);
+        list.trimToSize();
+        return result;
+    }
+
+    private void getProjectionAttributes(Class<?> projectionType,
+                                         Type owner,
+                                         EntityType entity,
+                                         ArrayList<ProjectionAttribute> list,
+                                         int deep,
+                                         int maxDeep) {
+        if (deep == maxDeep) {
+            return;
+        }
+        List<Attribute> attributes = getProjectionAttributes(projectionType, owner);
+        for (Attribute attribute : attributes) {
+            Attribute entityAttribute = getEntityAttribute(attribute, entity);
+            if (entityAttribute == null) {
+                continue;
             }
-        } else {
-            List<Attribute> fields = getAllFields(projectionType);
-            for (Attribute field : fields) {
-                Attribute baseField = entity.getAttribute(field.name());
-                if (field.javaType() == baseField.javaType()) {
-                    list.add(new ProjectionAttributeImpl(baseField, field));
-                }
+            if (entityAttribute instanceof EntityType) {
+                AnyToOneProjectionAttributeImpl o = new AnyToOneProjectionAttributeImpl(attribute, entityAttribute);
+                getProjectionAttributes(attribute.javaType(), o,
+                        (EntityType) entityAttribute, list, deep + 1, maxDeep);
+            } else if (attribute.javaType() == entityAttribute.javaType()) {
+                list.add(new ProjectionAttributeImpl(attribute, entityAttribute));
             }
         }
-        list.trimToSize();
-        return new ProjectionImpl(list);
+    }
+
+    private List<Attribute> getProjectionAttributes(Class<?> projectionType, Type owner) {
+        if (projectionType.isInterface()) {
+            return getInterfaceAttributes(projectionType, owner);
+        } else if (projectionType.isRecord()) {
+            return getRecordAttributes(projectionType, owner);
+        }
+        return getBeanAttributes(projectionType, owner);
+    }
+
+    private List<Attribute> getRecordAttributes(Class<?> projectionType, Type owner) {
+        RecordComponent[] components = projectionType.getRecordComponents();
+        return Arrays.stream(components)
+                .map(it -> newAttribute(null, it.getAccessor(), null, owner))
+                .collect(Collectors.toList());
+    }
+
+    protected Attribute getEntityAttribute(Attribute attribute, EntityType entity) {
+        Attribute entityAttribute = getEntityAttributeByAnnotation(attribute, entity);
+        return entityAttribute == null
+                ? entity.getAttribute(attribute.name())
+                : entityAttribute;
+    }
+
+    private Attribute getEntityAttributeByAnnotation(Attribute attribute, EntityType entity) {
+        EntityAttribute entityAttribute = getAnnotation(attribute, EntityAttribute.class);
+        if (entityAttribute == null || entityAttribute.value().isEmpty()) {
+            return null;
+        }
+        String value = entityAttribute.value();
+        String[] split = value.split("\\.");
+        Type cur = entity;
+        for (String s : split) {
+            if (cur instanceof EntityType) {
+                cur = ((EntityType) cur).getAttribute(s);
+            } else {
+                throw new IllegalStateException("entity attribute " + value + " not exist");
+            }
+        }
+        if (cur instanceof BasicAttribute) {
+            if (attribute.javaType() != cur.javaType()) {
+                throw new IllegalStateException("entity attribute " + value + " type mismatch");
+            }
+            return (Attribute) cur;
+        } else {
+            throw new IllegalStateException("entity attribute " + value + " not exist");
+        }
+    }
+
+    @NotNull
+    private List<Attribute> getInterfaceAttributes(Class<?> clazz, Type owner) {
+        return Arrays.stream(clazz.getMethods())
+                .map(it -> newAttribute(null, it, null, owner))
+                .collect(Collectors.toList());
     }
 
     protected abstract String getTableName(Class<?> javaType);
 
-    protected abstract boolean isMarkedId(Attribute field);
+    protected abstract boolean isMarkedId(Attribute attribute);
 
-    protected abstract String getReferencedColumnName(Attribute field);
+    protected abstract String getReferencedColumnName(Attribute attribute);
 
-    protected abstract String getJoinColumnName(Attribute field);
+    protected abstract String getJoinColumnName(Attribute attribute);
 
-    protected abstract boolean isVersionField(Attribute field);
+    protected abstract boolean isVersionField(Attribute attribute);
 
-    protected abstract boolean isTransient(Attribute field);
+    protected abstract boolean isTransient(Attribute attribute);
 
-    protected abstract boolean isBasicField(Attribute field);
+    protected abstract boolean isBasicField(Attribute attribute);
 
-    protected abstract boolean isAnyToOne(Attribute field);
+    protected abstract boolean isAnyToOne(Attribute attribute);
 
-    protected abstract String getColumnName(Attribute field);
+    protected abstract String getColumnName(Attribute attribute);
 
-    protected EntityTypeImpl createEntityType(Class<?> entityType) {
-        EntityTypeImpl result = new EntityTypeImpl();
+    protected abstract Field[] getSuperClassField(Class<?> baseClass, Class<?> superClass);
+
+    protected RootEntity createEntityType(Class<?> entityType) {
+        RootEntity result = new RootEntity();
+        return createEntityType(entityType, result, result);
+    }
+
+    protected RootEntity createEntityType(Class<?> entityType, RootEntity result, Type owner) {
         result.javaType(entityType);
         Map<String, Attribute> map = new HashMap<>();
-        result.attributeMap(map);
+        result.attributes(Collections.unmodifiableMap(map));
         result.tableName(getTableName(entityType));
-        List<Attribute> allFields = getAllFields(entityType);
+        List<Attribute> attributes = getBeanAttributes(entityType, owner);
         boolean hasVersion = false;
-        for (Attribute field : allFields) {
-            if (map.containsKey(field.name())) {
+        for (Attribute attr : attributes) {
+            if (map.containsKey(attr.name())) {
                 throw new IllegalStateException("Duplicate key");
+            }
+            if (isTransient(attr)) {
+                continue;
             }
 
             Attribute attribute;
-            if (isBasicField(field)) {
+            if (isBasicField(attr)) {
                 boolean versionColumn = false;
-                if (isVersionField(field)) {
+                if (isVersionField(attr)) {
                     if (hasVersion) {
-                        log.warn("duplicate attributes: " + field.name() + ", ignored");
+                        log.warn("duplicate attributes: " + attr.name() + ", ignored");
                     } else {
                         versionColumn = hasVersion = true;
                     }
                 }
-                attribute = new BasicAttributeImpl(field, getColumnName(field), versionColumn);
+                attribute = new BasicAttributeImpl(attr, getColumnName(attr), versionColumn);
                 if (versionColumn) {
                     result.version(attribute);
                 }
 
-            } else if (isAnyToOne(field)) {
-                AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(field);
-                ato.joinName(getJoinColumnName(field));
-                ato.referencedColumnName(getReferencedColumnName(field));
-                ato.referencedSupplier(() -> {
-                    EntityTypeImpl res = createEntityType(field.javaType());
-                    for (Map.Entry<String, Attribute> e : res.attributeMap().entrySet()) {
-                        setOwner(e.getValue(), ato);
-                    }
-                    return res;
-                });
+            } else if (isAnyToOne(attr)) {
+                AnyToOneAttributeImpl ato = new AnyToOneAttributeImpl(attr);
+                ato.joinName(getJoinColumnName(attr));
+                ato.referencedColumnName(getReferencedColumnName(attr));
+                ato.referencedSupplier(() -> createEntityType(attr.javaType(), new RootEntity(), ato));
                 attribute = ato;
             } else {
-                log.warn("ignored attribute " + field.field());
+                log.warn("ignored attribute " + attr.field());
                 continue;
             }
 
             boolean isMarkedId = isMarkedId(attribute);
-            if (isMarkedId || result.id() == null && "id".equals(field.name())) {
+            if (isMarkedId || result.id() == null && "id".equals(attr.name())) {
                 result.id(attribute);
             }
-
             map.put(attribute.name(), attribute);
-            setOwner(attribute, result);
         }
         setAnyToOneAttributeColumnName(map);
         return result;
@@ -172,66 +238,86 @@ public abstract class AbstractMetamodel implements Metamodel {
                 : joinName;
     }
 
-    private void setOwner(Attribute attribute, Type owner) {
-        if (attribute instanceof AbstractType) {
-            ((AbstractType) attribute).setOwner(owner);
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
-
-    protected List<Attribute> getAllFields(Class<?> type) {
-        Field[] fields = type.getDeclaredFields();
-        Map<Field, Attribute> map = new HashMap<>();
+    protected List<Attribute> getBeanAttributes(Class<?> type, Type owner) {
+        Map<String, PropertyDescriptor> map = new HashMap<>();
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(type);
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
             for (PropertyDescriptor descriptor : propertyDescriptors) {
-                String propertyName = descriptor.getName();
-                Field field = ReflectUtil.getDeclaredField(type, propertyName);
-                if (field == null) {
-                    continue;
+                Field field = ReflectUtil.getDeclaredField(type, descriptor.getName());
+                if (field != null) {
+                    map.put(field.getName(), descriptor);
                 }
-                int modifiers = field.getModifiers();
-                if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
-                    continue;
-                }
-                Method getter = descriptor.getReadMethod();
-                Method setter = descriptor.getWriteMethod();
-                Attribute value = newAttribute(field, getter, setter);
-                if (isTransient(value)) {
-                    continue;
-                }
-                map.put(field, value);
             }
-        } catch (Exception e) {
+        } catch (IntrospectionException e) {
             throw new BeanReflectiveException(e);
         }
+        List<Attribute> attributes = getDeclaredFields(type).stream()
+                .map(field -> newAttribute(owner, field, map.remove(field.getName())))
+                .collect(Collectors.toList());
+        map.values().stream()
+                .map(descriptor -> newAttribute(owner, null, descriptor))
+                .forEach(attributes::add);
+        return attributes;
+    }
+
+    protected Collection<Field> getDeclaredFields(Class<?> clazz) {
+        Map<String, Field> map = new LinkedHashMap<>();
+        Field[] fields = clazz.getDeclaredFields();
+        putFieldsIfAbsent(map, fields);
+        getSuperClassDeclaredFields(clazz, clazz.getSuperclass(), map);
+        return map.values();
+    }
+
+    protected void putFieldsIfAbsent(Map<String, Field> map, Field[] fields) {
         for (Field field : fields) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)) {
-                continue;
+            if (filterDeclaredField(field)) {
+                map.putIfAbsent(field.getName(), field);
             }
-            map.computeIfAbsent(field, k -> newAttribute(field, null, null));
         }
-        return new ArrayList<>(map.values());
     }
 
-    protected Attribute newAttribute(Field field, Method getter, Method setter) {
-        AttributeImpl value = new AttributeImpl();
-        String name = field != null ? field.getName() : Util.getPropertyName(getter.getName());
-        value.name(name);
-        value.getter(getter);
-        value.setter(setter);
-        value.field(field);
-        value.javaType(getter != null ? getter.getReturnType() : field.getType());
-        return value;
+    protected void getSuperClassDeclaredFields(Class<?> baseClass, Class<?> clazz, Map<String, Field> map) {
+        if (clazz == null) {
+            return;
+        }
+        Field[] superClassField = getSuperClassField(baseClass, clazz);
+        if (superClassField != null) {
+            putFieldsIfAbsent(map, superClassField);
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        getSuperClassDeclaredFields(baseClass, superclass, map);
     }
 
-    protected <T extends Annotation> T getAnnotation(Attribute field, Class<T> annotationClass) {
-        T column = field.field().getAnnotation(annotationClass);
+    private Attribute newAttribute(Type owner, Field field, PropertyDescriptor descriptor) {
+        Method getter, setter;
+        if (descriptor != null) {
+            getter = descriptor.getReadMethod();
+            setter = descriptor.getWriteMethod();
+        } else {
+            getter = setter = null;
+        }
+        return newAttribute(field, getter, setter, owner);
+    }
+
+    protected boolean filterDeclaredField(@NotNull Field field) {
+        int modifiers = field.getModifiers();
+        return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers) && !Modifier.isFinal(modifiers);
+    }
+
+    protected Attribute newAttribute(Field field, Method getter, Method setter, Type owner) {
+        Class<?> javaType = getter != null ? getter.getReturnType() : field.getType();
+        String name = field != null ? field.getName() : PathReference.getPropertyName(getter.getName());
+        return new AttributeImpl(javaType, owner, name, getter, setter, field);
+    }
+
+    protected <T extends Annotation> T getAnnotation(Attribute attribute, Class<T> annotationClass) {
+        T column = null;
+        if (attribute.field() != null) {
+            column = attribute.field().getAnnotation(annotationClass);
+        }
         if (column == null) {
-            Method getter = field.getter();
+            Method getter = attribute.getter();
             if (getter != null) {
                 column = getter.getAnnotation(annotationClass);
             }

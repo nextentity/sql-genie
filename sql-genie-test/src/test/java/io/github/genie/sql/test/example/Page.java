@@ -8,11 +8,11 @@ import java.util.List;
 public class Page<T> {
 
     private List<T> list;
-    private int total;
+    private long total;
     private int page;
     private int size;
 
-    public Page(List<T> list, int total, Pageable<T> pageable) {
+    public Page(List<T> list, long total, Pageable<T> pageable) {
         this.list = list;
         this.total = total;
         this.page = pageable.getPage();

@@ -16,12 +16,15 @@ public interface Update {
         return update(Lists.of(entity), entityType).get(0);
     }
 
-    <T> void delete(List<T> entities, Class<T> entityType);
+    <T> void delete(Iterable<T> entities, Class<T> entityType);
 
     default <T> void delete(T entity, Class<T> entityType) {
         delete(Lists.of(entity), entityType);
     }
 
     <T> T updateNonNullColumn(T entity, Class<T> entityType);
+
+    <T> Updater<T> getUpdater(Class<T> type);
+
 
 }

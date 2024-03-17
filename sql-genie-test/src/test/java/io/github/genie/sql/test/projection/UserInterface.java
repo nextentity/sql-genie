@@ -1,6 +1,9 @@
 package io.github.genie.sql.test.projection;
 
-import java.util.HashMap;
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.github.genie.sql.test.JsonSerializablePredicateValueTest;
+import io.github.genie.sql.builder.meta.EntityAttribute;
+
 import java.util.Map;
 
 public interface UserInterface {
@@ -15,13 +18,12 @@ public interface UserInterface {
 
     boolean isValid();
 
+    @EntityAttribute("parentUser.username")
+    String getParentUsername();
+
     default Map<String, Object> asMap() {
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("id", getId());
-        map.put("randomNumber", getRandomNumber());
-        map.put("username", getUsername());
-        map.put("pid", getPid());
-        map.put("valid", isValid());
-        return map;
+        return JsonSerializablePredicateValueTest.mapper
+                .convertValue(this, new TypeReference<>() {
+                });
     }
 }

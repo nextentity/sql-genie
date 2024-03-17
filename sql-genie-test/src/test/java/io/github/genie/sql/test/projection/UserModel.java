@@ -1,5 +1,6 @@
 package io.github.genie.sql.test.projection;
 
+import io.github.genie.sql.builder.meta.EntityAttribute;
 import io.github.genie.sql.test.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,9 @@ public class UserModel implements UserInterface {
 
     private boolean valid;
 
+    @EntityAttribute("parentUser.username")
+    private String parentUsername;
+
     public UserModel(User user) {
 
         id = user.getId();
@@ -25,6 +29,9 @@ public class UserModel implements UserInterface {
         username = user.getUsername();
         pid = user.getPid();
         valid = user.isValid();
+        if (user.getParentUser() != null) {
+            parentUsername = user.getParentUser().getUsername();
+        }
 
     }
 }

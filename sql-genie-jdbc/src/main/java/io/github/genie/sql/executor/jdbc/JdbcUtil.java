@@ -2,7 +2,6 @@ package io.github.genie.sql.executor.jdbc;
 
 import io.github.genie.sql.builder.TypeCastUtil;
 import lombok.Lombok;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +15,9 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -26,22 +28,6 @@ public abstract class JdbcUtil {
 
     private static final Map<Class<?>, Object> SINGLE_ENUM_MAP = new ConcurrentHashMap<>();
     private static final Map<Class<?>, ResultSetGetter<?>> GETTER_MAPS = new HashMap<>();
-    private static final Map<Class<?>, Class<?>> PRIMITIVE_MAP = getPrimitiveMap();
-
-    @NotNull
-    private static Map<Class<?>, Class<?>> getPrimitiveMap() {
-        Map<Class<?>, Class<?>> map = new HashMap<>();
-        Class<?>[]
-                primitiveTypes = {Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE,
-                Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE},
-                wrapperTypes = {Boolean.class, Character.class, Byte.class, Short.class, Integer.class,
-                        Long.class, Float.class, Double.class, Void.class};
-
-        for (int i = 0; i < primitiveTypes.length; i++) {
-            map.put(primitiveTypes[i], wrapperTypes[i]);
-        }
-        return map;
-    }
 
     static {
 
@@ -80,12 +66,14 @@ public abstract class JdbcUtil {
         put(java.io.InputStream.class, ResultSet::getBinaryStream);
         put(byte[].class, ResultSet::getBytes);
         put(Timestamp.class, ResultSet::getTimestamp);
-        put(Instant.class, (resultSet, columnIndex) -> resultSet.getTimestamp(columnIndex).toInstant());
+        put(Instant.class, (resultSet, columnIndex) -> {
+            Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+            return timestamp.toInstant();
+        });
+        put(LocalDate.class, (resultSet, columnIndex) -> resultSet.getDate(columnIndex).toLocalDate());
+        put(LocalDateTime.class, (resultSet, columnIndex) -> resultSet.getTimestamp(columnIndex).toLocalDateTime());
+        put(LocalTime.class, (resultSet, columnIndex) -> resultSet.getTime(columnIndex).toLocalTime());
 
-    }
-
-    public static Class<?> getWrapedClass(Class<?> javaType) {
-        return PRIMITIVE_MAP.getOrDefault(javaType, javaType);
     }
 
     public static <X> X getValue(ResultSet resultSet, int column, Class<X> targetType) throws SQLException {
@@ -93,7 +81,7 @@ public abstract class JdbcUtil {
         if (result == null) {
             return null;
         }
-        if (!targetType.isInstance(result)) {
+        if (targetType != result.getClass()) {
             ResultSetGetter<?> getter = GETTER_MAPS.get(targetType);
             if (getter == null) {
                 if (Enum.class.isAssignableFrom(targetType)) {
@@ -113,23 +101,6 @@ public abstract class JdbcUtil {
                 arg = ((Enum<?>) arg).ordinal();
             }
             pst.setObject(++i, arg);
-        }
-    }
-
-    public static void setParam(PreparedStatement pst, Object[] args) throws SQLException {
-        int i = 0;
-        for (Object arg : args) {
-            if (arg instanceof Enum) {
-                arg = ((Enum<?>) arg).ordinal();
-            }
-            pst.setObject(++i, arg);
-        }
-    }
-
-    public static void setParamBatch(PreparedStatement pst, List<Object[]> argsList) throws SQLException {
-        for (Object[] args : argsList) {
-            setParam(pst, args);
-            pst.addBatch();
         }
     }
 

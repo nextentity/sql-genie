@@ -4,15 +4,15 @@ import io.github.genie.sql.api.Column;
 import io.github.genie.sql.api.Constant;
 import io.github.genie.sql.api.Expression;
 import io.github.genie.sql.api.ExpressionHolder;
-import io.github.genie.sql.api.ExpressionOperator.PathOperator;
-import io.github.genie.sql.api.ExpressionOperator.Predicate;
+import io.github.genie.sql.api.ExpressionHolder.ColumnHolder;
 import io.github.genie.sql.api.Lists;
 import io.github.genie.sql.api.Operation;
 import io.github.genie.sql.api.Operator;
 import io.github.genie.sql.api.Path;
-import io.github.genie.sql.builder.QueryStructures.ColumnMeta;
-import io.github.genie.sql.builder.QueryStructures.ConstantMeta;
-import io.github.genie.sql.builder.QueryStructures.OperationMeta;
+import io.github.genie.sql.api.TypedExpression.PathExpression;
+import io.github.genie.sql.builder.QueryStructures.ColumnImpl;
+import io.github.genie.sql.builder.QueryStructures.ConstantImpl;
+import io.github.genie.sql.builder.QueryStructures.OperationImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,21 +30,13 @@ public interface Expressions {
                && Boolean.TRUE.equals(((Constant) expression).value());
     }
 
-    static Expression of(ExpressionHolder<?, ?> expression) {
-        return expression.expression();
-    }
-
     static Expression of(Object value) {
         if (value instanceof ExpressionHolder<?, ?>) {
             return ((ExpressionHolder<?, ?>) value).expression();
         } else if (value instanceof Path<?, ?>) {
             return of((Path<?, ?>) value);
         }
-        return new ConstantMeta(value);
-    }
-
-    static Expression of(Expression value) {
-        return value;
+        return new ConstantImpl(value);
     }
 
     static Column of(Path<?, ?> path) {
@@ -53,7 +45,7 @@ public interface Expressions {
     }
 
     static String columnName(Path<?, ?> path) {
-        return Util.getPropertyName(path);
+        return PathReference.of(path).getPropertyName();
     }
 
     static Column column(String path) {
@@ -67,7 +59,7 @@ public interface Expressions {
         if (paths.getClass() != ArrayList.class) {
             paths = new ArrayList<>(paths);
         }
-        return new ColumnMeta(paths);
+        return new ColumnImpl(paths.toArray(String[]::new));
     }
 
     static Expression operate(Expression l, Operator o, Expression r) {
@@ -87,24 +79,24 @@ public interface Expressions {
         }
         if (o.isMultivalued() && l instanceof Operation && ((Operation) l).operator() == o) {
             Operation lo = (Operation) l;
-            List<Expression> args = Util.concat(lo.args(), r);
-            return new OperationMeta(lo.operand(), o, args);
+            List<Expression> args = Lists.concat(lo.args(), r);
+            return new OperationImpl(lo.operand(), o, args);
         }
-        return new OperationMeta(l, o, r);
+        return new OperationImpl(l, o, r);
     }
 
-    static <T> List<PathOperator<T, ?, Predicate<T>>> toExpressionList(Collection<Path<T, ?>> paths) {
+    static <T> List<ColumnHolder<T, ?>> toExpressionList(Collection<Path<T, ?>> paths) {
         return paths.stream()
-                .<PathOperator<T, ?, Predicate<T>>>map(Q::get)
+                .<PathExpression<T, ?>>map(Q::get)
                 .collect(Collectors.toList());
     }
 
     static Column concat(Column join, String path) {
-        return column(Util.concat(join.paths(), path));
+        return join.get(path);
     }
 
     static Column concat(Column join, Path<?, ?> path) {
-        return column(Util.concat(join.paths(), columnName(path)));
+        return join.get(columnName(path));
     }
 
 }
