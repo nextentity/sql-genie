@@ -11,9 +11,12 @@ import org.jetbrains.annotations.Nullable;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
@@ -116,8 +119,6 @@ public class ReflectUtil {
             Class<?> javaType = type.javaType();
             if (javaType.isInterface()) {
                 return new InterfaceConstructor(type);
-            } else if (javaType.isRecord()) {
-                return new RecordConstructor(type);
             } else {
                 return new BeanConstructor(type);
             }
@@ -136,7 +137,30 @@ public class ReflectUtil {
     }
 
     public static Object invokeDefaultMethod(Object proxy, Method method, Object[] args) throws Throwable {
-        return InvocationHandler.invokeDefault(proxy, method, args);
+        final float version = Float.parseFloat(System.getProperty("java.class.version"));
+        if (version <= 52) {
+            final Constructor<Lookup> constructor = MethodHandles.Lookup.class
+                    .getDeclaredConstructor(Class.class);
+            constructor.setAccessible(true);
+
+            final Class<?> clazz = method.getDeclaringClass();
+            MethodHandles.Lookup lookup = constructor.newInstance(clazz);
+            return lookup
+                    .in(clazz)
+                    .unreflectSpecial(method, clazz)
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
+        } else {
+            return MethodHandles.lookup()
+                    .findSpecial(
+                            method.getDeclaringClass(),
+                            method.getName(),
+                            MethodType.methodType(method.getReturnType(), new Class[0]),
+                            method.getDeclaringClass()
+                    )
+                    .bindTo(proxy)
+                    .invokeWithArguments(args);
+        }
     }
 
     public static Object getFieldValue(Field field, Object instance) throws IllegalAccessException {
@@ -156,7 +180,7 @@ public class ReflectUtil {
     }
 
     public static boolean isAccessible(AccessibleObject accessibleObject, Object instance) {
-        return accessibleObject.canAccess(instance);
+        return accessibleObject.isAccessible();
     }
 
     @NotNull

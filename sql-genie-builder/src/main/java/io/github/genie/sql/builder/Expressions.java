@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public interface Expressions {
 
     Expression TRUE = of(true);
@@ -59,7 +58,7 @@ public interface Expressions {
         if (paths.getClass() != ArrayList.class) {
             paths = new ArrayList<>(paths);
         }
-        return new ColumnImpl(paths.toArray(String[]::new));
+        return new ColumnImpl(paths.toArray(new String[0]));
     }
 
     static Expression operate(Expression l, Operator o, Expression r) {

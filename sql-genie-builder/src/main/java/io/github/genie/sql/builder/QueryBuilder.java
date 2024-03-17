@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public class QueryBuilder<T> extends QueryConditionBuilder<T, T> implements Select<T>, Fetch<T> {
 
     public QueryBuilder(QueryExecutor queryExecutor, Class<T> type, QueryStructurePostProcessor structurePostProcessor) {

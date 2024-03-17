@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 public class MysqlUpdateSqlBuilder implements JdbcUpdateSqlBuilder {
 
     @Override

@@ -1,7 +1,7 @@
 package io.github.genie.sql.test.entity;
 
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Version;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
 

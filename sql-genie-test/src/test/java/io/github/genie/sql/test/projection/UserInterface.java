@@ -23,7 +23,7 @@ public interface UserInterface {
 
     default Map<String, Object> asMap() {
         return JsonSerializablePredicateValueTest.mapper
-                .convertValue(this, new TypeReference<>() {
+                .convertValue(this, new TypeReference<Map<String, Object>>() {
                 });
     }
 }

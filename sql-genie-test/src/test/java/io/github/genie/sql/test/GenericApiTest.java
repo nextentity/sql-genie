@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -73,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class GenericApiTest {
 
     protected static final String username = "Jeremy Keynes";
+    public static final Supplier<IllegalStateException> NEW_EXP = IllegalStateException::new;
 
     protected static List<User> allUsers;
 
@@ -319,7 +321,7 @@ public class GenericApiTest {
         User u = allUsers.stream()
                 .filter(it -> it.getId() == userId)
                 .findAny()
-                .orElseThrow();
+                .orElseThrow(IllegalStateException::new);
 
         if (user.getPid() != null) {
             User parentUser = user.getParentUser();
@@ -439,8 +441,8 @@ public class GenericApiTest {
                 .requireSingle();
 
         assertNotNull(aggregated);
-        assertEquals(getUserIdStream().min().orElseThrow(), aggregated.<Integer>get(0));
-        assertEquals(getUserIdStream().max().orElseThrow(), aggregated.<Integer>get(1));
+        assertEquals(getUserIdStream().min().orElseThrow(NEW_EXP), aggregated.<Integer>get(0));
+        assertEquals(getUserIdStream().max().orElseThrow(NEW_EXP), aggregated.<Integer>get(1));
         assertEquals(getUserIdStream().count(), aggregated.<Long>get(2));
         OptionalDouble average = getUserIdStream().average();
         assertEquals(average.orElse(0), aggregated.<Number>get(3).doubleValue(), 0.0001);

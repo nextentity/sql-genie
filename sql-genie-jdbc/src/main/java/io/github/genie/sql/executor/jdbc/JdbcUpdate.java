@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-@SuppressWarnings("PatternVariableCanBeUsed")
 @Slf4j
 public class JdbcUpdate implements Update {
 

@@ -9,6 +9,7 @@ import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -101,7 +102,7 @@ public class PathReference {
         }
         expr = matcher.group(1);
         return Arrays.stream(expr.split(";"))
-                .filter(s -> !s.isBlank())
+                .filter(s -> !s.isEmpty())
                 .map(s -> s.replace("L", "").replace("/", "."))
                 .map(s -> {
                     try {
@@ -111,7 +112,7 @@ public class PathReference {
                     }
                 })
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new NoSuchElementException("No value present"));
     }
 
 }

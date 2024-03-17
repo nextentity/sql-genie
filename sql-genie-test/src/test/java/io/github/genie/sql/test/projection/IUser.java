@@ -1,5 +1,8 @@
 package io.github.genie.sql.test.projection;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public interface IUser {
 
     int getId();
@@ -10,7 +13,12 @@ public interface IUser {
 
     U parentUser();
 
-    record U(int id, int randomNumber, String username) {
+    @Getter
+    @Setter
+    final class U {
+        private int id;
+        private int randomNumber;
+        private String username;
     }
 
 }

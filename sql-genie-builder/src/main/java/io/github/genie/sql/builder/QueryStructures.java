@@ -128,15 +128,15 @@ final class QueryStructures {
         public String toString() {
 
             return "select " + select
-                    + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
-                    + " from " + from.type().getName()
-                    + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
-                    + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
-                    + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
-                    + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
-                    + (offset == null ? "" : " offset " + offset)
-                    + (limit == null ? "" : " limit " + limit)
-                    + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
+                   + (isEmpty(fetch) ? "" : " fetch " + QueryStructures.toString(fetch))
+                   + " from " + from.type().getName()
+                   + (where == null || Expressions.isTrue(where) ? "" : " where " + where)
+                   + (isEmpty(groupBy) ? "" : " group by " + QueryStructures.toString(groupBy))
+                   + (having == null || Expressions.isTrue(having) ? "" : " having " + having)
+                   + (isEmpty(orderBy) ? "" : " orderBy " + QueryStructures.toString(orderBy))
+                   + (offset == null ? "" : " offset " + offset)
+                   + (limit == null ? "" : " limit " + limit)
+                   + (lockType == null || lockType == LockModeType.NONE ? "" : " lock(" + lockType + ")");
         }
 
         private static boolean isEmpty(Collection<?> objects) {

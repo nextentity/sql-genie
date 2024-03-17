@@ -26,6 +26,7 @@ import io.github.genie.sql.test.entity.User;
 import io.github.genie.sql.test.example.Page;
 import io.github.genie.sql.test.example.Pageable;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -40,15 +41,20 @@ import java.util.stream.Stream;
 import static io.github.genie.sql.test.Transaction.doInTransaction;
 import static io.github.genie.sql.builder.Q.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 class QueryBuilderTest {
 
     static List<User> users() {
         return UserQueryProvider.users();
+    }
+
+    @Test
+    void testDiv() {
+        UserQueryProvider.jpa.where(User::getRandomNumber).divide(3).eq(12).getList();
     }
 
     @ParameterizedTest
@@ -1280,16 +1286,16 @@ class QueryBuilderTest {
                 .single(10).orElse(null);
         assertEquals(single, user);
 
-        assertTrue(userQuery
+        assertFalse(userQuery
                 .where(User::getId).le(10)
-                .single(11).isEmpty());
+                .single(11).isPresent());
 
         Slice<User> slice = userQuery.slice(20, 10);
         assertEquals(slice.total(), users().size());
         List<User> list = users().stream()
                 .skip(20)
                 .limit(10)
-                .toList();
+                .collect(Collectors.toList());
         assertEquals(slice.data(), list);
 
         Page<User> page = userQuery.slice(new Pageable<>(3, 10));
@@ -1345,9 +1351,9 @@ class QueryBuilderTest {
                         .single(10).orElse(null);
                 assertEquals(single, user);
 
-                assertTrue(userQuery
+                assertFalse(userQuery
                         .where(User::getId).le(10)
-                        .single(11, lockModeType).isEmpty());
+                        .single(11, lockModeType).isPresent());
 
 
                 user = userQuery.getFirst(lockModeType);

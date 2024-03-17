@@ -10,11 +10,11 @@ import io.github.genie.sql.builder.ExpressionHolders;
 import io.github.genie.sql.builder.Expressions;
 import io.github.genie.sql.builder.UpdaterImpl;
 import io.github.genie.sql.builder.reflect.ReflectUtil;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.metamodel.EntityType;
-import jakarta.persistence.metamodel.SingularAttribute;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.persistence.EntityManager;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
