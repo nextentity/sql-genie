@@ -41,15 +41,6 @@ public class Metamodels {
             this.field = field;
         }
 
-        @Override
-        public String toString() {
-            if (declaringType != null
-                    && !(declaringType instanceof RootEntity)
-                    && !(declaringType instanceof RootProjection)) {
-                return declaringType + "." + name;
-            }
-            return name;
-        }
     }
 
     @Getter
@@ -62,25 +53,15 @@ public class Metamodels {
         private Attribute id;
         private Attribute version;
         private String tableName;
-        private Map<String, Attribute> attributeMap;
+        private Map<String, Attribute> attributes;
 
         public Collection<Attribute> attributes() {
-            return attributeMap.values();
+            return attributes.values();
         }
 
         @Override
         public Attribute getAttribute(String fieldName) {
-            return attributeMap.get(fieldName);
-        }
-
-        @Override
-        public String toString() {
-            return "Entity{" + javaType.getSimpleName() + "}";
-        }
-
-        @Override
-        public String name() {
-            return javaType.getSimpleName();
+            return attributes.get(fieldName);
         }
 
     }
@@ -93,16 +74,10 @@ public class Metamodels {
         private final Attribute attribute;
         private final String columnName;
         private final boolean hasVersion;
-
-        @Override
-        public String toString() {
-            return attribute.toString();
-        }
     }
 
     @Getter
     @Setter
-    @RequiredArgsConstructor
     @Accessors(fluent = true)
     public static class AnyToOneAttributeImpl implements AnyToOneAttribute {
         @Delegate
@@ -118,11 +93,6 @@ public class Metamodels {
         public AnyToOneAttributeImpl(Attribute attribute) {
             this.attribute = attribute;
         }
-
-        @Override
-        public String toString() {
-            return attribute.toString();
-        }
     }
 
     @Getter
@@ -132,11 +102,6 @@ public class Metamodels {
         @Delegate
         private final Attribute attribute;
         private final Attribute entityAttribute;
-
-        @Override
-        public String toString() {
-            return attribute.toString();
-        }
     }
 
     @Getter
@@ -146,11 +111,6 @@ public class Metamodels {
         @Delegate
         private final Attribute attribute;
         private final Attribute entityAttribute;
-
-        @Override
-        public String toString() {
-            return attribute.toString();
-        }
 
         @Override
         public Collection<? extends Attribute> attributes() {
@@ -165,15 +125,5 @@ public class Metamodels {
         private final Class<?> javaType;
         private final List<ProjectionAttribute> attributes;
         private final EntityType entityType;
-
-        @Override
-        public String name() {
-            return javaType.getSimpleName();
-        }
-
-        @Override
-        public String toString() {
-            return javaType.getSimpleName();
-        }
     }
 }

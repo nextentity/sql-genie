@@ -4,6 +4,4 @@ public interface Type {
 
     Class<?> javaType();
 
-    String name();
-
 }
