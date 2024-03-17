@@ -17,7 +17,6 @@ module sql.genie.test {
     opens io.github.genie.sql.test;
     opens io.github.genie.sql.test.entity;
     opens io.github.genie.sql.test.example;
-    opens io.github.genie.sql.test.builder;
     opens io.github.genie.sql.test.projection;
 
 }
